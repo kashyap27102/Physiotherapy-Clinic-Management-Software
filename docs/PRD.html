@@ -1,0 +1,2661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Physiotherapy Clinic Management Software — PRD</title>
+<style>
+:root{--bg:#fff;--fg:#1c2330;--muted:#5b6678;--line:#dfe4ec;--soft:#f5f7fa;--accent:#0b6e99;--code:#f1f4f8;--quote:#fff7e0;--quote-line:#e0a800}
+@media (prefers-color-scheme:dark){:root{--bg:#10141b;--fg:#e3e8ef;--muted:#9aa5b8;--line:#2a3342;--soft:#171d27;--accent:#58b4dd;--code:#1a2230;--quote:#2b2610;--quote-line:#c79a12}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.layout{display:flex;max-width:1280px;margin:0 auto}
+nav{position:sticky;top:0;align-self:flex-start;height:100vh;overflow:auto;width:290px;flex:none;padding:24px 16px;border-right:1px solid var(--line);font-size:14px}
+nav h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+nav ul{list-style:none;margin:0;padding:0}
+nav li{margin:0}
+nav a{display:block;padding:4px 8px;border-radius:6px;color:var(--fg);text-decoration:none}
+nav a:hover{background:var(--soft);color:var(--accent)}
+main{min-width:0;flex:1;padding:32px 40px 80px}
+h1{font-size:2rem;line-height:1.25;margin:0 0 .6em}
+h2{font-size:1.5rem;margin:2.2em 0 .6em;padding-top:.4em;border-top:1px solid var(--line)}
+h3{font-size:1.2rem;margin:1.8em 0 .5em}
+h4{font-size:1.02rem;margin:1.5em 0 .4em;color:var(--accent)}
+a{color:var(--accent)}
+hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+.tbl{overflow-x:auto;margin:1em 0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft)}
+tbody tr:nth-child(even){background:color-mix(in srgb,var(--soft) 55%,transparent)}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.9em}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow:auto;font-size:13px;line-height:1.5}
+pre code{background:none;padding:0}
+blockquote{margin:1em 0;padding:8px 16px;background:var(--quote);border-left:4px solid var(--quote-line);border-radius:0 6px 6px 0}
+blockquote p{margin:.4em 0}
+ul,ol{padding-left:1.4em}
+li{margin:.2em 0}
+.menu{display:none}
+@media (max-width:900px){
+  .layout{display:block}
+  nav{position:static;height:auto;width:auto;border-right:0;border-bottom:1px solid var(--line);padding:16px}
+  nav ul{columns:2}
+  main{padding:20px 16px 60px}
+}
+@media print{nav{display:none}main{padding:0}h2{break-after:avoid}table,pre{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav aria-label="Contents">
+<h2>Contents</h2>
+<ul>
+<li><a href="#how-to-read-this-document">How to read this document</a></li>
+<li><a href="#1-executive-summary">1. Executive Summary</a></li>
+<li><a href="#2-product-vision">2. Product Vision</a></li>
+<li><a href="#3-problem-statement">3. Problem Statement</a></li>
+<li><a href="#4-business-objectives">4. Business Objectives</a></li>
+<li><a href="#5-target-audience-and-user-personas">5. Target Audience and User Personas</a></li>
+<li><a href="#6-stakeholders">6. Stakeholders</a></li>
+<li><a href="#7-product-scope">7. Product Scope</a></li>
+<li><a href="#8-mvp-vs-future-phases-moscow">8. MVP vs Future Phases (MoSCoW)</a></li>
+<li><a href="#9-functional-requirements">9. Functional Requirements</a></li>
+<li><a href="#10-user-stories">10. User Stories</a></li>
+<li><a href="#11-acceptance-criteria-given-when-then">11. Acceptance Criteria (Given / When / Then)</a></li>
+<li><a href="#12-user-journeys-and-workflows">12. User Journeys and Workflows</a></li>
+<li><a href="#13-business-rules">13. Business Rules</a></li>
+<li><a href="#14-screen-and-module-specifications">14. Screen and Module Specifications</a></li>
+<li><a href="#15-data-requirements-and-entity-relationships">15. Data Requirements and Entity Relationships</a></li>
+<li><a href="#16-roles-and-permissions-matrix">16. Roles and Permissions Matrix</a></li>
+<li><a href="#17-non-functional-requirements">17. Non-Functional Requirements</a></li>
+<li><a href="#18-security-and-privacy-requirements">18. Security and Privacy Requirements</a></li>
+<li><a href="#19-applicable-indian-regulatory-considerations">19. Applicable Indian Regulatory Considerations</a></li>
+<li><a href="#20-integration-requirements">20. Integration Requirements</a></li>
+<li><a href="#21-reporting-and-analytics-requirements">21. Reporting and Analytics Requirements</a></li>
+<li><a href="#22-error-states-and-edge-cases">22. Error States and Edge Cases</a></li>
+<li><a href="#23-dependencies-and-risks">23. Dependencies and Risks</a></li>
+<li><a href="#24-success-metrics">24. Success Metrics</a></li>
+<li><a href="#25-release-plan">25. Release Plan</a></li>
+<li><a href="#26-open-questions-and-assumptions">26. Open Questions and Assumptions</a></li>
+<li><a href="#27-requirements-traceability-matrix">27. Requirements Traceability Matrix</a></li>
+<li><a href="#next-deliverables-offered-not-yet-created">Next deliverables (offered, not yet created)</a></li>
+</ul>
+</nav>
+<main>
+<h1 id="physiotherapy-clinic-management-software-product-requirements-document">Physiotherapy Clinic Management Software — Product Requirements Document</h1>
+<div class="tbl"><table><thead><tr>
+<th></th>
+<th></th>
+</tr>
+</thead><tbody><tr>
+<td><strong>Version</strong></td>
+<td>1.0 (scope approved)</td>
+</tr>
+<tr>
+<td><strong>Date</strong></td>
+<td>2026-10-26</td>
+</tr>
+<tr>
+<td><strong>Status</strong></td>
+<td>Scope approved by product owner; PRD ready for review</td>
+</tr>
+<tr>
+<td><strong>Market</strong></td>
+<td>India</td>
+</tr>
+<tr>
+<td><strong>Product type</strong></td>
+<td>Multi-tenant SaaS (clinic business → branches)</td>
+</tr>
+</tbody></table></div>
+<h2 id="how-to-read-this-document">How to read this document</h2>
+<p>Every requirement carries a <strong>Source</strong> tag so confirmed decisions are never confused with suggestions:</p>
+<div class="tbl"><table><thead><tr>
+<th>Tag</th>
+<th>Meaning</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>C</strong></td>
+<td><strong>Confirmed</strong> by the product owner during discovery (decision reference in brackets, e.g. Q23).</td>
+</tr>
+<tr>
+<td><strong>Rec</strong></td>
+<td><strong>Recommendation</strong> by the business analyst. Not yet confirmed; needs approval.</td>
+</tr>
+<tr>
+<td><strong>A</strong></td>
+<td><strong>Assumption</strong> made because information was missing. Listed in section 26.</td>
+</tr>
+</tbody></table></div>
+<p>Priorities use MoSCoW (Must / Should / Could / Won&#39;t for the MVP). Releases are <strong>R1</strong> (Pilot, about 2 months) and <strong>R2</strong> (Full MVP, 4 to 6 months from start).</p>
+<blockquote>
+<p><strong>Legal disclaimer.</strong> Nothing in this document is legal, tax, or regulatory advice. Items in section 19 are flags for review by qualified professionals (lawyer, chartered accountant). No compliance is claimed.</p>
+</blockquote>
+<hr>
+<h2 id="1-executive-summary">1. Executive Summary</h2>
+<p>This product is a cloud-based clinic management system for small physiotherapy clinics in India (2 to 5 therapists, 1 to 2 branches), many of which still run on paper or Excel. It is a <strong>multi-tenant SaaS</strong>: each clinic business is an isolated tenant that can have multiple branches, managed by a platform super-admin.</p>
+<p>The MVP is built around how these clinics actually work: <strong>walk-in patients, no advance appointment booking, and flexible payment timing</strong> (some patients prepay for several days, others pay after several days). The core loop is:</p>
+<ol>
+<li>Register a patient (name, phone, age, gender) in seconds.</li>
+<li>A therapist records an assessment and a treatment plan.</li>
+<li>On each visit, staff mark attendance; each attended session adds a charge to the patient&#39;s running account.</li>
+<li>Payments, advances, refunds, and corrections are recorded in an append-only ledger.</li>
+<li>The patient receives a numbered receipt; an invoice is available on request.</li>
+<li>The therapist discharges the patient when treatment ends. The patient can return later under a new treatment episode.</li>
+</ol>
+<p>Priorities, in order: <strong>(1) patient records, (2) appointments and visits, (3) billing and payments</strong>. Because walk-ins dominate, the MVP replaces the appointment calendar with a &quot;today&#39;s visits&quot; list.</p>
+<p>Delivery is in two releases: a <strong>Pilot (R1, about 2 months)</strong> for one or two friendly clinics, then a <strong>Full MVP (R2, 4 to 6 months)</strong>. Technology: React PWA, Node.js with Express (TypeScript), PostgreSQL, hosted prototype-first on Render. Production hosting and data location are decided after legal review (section 19).</p>
+<h2 id="2-product-vision">2. Product Vision</h2>
+<p><em>Every small physiotherapy clinic in India can run its patients, visits, and money from one simple, fast, trustworthy system, without paper registers or Excel sheets.</em></p>
+<p>Design principles:</p>
+<ul>
+<li><strong>Speed at the front desk.</strong> The common actions (find patient, register, mark attendance, take payment) take seconds.</li>
+<li><strong>Money you can trust.</strong> Nothing is deleted. Every balance is the sum of recorded entries and can be audited.</li>
+<li><strong>Privacy by default.</strong> One clinic never sees another&#39;s data. Access to sensitive records is permission-controlled and logged.</li>
+<li><strong>Simple first, extensible later.</strong> The data model leaves room for appointments, reminders, packages, and more roles.</li>
+</ul>
+<h2 id="3-problem-statement">3. Problem Statement</h2>
+<p>Small physiotherapy clinics in India typically keep patient history on paper or in spreadsheets. Per the product owner&#39;s priorities, the problems to solve are, in order:</p>
+<ol>
+<li><strong>Messy records and hard-to-find patient history.</strong> Past complaints, treatments, and visits are scattered.</li>
+<li><strong>Hard-to-manage visits.</strong> Staff cannot easily see who came today, which session number it is, or who treated them.</li>
+<li><strong>Billing and dues not tracked properly.</strong> Patients pay in advance or after several days, so dues and advances are easily lost.</li>
+</ol>
+<p>Later-phase problems (not MVP): no structured view of patient improvement (progress tracking) and patients dropping out of treatment (follow-up reminders).</p>
+<h2 id="4-business-objectives">4. Business Objectives</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Objective</th>
+<th>Measure (proposed)</th>
+<th>Source</th>
+</tr>
+</thead><tbody><tr>
+<td>BO-1</td>
+<td>Validate the core workflow with real clinics</td>
+<td>2 pilot clinics using it daily for at least 4 weeks</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>BO-2</td>
+<td>Replace paper/Excel for patient records</td>
+<td>100% of a pilot clinic&#39;s new patients registered in the system</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>BO-3</td>
+<td>Make dues and advances visible</td>
+<td>Zero unexplained ledger differences in pilot clinics</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>BO-4</td>
+<td>Build a scalable multi-tenant SaaS foundation</td>
+<td>New clinic onboarded without developer help (R2)</td>
+<td>C (multi-tenant, Q1)</td>
+</tr>
+<tr>
+<td>BO-5</td>
+<td>Prepare for paid subscriptions</td>
+<td>Plans, limits, and trial status exist in the data model (R2)</td>
+<td>C (A-1)</td>
+</tr>
+</tbody></table></div>
+<h2 id="5-target-audience-and-user-personas">5. Target Audience and User Personas</h2>
+<p><strong>Target customers (C, Q2):</strong> small clinics with 2 to 5 therapists and 1 to 2 branches. Hospitals, large rehab centres, and chains are not targets.</p>
+<p>The personas below are illustrative and for design discussion only.</p>
+<div class="tbl"><table><thead><tr>
+<th>Persona</th>
+<th>Role in system</th>
+<th>Goals</th>
+<th>Pain points today</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>Clinic owner</strong> (often also a practising physiotherapist)</td>
+<td>Owner/Admin</td>
+<td>Know daily collections and dues; control who sees what; keep records safe</td>
+<td>Cash and dues tracked in a notebook; cannot see both branches</td>
+</tr>
+<tr>
+<td><strong>Receptionist</strong></td>
+<td>Receptionist</td>
+<td>Register walk-ins fast; mark attendance; take payments; find returning patients</td>
+<td>Searching paper files; remembering who owes money</td>
+</tr>
+<tr>
+<td><strong>Physiotherapist</strong></td>
+<td>Physiotherapist</td>
+<td>Record assessment and plan quickly; see patient history before treating</td>
+<td>Handwritten notes; no history at hand</td>
+</tr>
+<tr>
+<td><strong>Platform super-admin</strong> (the product owner)</td>
+<td>Super-admin</td>
+<td>Onboard clinics; manage plans and status; support clinics</td>
+<td>No tooling yet</td>
+</tr>
+</tbody></table></div>
+<p><strong>Patients do not log in (C, Q5).</strong> They receive printed or PDF receipts only.</p>
+<h2 id="6-stakeholders">6. Stakeholders</h2>
+<div class="tbl"><table><thead><tr>
+<th>Stakeholder</th>
+<th>Interest</th>
+</tr>
+</thead><tbody><tr>
+<td>Product owner / platform operator</td>
+<td>Product success; builds with AI coding tools; final approver</td>
+</tr>
+<tr>
+<td>Clinic owners</td>
+<td>Accurate collections, control, data safety</td>
+</tr>
+<tr>
+<td>Receptionists and therapists</td>
+<td>Speed and ease of use</td>
+</tr>
+<tr>
+<td>Patients (indirect)</td>
+<td>Privacy of health data; correct billing</td>
+</tr>
+<tr>
+<td>Legal counsel (to be engaged)</td>
+<td>Data location, retention, consent, health-data rules</td>
+</tr>
+<tr>
+<td>Chartered accountant (to be engaged)</td>
+<td>Receipt/invoice numbering, GST treatment</td>
+</tr>
+<tr>
+<td>Independent security reviewer (to be engaged)</td>
+<td>Pre-launch review of tenant isolation, permissions, ledger</td>
+</tr>
+<tr>
+<td>Third-party vendors</td>
+<td>Hosting (Render at prototype stage), email delivery</td>
+</tr>
+</tbody></table></div>
+<h2 id="7-product-scope">7. Product Scope</h2>
+<h3 id="in-scope-for-the-mvp-r1-r2">In scope for the MVP (R1 + R2)</h3>
+<ul>
+<li>Multi-tenant platform with clinics (tenants), branches, staff accounts, and a super-admin.</li>
+<li>Login with email and password; email OTP on new devices; trusted-device management.</li>
+<li>Owner-managed permissions per role (Owner/Admin, Receptionist, Physiotherapist).</li>
+<li>Patient registration, search, and profile; one patient record shared across branches.</li>
+<li>Treatment episodes: assessment (fixed form), treatment plan, discharge.</li>
+<li>Today&#39;s visits, attendance marking, optional session notes.</li>
+<li>Running patient account (ledger): default session fee with override, payments, advances, refunds, reversals.</li>
+<li>Receipts per payment and invoices on request (PDF/print), numbered per branch per financial year.</li>
+<li>Dues warning on visits.</li>
+<li>Owner dashboard and reports with Excel/PDF export (R2).</li>
+<li>Excel import of existing patient lists (R2).</li>
+<li>Owner export of clinic data to Excel (R2).</li>
+<li>Audit log.</li>
+<li>Subscription groundwork: plans, limits, feature flags, trial status (R2).</li>
+<li>Responsive PWA; English only; online only.</li>
+</ul>
+<h3 id="explicitly-out-of-scope-for-the-mvp-won-t-have">Explicitly out of scope for the MVP (Won&#39;t Have)</h3>
+<p>Appointment calendar and advance booking; therapist availability and leave; reminders; WhatsApp/SMS messaging; patient document upload (X-rays, MRI, prescriptions); exercise library and home-exercise sharing; progress tracking and charts; follow-up reminders for dropped-out patients; expense tracking; therapist-wise reports; accountant and branch-manager roles; patient portal/login; custom roles and per-user permission overrides; fixed named packages; GST tax invoices; insurance/TPA claims; cheque payments; offline mode; native mobile apps; languages other than English; online subscription payment collection; online patient self-booking; formal printable discharge summary; configurable assessment templates; structured SOAP notes.</p>
+<h2 id="8-mvp-vs-future-phases-moscow">8. MVP vs Future Phases (MoSCoW)</h2>
+<div class="tbl"><table><thead><tr>
+<th>Feature</th>
+<th>Priority</th>
+<th>Release</th>
+</tr>
+</thead><tbody><tr>
+<td>Authentication, email OTP on new device, trusted devices</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Clinics, branches, staff accounts</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Owner-managed role permissions</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Patient registration, search, profile (shared across branches)</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Episodes: assessment, treatment plan, discharge</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Today&#39;s visits, attendance, optional notes</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Ledger: fees, payments, advances, refunds, reversals</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Receipts and invoices, numbering</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Dues warning</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Audit log</td>
+<td>Must</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>Basic owner dashboard (today&#39;s summary, dues)</td>
+<td>Should</td>
+<td>R1 (first to move to R2 if the pilot slips)</td>
+</tr>
+<tr>
+<td>Excel import of patients</td>
+<td>Should</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>Full reports and Excel/PDF export</td>
+<td>Should</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>Owner data export</td>
+<td>Should</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>Super-admin console</td>
+<td>Should</td>
+<td>R2 (a minimal way to create tenants is needed in R1)</td>
+</tr>
+<tr>
+<td>Subscription groundwork (plans, limits, trial status)</td>
+<td>Should</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>Inactive-patient flag</td>
+<td>Should</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>Security review, tenant-isolation testing, restore test</td>
+<td>Must (pre-launch)</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>Patient documents, WhatsApp/SMS, exercise sharing</td>
+<td>Could</td>
+<td>Later</td>
+</tr>
+<tr>
+<td>Appointment calendar and booking, reminders</td>
+<td>Could</td>
+<td>Later</td>
+</tr>
+<tr>
+<td>Progress tracking, follow-up reminders, expenses</td>
+<td>Could</td>
+<td>Later</td>
+</tr>
+<tr>
+<td>Native apps, offline, other languages, patient portal, GST invoices, insurance</td>
+<td>Won&#39;t (MVP)</td>
+<td>Later / TBD</td>
+</tr>
+</tbody></table></div>
+<blockquote>
+<p><strong>Note (R-12).</strong> The Pilot is tight for 2 months. If it slips, move the basic dashboard to R2 first.</p>
+</blockquote>
+<hr>
+<h2 id="9-functional-requirements">9. Functional Requirements</h2>
+<p>Requirement ID prefixes: <strong>AUTH</strong> authentication, <strong>TEN</strong> clinics and branches, <strong>USR</strong> staff and permissions, <strong>PAT</strong> patients, <strong>CLN</strong> clinical (episodes), <strong>VIS</strong> visits, <strong>BILL</strong> billing, <strong>REP</strong> reports, <strong>IMP</strong> import, <strong>EXP</strong> export, <strong>ADM</strong> super-admin, <strong>SUB</strong> subscription groundwork, <strong>AUD</strong> audit, <strong>NFR</strong> non-functional.</p>
+<p>Detail template for each major requirement: ID, name, description, user role, priority, preconditions, expected behavior, business rules, validation, edge cases, acceptance criteria (section 11), dependencies.</p>
+<h3 id="9-1-authentication-auth">9.1 Authentication (AUTH)</h3>
+<h4 id="auth-001-email-and-password-login">AUTH-001 — Email and password login</h4>
+<ul>
+<li><strong>Description:</strong> Users sign in with email and password. <strong>Source:</strong> C (Q41).</li>
+<li><strong>Role:</strong> All users. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Preconditions:</strong> User account exists, is active, and belongs to an active tenant (or is a super-admin).</li>
+<li><strong>Expected behavior:</strong> Valid credentials start a session. Invalid credentials show a generic error that does not reveal whether the email exists.</li>
+<li><strong>Business rules:</strong> BR-AUTH-1: repeated failed logins temporarily lock the account (Rec: 5 failures, 15-minute lock). BR-AUTH-2: sessions expire after inactivity (Rec: 30 minutes for staff; value configurable by platform).</li>
+<li><strong>Validation:</strong> Email format; password policy (Rec: minimum 10 characters, checked against common-password list).</li>
+<li><strong>Edge cases:</strong> Disabled user; suspended tenant; user removed while logged in (session invalidated); password reset flow (email link, single use, short expiry).</li>
+<li><strong>Dependencies:</strong> Email delivery service.</li>
+</ul>
+<h4 id="auth-002-email-otp-on-new-or-unrecognised-device">AUTH-002 — Email OTP on new or unrecognised device</h4>
+<ul>
+<li><strong>Description:</strong> After a correct password, if the device is not trusted, the user must enter a one-time code sent to their email. <strong>Source:</strong> C (Q41, option C).</li>
+<li><strong>Role:</strong> All users. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Expected behavior:</strong> A 6-digit code is emailed; the user enters it; the user may choose &quot;trust this device&quot;.</li>
+<li><strong>Business rules:</strong> Code expires in 10 minutes (Rec); limited attempts (Rec: 5); resend limited by rate (Rec). Trusted-device status lasts a configured period (Rec: 30 days).</li>
+<li><strong>Edge cases:</strong> Email delayed; code reused; user changes email; clock skew.</li>
+<li><strong>Dependencies:</strong> AUTH-001, email delivery.</li>
+</ul>
+<h4 id="auth-003-trusted-device-management">AUTH-003 — Trusted device management</h4>
+<ul>
+<li><strong>Description:</strong> Users can see and revoke their trusted devices; the Owner can revoke a device for any user in the clinic. <strong>Source:</strong> Rec (derived from Q41).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Acceptance:</strong> Revoking a device forces OTP on its next login.</li>
+</ul>
+<h4 id="auth-004-password-reset-and-change">AUTH-004 — Password reset and change</h4>
+<ul>
+<li><strong>Description:</strong> Self-service reset by email link; change password when logged in. <strong>Source:</strong> Rec. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+</ul>
+<h3 id="9-2-clinics-branches-and-tenancy-ten">9.2 Clinics, branches, and tenancy (TEN)</h3>
+<h4 id="ten-001-clinic-tenant-creation">TEN-001 — Clinic (tenant) creation</h4>
+<ul>
+<li><strong>Description:</strong> The super-admin creates a clinic business and its first Owner account; the Owner sets clinic profile (name, address, phone, logo, registration details printed on receipts). <strong>Source:</strong> C (Q1, A-4 for receipt details).</li>
+<li><strong>Role:</strong> Super-admin (create); Owner (edit profile). <strong>Priority:</strong> Must. <strong>Release:</strong> R1 (minimal creation), R2 (full console, ADM-001).</li>
+<li><strong>Business rules:</strong> BR-TEN-1: every record belongs to exactly one tenant and is never visible to another tenant.</li>
+<li><strong>Edge cases:</strong> Duplicate owner email; tenant suspended mid-session.</li>
+<li><strong>Dependencies:</strong> AUTH.</li>
+</ul>
+<h4 id="ten-002-branch-management">TEN-002 — Branch management</h4>
+<ul>
+<li><strong>Description:</strong> Owner creates and edits branches (name, address, phone, branch code used in receipt numbers). <strong>Source:</strong> C (Q1, Q50).</li>
+<li><strong>Role:</strong> Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-TEN-2: branch code unique within the tenant, not editable after the first receipt is issued. BR-TEN-3: branches cannot be deleted once they hold visits or payments; they can be deactivated (Rec).</li>
+<li><strong>Edge cases:</strong> Plan limit on branches (SUB-001); deactivating a branch with active staff.</li>
+</ul>
+<h3 id="9-3-staff-roles-and-permissions-usr">9.3 Staff, roles, and permissions (USR)</h3>
+<h4 id="usr-001-staff-account-management">USR-001 — Staff account management</h4>
+<ul>
+<li><strong>Description:</strong> Owner creates, edits, deactivates staff users (Receptionist, Physiotherapist) and assigns <strong>one branch each</strong>. <strong>Source:</strong> C (Q24).</li>
+<li><strong>Role:</strong> Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-USR-1: a Receptionist or Physiotherapist belongs to exactly one branch; the Owner sees all branches. BR-USR-2: users are deactivated, never deleted, so history stays attributable. BR-USR-3: moving a staff member to another branch is a reassignment by the Owner.</li>
+<li><strong>Edge cases:</strong> Deactivating the last Owner is blocked; plan limit on users.</li>
+</ul>
+<h4 id="usr-002-owner-managed-role-permissions">USR-002 — Owner-managed role permissions</h4>
+<ul>
+<li><strong>Description:</strong> The Owner edits which permissions each role (Receptionist, Physiotherapist) holds. All users in a role share the same permissions. <strong>Source:</strong> C (Q7 revised, Q8 option A).</li>
+<li><strong>Role:</strong> Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-USR-4: Owner/Admin always has all permissions within its tenant and this cannot be reduced. BR-USR-5: no per-user overrides and no custom roles in the MVP, but the permission model must allow custom roles later. BR-USR-6: every permission change is audit-logged. BR-USR-7: each new tenant starts with default permission templates (section 16).</li>
+<li><strong>Edge cases:</strong> Owner removes a permission while a user is mid-task (takes effect on next request); lock-out protection warns before removing permissions that would leave nobody able to take payments (Rec).</li>
+<li><strong>Dependencies:</strong> AUD-001.</li>
+</ul>
+<h3 id="9-4-patients-pat">9.4 Patients (PAT)</h3>
+<h4 id="pat-001-patient-registration">PAT-001 — Patient registration</h4>
+<ul>
+<li><strong>Description:</strong> Register a patient quickly. <strong>Mandatory fields: name, phone, age, gender.</strong> All other fields optional. <strong>Source:</strong> C (Q9, Q10).</li>
+<li><strong>Role:</strong> Receptionist (default), Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Preconditions:</strong> User holds &quot;register patient&quot; permission.</li>
+<li><strong>Expected behavior:</strong> After saving, the user can go straight to starting an episode and/or marking today&#39;s attendance.</li>
+<li><strong>Business rules:</strong> BR-PAT-1: a patient belongs to the tenant, not to a branch; the registering branch is recorded. BR-PAT-2: possible duplicates (same phone, similar name) are shown before saving, and the user may still create a new record, because family members often share a phone number (Rec). BR-PAT-3: age and date of birth are interchangeable; the form accepts either and derives the other (Rec, noted at Q10).</li>
+<li><strong>Validation:</strong> Name non-empty; phone 10-digit Indian mobile (+91 optional) or other valid number; age 0 to 120 or valid date of birth; gender from a fixed list (Male, Female, Other, Prefer not to say).</li>
+<li><strong>Optional fields (Rec):</strong> address, emergency contact, occupation, referring doctor, email, notes.</li>
+<li><strong>Edge cases:</strong> Patient without a personal phone (guardian&#39;s number); patient name spelled differently; minors.</li>
+</ul>
+<h4 id="pat-002-patient-search">PAT-002 — Patient search</h4>
+<ul>
+<li><strong>Description:</strong> Search by name or phone from the home screen. <strong>Source:</strong> C (Q33), A-2.</li>
+<li><strong>Role:</strong> Receptionist, Therapist, Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-PAT-4: search covers all patients in the tenant, across branches (C, Q28). BR-PAT-5: results show name, phone, age, last visit date, branch of last visit, and a dues indicator.</li>
+<li><strong>Edge cases:</strong> Partial phone number; mixed case; very many results (paged).</li>
+</ul>
+<h4 id="pat-003-patient-profile">PAT-003 — Patient profile</h4>
+<ul>
+<li><strong>Description:</strong> A single page with tabs: Overview, Treatment, Visits, Payments. Shows basic details and discharge status; outstanding balance or advance credit prominently at the top; assessment and treatment plan; visit history with notes; payment and receipt history; branch tags on visits and payments; quick actions (mark attendance, record payment, discharge). <strong>Source:</strong> C (Q34 items A to G); tabs are Rec.</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> Sections visible depend on the viewer&#39;s permissions (for example clinical notes read-only for a receptionist).</li>
+</ul>
+<h4 id="pat-004-edit-patient-details">PAT-004 — Edit patient details</h4>
+<ul>
+<li><strong>Description:</strong> Authorised users edit patient details; changes are audit-logged with before/after values. <strong>Source:</strong> Rec. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+</ul>
+<h4 id="pat-005-cross-branch-access">PAT-005 — Cross-branch access</h4>
+<ul>
+<li><strong>Description:</strong> Staff at any branch can search and open any patient in the tenant, including visits and payments at other branches, subject to role permissions. <strong>Source:</strong> C (Q23, Q28).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> Each view of a patient record is logged (AUD-001).</li>
+</ul>
+<h3 id="9-5-clinical-episodes-assessment-plan-discharge-cln">9.5 Clinical: episodes, assessment, plan, discharge (CLN)</h3>
+<h4 id="cln-001-treatment-episodes">CLN-001 — Treatment episodes</h4>
+<ul>
+<li><strong>Description:</strong> A patient can have many episodes; each is one course of treatment with its own assessment, plan, visits, and discharge. All episodes sit under one patient; the payment ledger stays at patient level. <strong>Source:</strong> C (Q48).</li>
+<li><strong>Role:</strong> Physiotherapist, Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-CLN-1: attendance belongs to an episode. BR-CLN-2: a patient may have at most one active episode at a time (Rec). BR-CLN-3: reactivation means starting a new episode; the old history is preserved.</li>
+<li><strong>Edge cases:</strong> A visit for a patient with no active episode prompts the user to start one first; a walk-in whose therapist has not yet assessed them can be marked present and the episode opened immediately (Rec).</li>
+</ul>
+<h4 id="cln-002-initial-assessment-fixed-form">CLN-002 — Initial assessment (fixed form)</h4>
+<ul>
+<li><strong>Description:</strong> The therapist records: <strong>history, pain, range of motion, diagnosis</strong> (C, Q11). The MVP uses one fixed form (A-3). <strong>Source:</strong> C for the four sections; additional fields below are Rec.</li>
+<li><strong>Recommended fields:</strong> chief complaint, onset and duration, pain site, pain score 0 to 10 at rest and in movement, aggravating and relieving factors, past medical and surgical history, range of motion by joint (free text or simple table), notes.</li>
+<li><strong>Role:</strong> Physiotherapist (default), Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-CLN-4: assessments are append-only versions; edits create a new version and keep the old (Rec, consistent with &quot;nothing is deleted&quot;, Q25).</li>
+</ul>
+<h4 id="cln-003-treatment-plan">CLN-003 — Treatment plan</h4>
+<ul>
+<li><strong>Description:</strong> Contains diagnosis or condition, treatment goals, <strong>planned number of sessions and frequency</strong>, <strong>types of therapy</strong>, and <strong>estimated cost</strong>. <strong>Source:</strong> C (Q12).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-CLN-5: the estimated cost is <strong>informational only</strong>. Billing is per visit through the ledger because fixed packages are out of scope (Q18). This resolves OQ-1 (inferred from Q18; please confirm). BR-CLN-6: planned sessions are a guide, not a limit; the UI shows progress (&quot;session 6 of 10&quot;) and a gentle notice when the plan is exceeded (Rec, A).</li>
+<li><strong>Edge cases:</strong> Plan changed mid-treatment (new version kept); free-text exercise notes are allowed in the plan notes field (Rec; exercise library is out of scope).</li>
+</ul>
+<h4 id="cln-004-discharge">CLN-004 — Discharge</h4>
+<ul>
+<li><strong>Description:</strong> The therapist marks the episode and patient as discharged, with an optional note. Discharged patients move to an inactive list. <strong>Source:</strong> C (Q21 option A).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-CLN-7: discharge with an outstanding balance shows a prompt to settle or record the due; it does not block (Rec, consistent with Q27). BR-CLN-8: a discharged patient is reactivated by starting a new episode (C, Q48). BR-CLN-9: only users holding the &quot;discharge patient&quot; permission may discharge (Rec, since permissions are owner-managed).</li>
+<li><strong>Out of scope:</strong> formal printable discharge summary.</li>
+</ul>
+<h3 id="9-6-visits-and-attendance-vis">9.6 Visits and attendance (VIS)</h3>
+<h4 id="vis-001-today-s-visits-and-attendance">VIS-001 — Today&#39;s visits and attendance</h4>
+<ul>
+<li><strong>Description:</strong> Because follow-ups are not pre-booked, the patient simply arrives and staff mark attendance on that day. The home screen shows a list of today&#39;s visits and a quick action to mark a patient present. <strong>Source:</strong> C (Q14, Q15 option A, Q33).</li>
+<li><strong>Role:</strong> Receptionist and/or Physiotherapist, as configured by the Owner. <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Expected behavior:</strong> Selecting a patient and &quot;Mark attendance&quot; creates a visit in the user&#39;s branch, linked to the active episode, with the treating therapist (optional field, defaults to the marking user if a therapist), the session fee, and the date and time. The fee becomes a <strong>charge</strong> in the ledger (BILL-002).</li>
+<li><strong>Business rules:</strong> BR-VIS-1: marking attendance counts one session against the episode. BR-VIS-2: the session fee is the default fee, or an override with a recorded reason (BILL-001). BR-VIS-3: the fee in force at the time is stored on the visit (C, Q49). BR-VIS-4: if the patient has an outstanding balance, a visible warning shows the amount due; the visit is allowed (C, Q27). BR-VIS-5: duplicate attendance for the same patient and day shows a confirmation before a second visit is created (Rec), since some clinics treat twice a day.</li>
+<li><strong>Edge cases:</strong> Wrong patient marked (see reversal, BILL-005); attendance after midnight; visit marked at the wrong branch.</li>
+</ul>
+<h4 id="vis-002-session-note-optional">VIS-002 — Session note (optional)</h4>
+<ul>
+<li><strong>Description:</strong> A short free-text note per visit (what was done, patient response, pain level). <strong>Source:</strong> C (Q13 option D).</li>
+<li><strong>Role:</strong> Physiotherapist. <strong>Priority:</strong> Must (the field), optional to fill. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> Notes are append-only; corrections add a new version.</li>
+</ul>
+<h4 id="vis-003-patient-visit-history">VIS-003 — Patient visit history</h4>
+<ul>
+<li><strong>Description:</strong> A chronological list of visits across episodes and branches. <strong>Source:</strong> C (Q15 option A). <strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+</ul>
+<h3 id="9-7-billing-and-payments-bill">9.7 Billing and payments (BILL)</h3>
+<p>The patient has a <strong>running account</strong>. Each attended session adds a charge. Payments are recorded whenever they happen: in advance (creating credit) or later (clearing dues). The system does not enforce payment timing. <strong>Source:</strong> C (Q16 clarification, Q18 option A).</p>
+<h4 id="bill-001-session-fee-and-overrides">BILL-001 — Session fee and overrides</h4>
+<ul>
+<li><strong>Description:</strong> The Owner sets a default session fee for the tenant. Authorised staff can override it for a patient or a single visit; every override records the amount and a reason. <strong>Source:</strong> C (Q19 option D).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-BILL-1: a fee change applies to future visits only; past visits keep their stored fee (C, Q49). BR-BILL-2: &quot;can override fee&quot; is a role permission. BR-BILL-3: a patient-level fee, if set, applies to that patient&#39;s future visits until changed (Rec).</li>
+<li><strong>Validation:</strong> Fee is a non-negative amount in INR with two decimals; zero-fee visits require a reason (Rec).</li>
+</ul>
+<h4 id="bill-002-patient-ledger">BILL-002 — Patient ledger</h4>
+<ul>
+<li><strong>Description:</strong> An append-only ledger of entries per patient: <strong>CHARGE</strong> (from a visit), <strong>PAYMENT</strong>, <strong>REFUND</strong>, <strong>REVERSAL</strong> (of a prior entry). Balance = charges − payments + refunds, adjusted by reversals. Negative balance = advance credit; positive = dues. <strong>Source:</strong> C (Q16, Q25, Q26); entry types are Rec.</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-BILL-4: entries are never edited or deleted. BR-BILL-5: each entry stores branch, user, timestamp, and (for reversals) the original entry and a reason. BR-BILL-6: the balance is computed from entries, not stored independently, or stored only as a verified cache (Rec). BR-BILL-7: payments are applied to the patient&#39;s account as a whole, not matched to specific visits (A; see OQ-9).</li>
+<li><strong>Edge cases:</strong> Concurrent entries by two users; patient balance crossing episodes (balance carries across episodes, per Q48).</li>
+</ul>
+<h4 id="bill-003-record-a-payment">BILL-003 — Record a payment</h4>
+<ul>
+<li><strong>Description:</strong> Record amount, method (<strong>cash, UPI, debit/credit card, bank transfer</strong>), date, branch, and optional reference (for example a UPI transaction ID). The system only <strong>records</strong> the payment; it does not process online payments. <strong>Source:</strong> C (Q17).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-BILL-8: the payment may exceed current dues, creating advance credit (C, Q16). BR-BILL-9: each payment produces a receipt (BILL-006).</li>
+<li><strong>Validation:</strong> Amount greater than zero; method required; reference required for bank transfer (Rec).</li>
+<li><strong>Out of scope:</strong> cheque, insurance/TPA.</li>
+</ul>
+<h4 id="bill-004-refunds-and-advance-credit">BILL-004 — Refunds and advance credit</h4>
+<ul>
+<li><strong>Description:</strong> Unused advance may be refunded or kept as credit, decided case by case. <strong>Source:</strong> C (Q26 option C).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-BILL-10: refunding requires a &quot;process refund&quot; permission assigned by the Owner. BR-BILL-11: a refund records amount, method, reason, and the user. BR-BILL-12: a refund cannot exceed the patient&#39;s advance credit (Rec).</li>
+</ul>
+<h4 id="bill-005-corrections-by-reversal">BILL-005 — Corrections by reversal</h4>
+<ul>
+<li><strong>Description:</strong> A wrongly entered attendance or payment is corrected by a <strong>reversal entry</strong>, not by editing or deleting. The original stays visible, linked to its reversal, with the reason, user, and time. <strong>Source:</strong> C (Q25 option C, same-day included).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-BILL-13: reversing a visit&#39;s attendance also reverses its charge and decrements the episode&#39;s session count. BR-BILL-14: reversing a payment reverses its receipt (a reversal receipt number is issued). BR-BILL-15: an entry can be reversed once; correcting an amount means reversing then re-entering. BR-BILL-16: reversing requires the &quot;reverse entry&quot; permission (Rec).</li>
+<li><strong>Edge cases:</strong> Reversing a payment that has been partially refunded.</li>
+</ul>
+<h4 id="bill-006-receipts-and-numbering">BILL-006 — Receipts and numbering</h4>
+<ul>
+<li><strong>Description:</strong> Every payment generates a receipt showing clinic details, patient, amount, date, method, branch, receipt number, and balance after payment. Output is PDF and printable. <strong>Source:</strong> C (Q20 option D, Q50 option C).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> BR-BILL-17: numbers are sequential <strong>per branch per financial year (April to March)</strong>, for example <code>MUM/2026-27/0001</code>. BR-BILL-18: numbers are never reused, and gaps are not created by failed saves (allocate the number inside the same database transaction as the entry). BR-BILL-19: a reversal gets its own number. BR-BILL-20: the format and its legal adequacy need a chartered accountant&#39;s review (section 19).</li>
+<li><strong>Edge cases:</strong> Concurrent receipts at one branch; financial year rollover at midnight on 1 April; branch code change (blocked after first receipt).</li>
+<li><strong>Out of scope:</strong> automatic WhatsApp sharing; GST tax invoices.</li>
+</ul>
+<h4 id="bill-007-invoice-on-request">BILL-007 — Invoice on request</h4>
+<ul>
+<li><strong>Description:</strong> A detailed invoice listing sessions, fees, discounts, and totals for a chosen period or episode, generated on request as PDF. <strong>Source:</strong> C (Q20 option D).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> Invoice numbers follow the same per-branch, per-financial-year sequence with an <code>INV</code> prefix (Rec). Invoices are not GST tax invoices.</li>
+</ul>
+<h4 id="bill-008-dues-warning">BILL-008 — Dues warning</h4>
+<ul>
+<li><strong>Description:</strong> When marking attendance, or opening a patient with an outstanding balance, show a visible warning with the amount due. Do not block. <strong>Source:</strong> C (Q27 option B).</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Business rules:</strong> Dues from <strong>all branches</strong> of the tenant count (Q28, Q23). Configurable thresholds are a later phase.</li>
+</ul>
+<h3 id="9-8-reports-and-dashboard-rep">9.8 Reports and dashboard (REP)</h3>
+<h4 id="rep-001-basic-owner-dashboard">REP-001 — Basic owner dashboard</h4>
+<ul>
+<li><strong>Description:</strong> Today&#39;s summary: patients seen, collections, outstanding dues. <strong>Source:</strong> C (Q22 item A). <strong>Priority:</strong> Should. <strong>Release:</strong> R1 (moves to R2 if the pilot slips).</li>
+</ul>
+<h4 id="rep-002-reports">REP-002 — Reports</h4>
+<ul>
+<li><strong>Description:</strong> Daily, weekly, monthly revenue; outstanding balances by patient; revenue and visits by branch; collections by payment method. <strong>Source:</strong> C (Q22). <strong>Priority:</strong> Should. <strong>Release:</strong> R2.</li>
+<li><strong>Business rules:</strong> BR-REP-1: &quot;collections&quot; are payments received (cash basis) and &quot;charges&quot; are sessions delivered; reports state which they show (Rec). Reversals and refunds are netted and shown separately.</li>
+<li><strong>Out of scope:</strong> therapist-wise reports, expense/profit reports, new-versus-returning analysis.</li>
+</ul>
+<h4 id="rep-003-report-export">REP-003 — Report export</h4>
+<ul>
+<li><strong>Description:</strong> Export any report to Excel or PDF. <strong>Source:</strong> C (Q22 item I). <strong>Priority:</strong> Should. <strong>Release:</strong> R2.</li>
+</ul>
+<h3 id="9-9-import-and-export-imp-exp">9.9 Import and export (IMP, EXP)</h3>
+<h4 id="imp-001-excel-import-of-patients">IMP-001 — Excel import of patients</h4>
+<ul>
+<li><strong>Description:</strong> Import an existing patient list from Excel. <strong>Source:</strong> C (Q29 item G). <strong>Priority:</strong> Should. <strong>Release:</strong> R2.</li>
+<li><strong>Proposed behavior (Rec, OQ-4 open):</strong> download a template; upload; map columns; validate (mandatory fields: name, phone, age, gender); preview with errors; duplicate detection by phone plus name; import with a result report; imports are logged and can be rolled back as a batch. Opening balances may be imported as a dated opening-balance ledger entry. Dues and visit history import is <strong>not</strong> assumed.</li>
+<li><strong>Edge cases:</strong> Mixed date formats; missing gender; thousands of rows; duplicate rows; files from older Excel versions; non-English characters.</li>
+</ul>
+<h4 id="exp-001-owner-data-export">EXP-001 — Owner data export</h4>
+<ul>
+<li><strong>Description:</strong> The Owner can download the clinic&#39;s data (patients, visits, payments) to Excel at any time. <strong>Source:</strong> C (Q42 option B). <strong>Priority:</strong> Should. <strong>Release:</strong> R2.</li>
+<li><strong>Business rules:</strong> Exports are audit-logged and require an Owner-level permission.</li>
+</ul>
+<h3 id="9-10-super-admin-and-subscriptions-adm-sub">9.10 Super-admin and subscriptions (ADM, SUB)</h3>
+<h4 id="adm-001-super-admin-console">ADM-001 — Super-admin console</h4>
+<ul>
+<li><strong>Description:</strong> The platform operator lists, creates, suspends, and reactivates tenants; views tenant plan, status, and usage counts; resets an owner&#39;s access. <strong>Source:</strong> C (Q5 role G). <strong>Priority:</strong> Should. <strong>Release:</strong> R2 (minimal tenant creation in R1).</li>
+<li><strong>Business rules (Rec, OQ-10):</strong> by default the super-admin cannot view patient clinical or financial records; support access, if ever needed, is time-limited, tenant-approved, and logged.</li>
+</ul>
+<h4 id="sub-001-subscription-groundwork">SUB-001 — Subscription groundwork</h4>
+<ul>
+<li><strong>Description:</strong> Each tenant has a plan and a subscription status (trial, active, suspended, cancelled). Plans define limits (branches, users, patients) and feature flags, changeable without code changes. <strong>Source:</strong> C (A-1, Q4 deferral). <strong>Priority:</strong> Should. <strong>Release:</strong> R2.</li>
+<li><strong>Business rules:</strong> Limits are enforced with clear messages. Behaviour of a suspended tenant is OQ-11 (Rec: read-only login and data export allowed, new entries blocked).</li>
+<li><strong>Out of scope:</strong> pricing values, payment collection, subscription invoicing.</li>
+</ul>
+<h3 id="9-11-audit-aud">9.11 Audit (AUD)</h3>
+<h4 id="aud-001-audit-log">AUD-001 — Audit log</h4>
+<ul>
+<li><strong>Description:</strong> An immutable log of who did what and when. <strong>Source:</strong> C (R-1, Q25) plus Rec for the event list.</li>
+<li><strong>Priority:</strong> Must. <strong>Release:</strong> R1.</li>
+<li><strong>Events:</strong> login, failed login, OTP, device trust/revoke, <strong>patient record views</strong>, patient edits, assessment/plan/note versions, attendance, payments, refunds, reversals, fee overrides, discharge, permission changes, staff changes, imports, exports.</li>
+<li><strong>Business rules:</strong> Entries cannot be edited or deleted by any tenant user. The Owner can view and filter the tenant&#39;s log. Retention is OQ-6.</li>
+</ul>
+<h4 id="ina-001-inactive-patient-flag">INA-001 — Inactive-patient flag</h4>
+<ul>
+<li><strong>Description:</strong> Flag patients with an active episode who have not visited for N days (default 30; Owner-configurable). <strong>Source:</strong> C (Q21). <strong>Priority:</strong> Should. <strong>Release:</strong> R2. Reminders to the patient are a later phase.</li>
+</ul>
+<hr>
+<h2 id="10-user-stories">10. User Stories</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>As a…</th>
+<th>I want to…</th>
+<th>So that…</th>
+<th>Req</th>
+<th>Rel</th>
+</tr>
+</thead><tbody><tr>
+<td>US-01</td>
+<td>User</td>
+<td>sign in with email and password</td>
+<td>I can access my clinic&#39;s data</td>
+<td>AUTH-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-02</td>
+<td>User</td>
+<td>enter a code emailed to me on a new device</td>
+<td>my account stays safe</td>
+<td>AUTH-002</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-03</td>
+<td>Owner</td>
+<td>review and revoke trusted devices</td>
+<td>a lost device cannot be used</td>
+<td>AUTH-003</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-04</td>
+<td>Super-admin</td>
+<td>create a clinic and its owner</td>
+<td>a clinic can start using the system</td>
+<td>TEN-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-05</td>
+<td>Owner</td>
+<td>add branches</td>
+<td>each location&#39;s work and receipts are separate</td>
+<td>TEN-002</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-06</td>
+<td>Owner</td>
+<td>add staff and assign each to a branch</td>
+<td>the right people work in the right place</td>
+<td>USR-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-07</td>
+<td>Owner</td>
+<td>change what each role can do</td>
+<td>I control access to sensitive data and money</td>
+<td>USR-002</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-08</td>
+<td>Receptionist</td>
+<td>register a walk-in with name, phone, age, gender</td>
+<td>the patient is in the system in seconds</td>
+<td>PAT-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-09</td>
+<td>Receptionist</td>
+<td>search by name or phone</td>
+<td>I find returning patients and avoid duplicates</td>
+<td>PAT-002</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-10</td>
+<td>Staff</td>
+<td>open a full patient profile</td>
+<td>I see history, balance, and actions in one place</td>
+<td>PAT-003</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-11</td>
+<td>Receptionist</td>
+<td>find a patient registered at another branch</td>
+<td>the patient does not re-register</td>
+<td>PAT-005</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-12</td>
+<td>Therapist</td>
+<td>record an assessment</td>
+<td>the patient&#39;s condition is documented</td>
+<td>CLN-002</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-13</td>
+<td>Therapist</td>
+<td>write a treatment plan with sessions, therapies, and estimate</td>
+<td>everyone knows the course of treatment</td>
+<td>CLN-003</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-14</td>
+<td>Receptionist</td>
+<td>mark attendance for today&#39;s visit</td>
+<td>the session is counted and charged</td>
+<td>VIS-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-15</td>
+<td>Therapist</td>
+<td>add a short note to a visit</td>
+<td>I remember what was done</td>
+<td>VIS-002</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-16</td>
+<td>Receptionist</td>
+<td>see a warning when a patient owes money</td>
+<td>I can ask for payment politely</td>
+<td>BILL-008</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-17</td>
+<td>Receptionist</td>
+<td>record a payment by cash, UPI, card, or bank transfer</td>
+<td>the patient&#39;s balance is correct</td>
+<td>BILL-003</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-18</td>
+<td>Receptionist</td>
+<td>accept an advance for several sessions</td>
+<td>the patient&#39;s credit is tracked</td>
+<td>BILL-002/003</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-19</td>
+<td>Owner</td>
+<td>override the fee with a reason</td>
+<td>I can give discounts with a record</td>
+<td>BILL-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-20</td>
+<td>Owner</td>
+<td>refund unused advance or keep it as credit</td>
+<td>I can handle stopped treatment fairly</td>
+<td>BILL-004</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-21</td>
+<td>Staff</td>
+<td>reverse a wrong entry with a reason</td>
+<td>mistakes are fixed without losing the trail</td>
+<td>BILL-005</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-22</td>
+<td>Receptionist</td>
+<td>print or save a numbered receipt</td>
+<td>the patient has proof of payment</td>
+<td>BILL-006</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-23</td>
+<td>Receptionist</td>
+<td>generate an invoice on request</td>
+<td>a patient can claim from an employer or insurer</td>
+<td>BILL-007</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-24</td>
+<td>Therapist</td>
+<td>discharge a patient</td>
+<td>finished cases leave the active list</td>
+<td>CLN-004</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-25</td>
+<td>Therapist</td>
+<td>start a new episode for a returning patient</td>
+<td>each course of treatment stays separate</td>
+<td>CLN-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-26</td>
+<td>Owner</td>
+<td>see today&#39;s patients, collections, and dues</td>
+<td>I know how the day is going</td>
+<td>REP-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-27</td>
+<td>Owner</td>
+<td>see revenue by day, week, month, and branch</td>
+<td>I understand my business</td>
+<td>REP-002</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>US-28</td>
+<td>Owner</td>
+<td>export reports to Excel/PDF</td>
+<td>I can share them with my accountant</td>
+<td>REP-003</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>US-29</td>
+<td>Owner</td>
+<td>import my Excel patient list</td>
+<td>I move off spreadsheets quickly</td>
+<td>IMP-001</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>US-30</td>
+<td>Owner</td>
+<td>download all my clinic&#39;s data</td>
+<td>I own my data and can back it up</td>
+<td>EXP-001</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>US-31</td>
+<td>Owner</td>
+<td>view who accessed which patient record</td>
+<td>I can check misuse</td>
+<td>AUD-001</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>US-32</td>
+<td>Owner</td>
+<td>see patients who stopped coming</td>
+<td>I can follow up by phone</td>
+<td>INA-001</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>US-33</td>
+<td>Super-admin</td>
+<td>suspend or reactivate a clinic and view its plan</td>
+<td>I can manage the platform</td>
+<td>ADM-001, SUB-001</td>
+<td>R2</td>
+</tr>
+</tbody></table></div>
+<h2 id="11-acceptance-criteria-given-when-then">11. Acceptance Criteria (Given / When / Then)</h2>
+<p><strong>AUTH-001</strong></p>
+<ul>
+<li><em>Given</em> a valid active user, <em>when</em> they submit the correct email and password on a trusted device, <em>then</em> a session starts and they land on their home screen.</li>
+<li><em>Given</em> a wrong password, <em>when</em> submitted, <em>then</em> a generic error appears and the failure is counted.</li>
+<li><em>Given</em> five consecutive failures, <em>when</em> a sixth attempt is made within the lock period, <em>then</em> login is refused with a &quot;try again later&quot; message even if the password is correct.</li>
+</ul>
+<p><strong>AUTH-002</strong></p>
+<ul>
+<li><em>Given</em> correct credentials on an unrecognised device, <em>when</em> the user submits, <em>then</em> a code is emailed and the app asks for it before opening a session.</li>
+<li><em>Given</em> an expired or wrong code, <em>when</em> entered, <em>then</em> access is refused, and after the attempt limit a new code must be requested.</li>
+<li><em>Given</em> the user ticks &quot;trust this device&quot;, <em>when</em> they log in again on it within the trust period, <em>then</em> no code is asked.</li>
+</ul>
+<p><strong>AUTH-003</strong></p>
+<ul>
+<li><em>Given</em> an Owner revokes a staff member&#39;s trusted device, <em>when</em> that staff logs in from it, <em>then</em> an OTP is required.</li>
+</ul>
+<p><strong>TEN-001 / TEN-002</strong></p>
+<ul>
+<li><em>Given</em> a super-admin creates a tenant with an Owner email, <em>when</em> the Owner accepts the invitation, <em>then</em> they can set a password and see an empty clinic.</li>
+<li><em>Given</em> two tenants, <em>when</em> a user from tenant A requests any record id from tenant B, <em>then</em> the system returns &quot;not found&quot;.</li>
+<li><em>Given</em> a branch has issued a receipt, <em>when</em> the Owner tries to change its code, <em>then</em> the change is refused.</li>
+</ul>
+<p><strong>USR-001 / USR-002</strong></p>
+<ul>
+<li><em>Given</em> an Owner removes &quot;view clinical notes&quot; from the Receptionist role, <em>when</em> a receptionist next opens a patient, <em>then</em> the clinical sections are hidden.</li>
+<li><em>Given</em> a receptionist assigned to branch X, <em>when</em> they mark attendance, <em>then</em> the visit is recorded at branch X and they cannot choose another branch.</li>
+<li><em>Given</em> the Owner is the only Owner, <em>when</em> they try to deactivate themselves, <em>then</em> the action is blocked.</li>
+</ul>
+<p><strong>PAT-001</strong></p>
+<ul>
+<li><em>Given</em> name, phone, age, and gender are filled, <em>when</em> the receptionist saves, <em>then</em> the patient is created with a unique ID and the registering branch.</li>
+<li><em>Given</em> any mandatory field is empty, <em>when</em> saving, <em>then</em> the form shows which field is missing and does not save.</li>
+<li><em>Given</em> an existing patient has the same phone, <em>when</em> saving a new patient, <em>then</em> the possible duplicate is shown and the user can choose &quot;open existing&quot; or &quot;create anyway&quot;.</li>
+</ul>
+<p><strong>PAT-002 / PAT-005</strong></p>
+<ul>
+<li><em>Given</em> a patient was registered at branch A, <em>when</em> a receptionist at branch B searches the phone number, <em>then</em> the patient appears with last-visit branch and dues indicator.</li>
+<li><em>Given</em> a staff member opens a patient, <em>then</em> an audit entry records the user, patient, and time.</li>
+</ul>
+<p><strong>CLN-001 to CLN-004</strong></p>
+<ul>
+<li><em>Given</em> a patient with no active episode, <em>when</em> the user marks attendance, <em>then</em> the app asks to start an episode first.</li>
+<li><em>Given</em> an assessment is saved, <em>when</em> it is edited later, <em>then</em> a new version is created and the earlier version stays viewable.</li>
+<li><em>Given</em> a plan of 10 sessions, <em>when</em> the 11th attendance is marked, <em>then</em> a notice says the plan is exceeded and the visit is still allowed.</li>
+<li><em>Given</em> a patient is discharged with dues, <em>when</em> the therapist confirms, <em>then</em> a prompt shows the balance and the discharge still completes.</li>
+<li><em>Given</em> a discharged patient returns, <em>when</em> a new episode is started, <em>then</em> old episodes remain and the ledger balance carries over.</li>
+</ul>
+<p><strong>VIS-001 / VIS-002</strong></p>
+<ul>
+<li><em>Given</em> a patient with a default fee of ₹500, <em>when</em> attendance is marked, <em>then</em> a visit is created with fee ₹500 and a charge of ₹500 appears in the ledger.</li>
+<li><em>Given</em> the Owner later changes the default to ₹600, <em>then</em> previously recorded visits still show ₹500.</li>
+<li><em>Given</em> a patient owes ₹1,500, <em>when</em> attendance is marked, <em>then</em> a visible warning shows ₹1,500 and the visit is allowed.</li>
+<li><em>Given</em> a visit exists, <em>when</em> the therapist adds a note, <em>then</em> it is saved with author and time.</li>
+</ul>
+<p><strong>BILL-001</strong></p>
+<ul>
+<li><em>Given</em> a user without the override permission, <em>when</em> they open the fee field on a visit, <em>then</em> it is read-only.</li>
+<li><em>Given</em> a user with the permission enters a different fee, <em>when</em> saving, <em>then</em> a reason is required and both the fee and reason are stored.</li>
+</ul>
+<p><strong>BILL-002 / BILL-003</strong></p>
+<ul>
+<li><em>Given</em> a patient with 3 charges of ₹500 and no payments, <em>when</em> viewing the profile, <em>then</em> the balance shows ₹1,500 due.</li>
+<li><em>Given</em> the patient pays ₹2,500 by UPI, <em>when</em> saved, <em>then</em> the balance shows ₹1,000 advance credit and a receipt is generated.</li>
+<li><em>Given</em> amount zero or negative, <em>when</em> saving, <em>then</em> the payment is rejected.</li>
+</ul>
+<p><strong>BILL-004</strong></p>
+<ul>
+<li><em>Given</em> a patient has ₹1,000 advance credit, <em>when</em> an authorised user refunds ₹1,000 with a reason, <em>then</em> a refund entry is added and credit becomes zero.</li>
+<li><em>Given</em> a refund larger than the credit, <em>when</em> submitted, <em>then</em> it is rejected.</li>
+<li><em>Given</em> a user without the refund permission, <em>then</em> no refund action is shown.</li>
+</ul>
+<p><strong>BILL-005</strong></p>
+<ul>
+<li><em>Given</em> a wrongly marked attendance, <em>when</em> a user with permission reverses it with a reason, <em>then</em> a reversal entry offsets the charge, the original remains visible, and the session count decreases by one.</li>
+<li><em>Given</em> an entry is already reversed, <em>when</em> reversing again is tried, <em>then</em> it is refused.</li>
+</ul>
+<p><strong>BILL-006</strong></p>
+<ul>
+<li><em>Given</em> two receptions at branch MUM issue receipts at the same moment, <em>then</em> the numbers are consecutive with no duplicate and no gap.</li>
+<li><em>Given</em> the date is 1 April 2027, <em>when</em> a receipt is issued, <em>then</em> the number uses the <code>2027-28</code> series starting at <code>0001</code>.</li>
+<li><em>Given</em> a payment is reversed, <em>then</em> a reversal receipt with its own number is issued, and the original number is not reused.</li>
+</ul>
+<p><strong>BILL-007</strong></p>
+<ul>
+<li><em>Given</em> a patient with visits in an episode, <em>when</em> an invoice is requested for that episode, <em>then</em> a PDF lists each session, its fee, discounts, payments, and the total.</li>
+</ul>
+<p><strong>REP-001 / REP-002 / REP-003</strong></p>
+<ul>
+<li><em>Given</em> a day with 12 visits and ₹6,000 in payments, <em>when</em> the Owner opens the dashboard, <em>then</em> it shows 12 patients seen and ₹6,000 collected.</li>
+<li><em>Given</em> a reversed payment, <em>when</em> viewing collections, <em>then</em> the net amount excludes it and the reversal is visible.</li>
+<li><em>Given</em> a report is on screen, <em>when</em> the Owner chooses export, <em>then</em> a file matches the on-screen figures.</li>
+</ul>
+<p><strong>IMP-001</strong></p>
+<ul>
+<li><em>Given</em> an Excel file with 200 rows of which 5 miss gender, <em>when</em> previewed, <em>then</em> the 5 are listed with errors and the other 195 can be imported.</li>
+<li><em>Given</em> the import completes, <em>then</em> a result report shows created, skipped as duplicates, and failed rows.</li>
+</ul>
+<p><strong>SUB-001 / ADM-001</strong></p>
+<ul>
+<li><em>Given</em> a plan limit of 2 branches, <em>when</em> the Owner adds a third, <em>then</em> the system refuses with a message to contact support.</li>
+<li><em>Given</em> the super-admin suspends a tenant, <em>when</em> its users log in, <em>then</em> they see the suspended-account behaviour defined in OQ-11.</li>
+</ul>
+<p><strong>AUD-001</strong></p>
+<ul>
+<li><em>Given</em> any logged event type occurs, <em>then</em> an entry with user, time, branch, and action is stored and cannot be edited or deleted from the application.</li>
+</ul>
+<hr>
+<h2 id="12-user-journeys-and-workflows">12. User Journeys and Workflows</h2>
+<h3 id="12-1-new-walk-in-patient-first-visit">12.1 New walk-in patient (first visit)</h3>
+<pre><code>Receptionist: search by name/phone ──► not found
+   │
+   ▼
+Register (name, phone, age, gender) ──► start episode
+   │
+   ▼
+Therapist: assessment (history, pain, ROM, diagnosis) ──► treatment plan
+   │
+   ▼
+Mark attendance (charge = default fee or override)
+   │
+   ▼
+Payment now?  ── yes ─► record payment ─► receipt
+             └─ no  ─► balance shows dues
+</code></pre>
+<h3 id="12-2-returning-patient-next-day">12.2 Returning patient (next day)</h3>
+<pre><code>Search ──► open patient ──► dues warning shown if balance &gt; 0
+   │
+   ▼
+Mark attendance ──► optional session note by therapist
+   │
+   ▼
+Payment (advance for several days, or pay later)
+</code></pre>
+<h3 id="12-3-correction">12.3 Correction</h3>
+<pre><code>Wrong entry noticed ──► &quot;Reverse&quot; ──► reason
+   │
+   ▼
+Reversal entry created; original stays; balance and session count updated
+   │
+   ▼
+Re-enter the correct entry
+</code></pre>
+<h3 id="12-4-discharge-and-return">12.4 Discharge and return</h3>
+<pre><code>Therapist marks discharged (optional note) ──► patient moves to inactive list
+   │
+   ▼ (months later)
+Patient returns ──► new episode ──► new assessment and plan; old history intact;
+                                     ledger balance carries over
+</code></pre>
+<h3 id="12-5-clinic-onboarding">12.5 Clinic onboarding</h3>
+<pre><code>Super-admin creates tenant + Owner ──► Owner sets password, OTP on first device
+   │
+   ▼
+Owner: clinic profile, branches, default fee, staff, role permissions
+   │
+   ▼
+(R2) Import Excel patient list ──► go live
+</code></pre>
+<h2 id="13-business-rules">13. Business Rules</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Rule</th>
+<th>Source</th>
+</tr>
+</thead><tbody><tr>
+<td>BR-TEN-1</td>
+<td>Every record belongs to one tenant; no cross-tenant visibility.</td>
+<td>C</td>
+</tr>
+<tr>
+<td>BR-TEN-2</td>
+<td>Branch code is unique in the tenant and locked after the first receipt.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>BR-USR-1</td>
+<td>Receptionist and Therapist belong to exactly one branch; Owner sees all.</td>
+<td>C (Q24)</td>
+</tr>
+<tr>
+<td>BR-USR-4</td>
+<td>Owner always has full permissions in its tenant.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>BR-USR-5</td>
+<td>Permissions are per role; no per-user overrides or custom roles in MVP.</td>
+<td>C (Q8)</td>
+</tr>
+<tr>
+<td>BR-PAT-1</td>
+<td>A patient belongs to the tenant, shared across branches.</td>
+<td>C (Q23)</td>
+</tr>
+<tr>
+<td>BR-PAT-4</td>
+<td>Any branch&#39;s staff can search and open any patient of the tenant.</td>
+<td>C (Q28)</td>
+</tr>
+<tr>
+<td>BR-CLN-1</td>
+<td>Attendance belongs to an episode; an episode has one assessment and plan (versioned).</td>
+<td>C (Q48)</td>
+</tr>
+<tr>
+<td>BR-CLN-5</td>
+<td>Estimated cost on the plan is informational; no fixed packages.</td>
+<td>C (Q18), inferred</td>
+</tr>
+<tr>
+<td>BR-CLN-8</td>
+<td>Discharged patients return via a new episode.</td>
+<td>C (Q48)</td>
+</tr>
+<tr>
+<td>BR-VIS-1</td>
+<td>Each marked attendance counts as one session and creates one charge.</td>
+<td>C</td>
+</tr>
+<tr>
+<td>BR-VIS-4</td>
+<td>Outstanding balance shows a warning; it never blocks the visit.</td>
+<td>C (Q27)</td>
+</tr>
+<tr>
+<td>BR-BILL-1</td>
+<td>A default-fee change applies to future visits only; each visit stores its fee.</td>
+<td>C (Q49)</td>
+</tr>
+<tr>
+<td>BR-BILL-4</td>
+<td>Ledger entries are never edited or deleted; corrections use reversals, including same day.</td>
+<td>C (Q25)</td>
+</tr>
+<tr>
+<td>BR-BILL-8</td>
+<td>A payment may exceed dues, creating advance credit.</td>
+<td>C (Q16)</td>
+</tr>
+<tr>
+<td>BR-BILL-10</td>
+<td>Refunds need a permission the Owner assigns; reason is recorded.</td>
+<td>C (Q26)</td>
+</tr>
+<tr>
+<td>BR-BILL-17</td>
+<td>Receipt numbers are sequential per branch per financial year; never reused.</td>
+<td>C (Q50)</td>
+</tr>
+<tr>
+<td>BR-BILL-7</td>
+<td>Payments apply to the patient account as a whole, not to specific visits.</td>
+<td>A</td>
+</tr>
+<tr>
+<td>BR-AUD-1</td>
+<td>Viewing a patient record is logged.</td>
+<td>C (R-1), Rec</td>
+</tr>
+<tr>
+<td>BR-SUB-1</td>
+<td>Plan limits and feature flags are data, not code.</td>
+<td>C (A-1)</td>
+</tr>
+</tbody></table></div>
+<p>Rules still to define: payment allocation to visits for reporting (OQ-9), visit marked at the wrong branch, back-dated entries (Rec: not allowed for staff; Owner only, logged), and multiple visits per day.</p>
+<h2 id="14-screen-and-module-specifications">14. Screen and Module Specifications</h2>
+<div class="tbl"><table><thead><tr>
+<th>#</th>
+<th>Screen / module</th>
+<th>Purpose</th>
+<th>Key elements</th>
+<th>Release</th>
+</tr>
+</thead><tbody><tr>
+<td>S-01</td>
+<td>Login</td>
+<td>Sign in</td>
+<td>Email, password, forgot password</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-02</td>
+<td>OTP entry</td>
+<td>Verify new device</td>
+<td>6-digit code, resend, &quot;trust this device&quot;</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-03</td>
+<td><strong>Receptionist home</strong></td>
+<td>Daily work</td>
+<td>Search box (name/phone); prominent &quot;Register new patient&quot;; today&#39;s visits list with quick &quot;mark attendance&quot; and &quot;take payment&quot;</td>
+<td>R1 (C, Q33)</td>
+</tr>
+<tr>
+<td>S-04</td>
+<td>Register patient</td>
+<td>Fast intake</td>
+<td>Mandatory: name, phone, age, gender; optional extras; duplicate warning</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-05</td>
+<td>Patient profile</td>
+<td>Everything about one patient</td>
+<td>Header: name, age, gender, phone, status, <strong>balance/credit</strong>; tabs Overview, Treatment, Visits, Payments; quick actions; branch tags</td>
+<td>R1 (C, Q34)</td>
+</tr>
+<tr>
+<td>S-06</td>
+<td>Assessment form</td>
+<td>Initial assessment</td>
+<td>History, pain, ROM, diagnosis + recommended fields; version history</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-07</td>
+<td>Treatment plan</td>
+<td>Plan editor</td>
+<td>Diagnosis, goals, sessions and frequency, therapy types, estimated cost, notes</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-08</td>
+<td>Mark attendance</td>
+<td>Create visit</td>
+<td>Patient, episode, therapist, fee (override with reason), warning banner</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-09</td>
+<td>Record payment</td>
+<td>Capture payment</td>
+<td>Amount, method, reference, date; shows balance before/after</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-10</td>
+<td>Receipt / invoice view</td>
+<td>Print or PDF</td>
+<td>Clinic details, number, items</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-11</td>
+<td>Reverse entry</td>
+<td>Correct mistakes</td>
+<td>Entry details, reason, confirm</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-12</td>
+<td>Refund</td>
+<td>Refund advance</td>
+<td>Amount, method, reason</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-13</td>
+<td>Discharge</td>
+<td>End episode</td>
+<td>Optional note, dues prompt</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-14</td>
+<td>Clinic settings</td>
+<td>Setup</td>
+<td>Profile and branding, default fee, inactive-days setting</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-15</td>
+<td>Branches</td>
+<td>Branch CRUD</td>
+<td>Name, address, code</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-16</td>
+<td>Staff</td>
+<td>Staff CRUD</td>
+<td>Name, email, role, branch, active</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-17</td>
+<td>Role permissions</td>
+<td>Permission editor</td>
+<td>Matrix of permissions per role</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-18</td>
+<td>Trusted devices</td>
+<td>Device list</td>
+<td>Device, last used, revoke</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-19</td>
+<td>Audit log</td>
+<td>Review activity</td>
+<td>Filter by user, patient, action, date</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>S-20</td>
+<td>Owner dashboard</td>
+<td>Daily view</td>
+<td>Patients seen, collections, dues</td>
+<td>R1/R2</td>
+</tr>
+<tr>
+<td>S-21</td>
+<td>Reports</td>
+<td>Revenue, dues, by branch, by method</td>
+<td>Filters, export</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>S-22</td>
+<td>Import wizard</td>
+<td>Excel import</td>
+<td>Upload, map, validate, preview, result</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>S-23</td>
+<td>Data export</td>
+<td>Owner export</td>
+<td>Choose data, download</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>S-24</td>
+<td>Inactive patients</td>
+<td>Follow-up list</td>
+<td>Patients with no visit in N days</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>S-25</td>
+<td>Super-admin: tenants</td>
+<td>Platform admin</td>
+<td>Tenant list, create, suspend, plan and usage</td>
+<td>R1 min / R2</td>
+</tr>
+<tr>
+<td>S-26</td>
+<td>Super-admin: plans</td>
+<td>Plan limits and features</td>
+<td>Limits, flags</td>
+<td>R2</td>
+</tr>
+</tbody></table></div>
+<p><strong>UX guidelines (Rec unless noted):</strong> responsive layout for phone, tablet, and desktop (C, Q31); installable PWA with app icon (C, Q31); English only (C, Q35) with text kept out of code to ease later translation; online only, with a clear &quot;no connection&quot; state and no silent failure (C, Q32); large tap targets and minimal typing at the front desk; global patient search always reachable.</p>
+<h2 id="15-data-requirements-and-entity-relationships">15. Data Requirements and Entity Relationships</h2>
+<h3 id="15-1-entities">15.1 Entities</h3>
+<div class="tbl"><table><thead><tr>
+<th>Entity</th>
+<th>Key attributes</th>
+<th>Notes</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>Tenant</strong></td>
+<td>id, name, address, phone, logo, registration details, status</td>
+<td>The clinic business</td>
+</tr>
+<tr>
+<td><strong>Plan</strong></td>
+<td>id, name, limits (branches, users, patients), feature flags</td>
+<td>Data-driven (SUB-001)</td>
+</tr>
+<tr>
+<td><strong>Subscription</strong></td>
+<td>tenant, plan, status (trial/active/suspended/cancelled), trial end</td>
+<td>No billing</td>
+</tr>
+<tr>
+<td><strong>Branch</strong></td>
+<td>id, tenant, name, address, code, active</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>User</strong></td>
+<td>id, tenant (null for super-admin), email, name, role, branch, active, password hash</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Role / Permission / RolePermission</strong></td>
+<td>role per tenant; fixed permission catalogue; grants</td>
+<td>Designed for custom roles later</td>
+</tr>
+<tr>
+<td><strong>TrustedDevice</strong></td>
+<td>user, device token hash, last used, expires</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Patient</strong></td>
+<td>id, tenant, name, phone, age/DOB, gender, optional fields, registered branch, status</td>
+<td>One per tenant, across branches</td>
+</tr>
+<tr>
+<td><strong>Episode</strong></td>
+<td>id, patient, start, status (active/discharged), discharge date and note</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Assessment</strong> (versioned)</td>
+<td>episode, history, pain, ROM, diagnosis, extras, author, version</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>TreatmentPlan</strong> (versioned)</td>
+<td>episode, diagnosis, goals, planned sessions, frequency, therapy types, estimated cost, notes</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Visit</strong></td>
+<td>id, episode, patient, branch, date-time, therapist, fee charged, fee override reason, marked by, status</td>
+<td>Attendance</td>
+</tr>
+<tr>
+<td><strong>SessionNote</strong> (versioned)</td>
+<td>visit, text, author</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>FeeSetting</strong></td>
+<td>tenant, default fee, effective from (history kept)</td>
+<td>Optional patient-level fee</td>
+</tr>
+<tr>
+<td><strong>LedgerEntry</strong></td>
+<td>id, patient, branch, type (charge/payment/refund/reversal), amount, method, reference, visit link, reversed-entry link, reason, user, time</td>
+<td>Append-only</td>
+</tr>
+<tr>
+<td><strong>Receipt / Invoice</strong></td>
+<td>number, branch, financial year, ledger entry or period, issued at</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>NumberSequence</strong></td>
+<td>branch, financial year, document type, last number</td>
+<td>Concurrency-safe</td>
+</tr>
+<tr>
+<td><strong>AuditLog</strong></td>
+<td>tenant, user, action, target, branch, time, details</td>
+<td>Immutable</td>
+</tr>
+<tr>
+<td><strong>ImportJob</strong></td>
+<td>tenant, file, mapping, counts, status, user</td>
+<td>R2</td>
+</tr>
+</tbody></table></div>
+<h3 id="15-2-relationships">15.2 Relationships</h3>
+<pre><code>Plan 1──* Subscription *──1 Tenant
+Tenant 1──* Branch
+Tenant 1──* User *──1 Role ──* Permission
+Tenant 1──* Patient 1──* Episode 1──* Assessment (versions)
+                         │         1──* TreatmentPlan (versions)
+                         │         1──* Visit 1──* SessionNote (versions)
+                         └──* LedgerEntry  (charge links to Visit; reversal links to LedgerEntry)
+Branch 1──* Visit,  Branch 1──* LedgerEntry,  Branch 1──* NumberSequence
+LedgerEntry 1──0..1 Receipt
+Tenant 1──* AuditLog
+</code></pre>
+<h3 id="15-3-data-rules">15.3 Data rules</h3>
+<ul>
+<li>Every tenant-owned table carries <code>tenant_id</code>; every query is scoped by it (section 18).</li>
+<li>Money uses fixed-point decimals in INR (never floating point).</li>
+<li>Timestamps in UTC with display in India Standard Time.</li>
+<li>Soft states (inactive, discharged, reversed) replace deletes for clinical and financial data.</li>
+<li>Patient records are owned by the clinic business (tenant), not by individual staff or branches (Rec; legal roles of data controller/processor need review).</li>
+</ul>
+<h2 id="16-roles-and-permissions-matrix">16. Roles and Permissions Matrix</h2>
+<p>The Owner edits the Receptionist and Physiotherapist columns per tenant (C, Q8). The matrix below is the <strong>default template</strong> for new tenants. Only the receptionist&#39;s &quot;view clinical notes read-only&quot; default and the Owner&#39;s full rights are confirmed (C, Q6, Q7); other defaults are <strong>Rec</strong> and the Owner can change them.</p>
+<div class="tbl"><table><thead><tr>
+<th>Permission</th>
+<th>Owner/Admin</th>
+<th>Receptionist (default)</th>
+<th>Physiotherapist (default, Rec)</th>
+<th>Super-admin</th>
+</tr>
+</thead><tbody><tr>
+<td>Manage clinic profile, branches, default fee</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>Platform only</td>
+</tr>
+<tr>
+<td>Manage staff</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Edit role permissions</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Register patient</td>
+<td>✔</td>
+<td>✔ (C)</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Edit patient demographics</td>
+<td>✔</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Search / open any patient in tenant</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+<td>✘ (OQ-10)</td>
+</tr>
+<tr>
+<td>View clinical notes (assessment, plan, session notes)</td>
+<td>✔</td>
+<td>✔ read-only (C)</td>
+<td>✔</td>
+<td>✘ (OQ-10)</td>
+</tr>
+<tr>
+<td>Edit assessment, plan, session notes</td>
+<td>✔</td>
+<td>✘</td>
+<td>✔</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Mark attendance</td>
+<td>✔</td>
+<td>✔</td>
+<td>✔</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Override session fee</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Record payment</td>
+<td>✔</td>
+<td>✔ (C)</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>View balances and payment history</td>
+<td>✔</td>
+<td>✔</td>
+<td>✘ (own patients&#39; dues indicator only)</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Process refund</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Reverse an entry</td>
+<td>✔</td>
+<td>✘ (Rec)</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Print receipt / generate invoice</td>
+<td>✔</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Discharge patient / start episode</td>
+<td>✔</td>
+<td>✘</td>
+<td>✔</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>View dashboard and reports</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>Platform stats only</td>
+</tr>
+<tr>
+<td>Import / export data</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>View audit log</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>Platform events only</td>
+</tr>
+<tr>
+<td>Manage trusted devices (others)</td>
+<td>✔</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+</tr>
+<tr>
+<td>Create / suspend tenants, manage plans</td>
+<td>✘</td>
+<td>✘</td>
+<td>✘</td>
+<td>✔</td>
+</tr>
+</tbody></table></div>
+<p><strong>Branch scope:</strong> Receptionist and Physiotherapist act only in their assigned branch for new visits and payments, but can view patients and their history from all branches (C, Q24, Q28).</p>
+<p><strong>Note (R-2):</strong> fully editable permissions need automated tests for each permission and warnings against lock-out.</p>
+<hr>
+<h2 id="17-non-functional-requirements">17. Non-Functional Requirements</h2>
+<p>All values below are <strong>Rec</strong> targets for approval unless marked C.</p>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Area</th>
+<th>Requirement</th>
+</tr>
+</thead><tbody><tr>
+<td>NFR-001</td>
+<td>Platform (C)</td>
+<td>Responsive web app, installable PWA; supported browsers: current Chrome, Edge, Safari, Firefox and Android Chrome / iOS Safari (last 2 major versions).</td>
+</tr>
+<tr>
+<td>NFR-002</td>
+<td>Connectivity (C)</td>
+<td>Online only. Show a clear offline state; block data entry; never imply a save succeeded when it did not.</td>
+</tr>
+<tr>
+<td>NFR-003</td>
+<td>Language (C)</td>
+<td>English only; UI strings externalised for future translation.</td>
+</tr>
+<tr>
+<td>NFR-004</td>
+<td>Performance</td>
+<td>Page loads in under 3 s on a typical 4G phone; common API calls under 500 ms at p95 for up to 25 tenants.</td>
+</tr>
+<tr>
+<td>NFR-005</td>
+<td>Scalability</td>
+<td>Sized for 5 to 25 clinics in year one (A-6), architecture able to grow to ~100 without rewrite.</td>
+</tr>
+<tr>
+<td>NFR-006</td>
+<td>Availability</td>
+<td>Target 99.5% monthly during the pilot and R2; planned maintenance outside clinic hours.</td>
+</tr>
+<tr>
+<td>NFR-007</td>
+<td>Backups (C)</td>
+<td>Daily automated backups with point-in-time recovery from the database host; owner export to Excel (EXP-001). A restore test before launch.</td>
+</tr>
+<tr>
+<td>NFR-008</td>
+<td>Accessibility</td>
+<td>Aim for WCAG 2.1 AA basics: keyboard use, contrast, labels, readable font sizes. (Not discussed; needs confirmation.)</td>
+</tr>
+<tr>
+<td>NFR-009</td>
+<td>Data integrity</td>
+<td>Ledger and receipt numbering run in database transactions; money in fixed-point decimals.</td>
+</tr>
+<tr>
+<td>NFR-010</td>
+<td>Observability</td>
+<td>Error monitoring and structured logs that never contain patient health data or passwords.</td>
+</tr>
+<tr>
+<td>NFR-011</td>
+<td>Maintainability</td>
+<td>Layered Express code (routes → services → data access), centralised permission checks, input validation on every endpoint, automated tests for permissions, tenant isolation, and the ledger.</td>
+</tr>
+<tr>
+<td>NFR-012</td>
+<td>Portability</td>
+<td>Avoid host-specific features so the app can move from Render to another host (C, Q40).</td>
+</tr>
+<tr>
+<td>NFR-013</td>
+<td>Time and locale</td>
+<td>INR currency, Indian number format, IST display, financial year April to March.</td>
+</tr>
+</tbody></table></div>
+<p><strong>Technical direction (C unless stated):</strong> React PWA frontend; Node.js with Express in TypeScript; managed PostgreSQL; hosted on Render for prototype with test data only, production host decided after legal review; email delivery service for OTP and password reset (vendor to be chosen).</p>
+<h2 id="18-security-and-privacy-requirements">18. Security and Privacy Requirements</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Source</th>
+</tr>
+</thead><tbody><tr>
+<td>SEC-001</td>
+<td><strong>Tenant isolation:</strong> every query is filtered by tenant in the service layer. Evaluate PostgreSQL row-level security as a second safeguard. Automated tests must prove cross-tenant access fails.</td>
+<td>Rec (R-7, R-8)</td>
+</tr>
+<tr>
+<td>SEC-002</td>
+<td>Passwords hashed with a modern algorithm (Argon2id or bcrypt); never logged.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-003</td>
+<td>TLS for all traffic; encryption at rest via the managed database; secrets in environment configuration, not in code.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-004</td>
+<td>Login rate limiting, account lockout, OTP attempt limits, session expiry.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-005</td>
+<td>Protection against common web attacks (injection, XSS, CSRF), input validation, secure headers.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-006</td>
+<td>Authorization is checked on the server for every action; the UI hides actions but is never the control.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-007</td>
+<td>Audit log of record views and sensitive actions (AUD-001).</td>
+<td>C (R-1)</td>
+</tr>
+<tr>
+<td>SEC-008</td>
+<td>Least privilege: the app database user cannot alter the audit table or delete ledger rows.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-009</td>
+<td>Dependency scanning and updates; no real patient data in non-production environments.</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-010</td>
+<td><strong>Independent security review</strong> before real patient data goes live, covering tenant isolation, permissions, and the ledger.</td>
+<td>Rec (R-7)</td>
+</tr>
+<tr>
+<td>SEC-011</td>
+<td>Super-admin access to tenant data is restricted and logged (OQ-10).</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>SEC-012</td>
+<td>Email OTP is acknowledged as weaker than an authenticator app; authenticator-app 2FA is a later enhancement.</td>
+<td>C (R-11)</td>
+</tr>
+</tbody></table></div>
+<p><strong>Privacy:</strong> collect only needed data; mandatory patient fields are only name, phone, age, gender; clinical notes are visible only to roles permitted by the Owner; patient-facing documents contain only what is necessary.</p>
+<h2 id="19-applicable-indian-regulatory-considerations">19. Applicable Indian Regulatory Considerations</h2>
+<blockquote>
+<p>These are <strong>flags for professional review</strong>, not statements of compliance or legal requirements. Do not rely on this section as legal advice.</p>
+</blockquote>
+<div class="tbl"><table><thead><tr>
+<th>#</th>
+<th>Topic</th>
+<th>What must be validated</th>
+<th>Who</th>
+</tr>
+</thead><tbody><tr>
+<td>REG-1</td>
+<td><strong>Personal data protection</strong> — Digital Personal Data Protection Act, 2023 and its rules; earlier IT Act 2000 provisions and rules on sensitive personal data (health data)</td>
+<td>Whether and how consent, notice, purpose limitation, retention, breach notification, and data-principal rights apply; roles of clinic (controller) versus platform (processor); timelines</td>
+<td>Lawyer</td>
+</tr>
+<tr>
+<td>REG-2</td>
+<td><strong>Data location</strong></td>
+<td>Whether patient health data may be stored outside India (Render prototype regions may be outside India; Q40). Resolve before any real patient data is stored.</td>
+<td>Lawyer</td>
+</tr>
+<tr>
+<td>REG-3</td>
+<td><strong>Medical record retention</strong></td>
+<td>How long physiotherapy records must be kept, and what happens to a tenant&#39;s data on cancellation (OQ-6)</td>
+<td>Lawyer / professional bodies</td>
+</tr>
+<tr>
+<td>REG-4</td>
+<td><strong>Receipts, invoices, numbering, GST</strong></td>
+<td>Whether receipts need specific content; GST treatment of physiotherapy services; whether sequential numbering per branch per financial year suffices; GST tax invoices are out of MVP</td>
+<td>Chartered accountant</td>
+</tr>
+<tr>
+<td>REG-5</td>
+<td><strong>Professional and clinical-establishment rules</strong></td>
+<td>Registration or documentation duties for physiotherapists and clinics (central and state-level) that might affect record content</td>
+<td>Lawyer / professional council</td>
+</tr>
+<tr>
+<td>REG-6</td>
+<td><strong>Electronic records and signatures</strong></td>
+<td>Validity of electronic clinical notes and receipts</td>
+<td>Lawyer</td>
+</tr>
+<tr>
+<td>REG-7</td>
+<td><strong>SMS/WhatsApp messaging rules</strong></td>
+<td>Telecom rules (such as DLT registration) and consent — relevant later when messaging is added</td>
+<td>Lawyer</td>
+</tr>
+<tr>
+<td>REG-8</td>
+<td><strong>Terms of service and privacy policy</strong></td>
+<td>Tenant agreement, data-processing terms, patient notice templates for clinics</td>
+<td>Lawyer</td>
+</tr>
+</tbody></table></div>
+<h2 id="20-integration-requirements">20. Integration Requirements</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Integration</th>
+<th>Purpose</th>
+<th>Release</th>
+<th>Note</th>
+</tr>
+</thead><tbody><tr>
+<td>INT-001</td>
+<td><strong>Email delivery service</strong></td>
+<td>OTP, password reset, invitations</td>
+<td>R1</td>
+<td>Vendor TBD; small recurring cost</td>
+</tr>
+<tr>
+<td>INT-002</td>
+<td>PDF generation</td>
+<td>Receipts and invoices</td>
+<td>R1</td>
+<td>Server-side or in-browser</td>
+</tr>
+<tr>
+<td>INT-003</td>
+<td>Excel read/write</td>
+<td>Import and export</td>
+<td>R2</td>
+<td>Library-based</td>
+</tr>
+<tr>
+<td>INT-004</td>
+<td>Hosting and managed PostgreSQL</td>
+<td>Run the product</td>
+<td>R1</td>
+<td>Render for prototype (C, Q39/Q40)</td>
+</tr>
+<tr>
+<td>INT-005</td>
+<td>Error monitoring</td>
+<td>Detect failures</td>
+<td>R1</td>
+<td>Rec</td>
+</tr>
+<tr>
+<td>INT-006</td>
+<td>WhatsApp/SMS</td>
+<td>Messages and reminders</td>
+<td>Later</td>
+<td>Out of scope</td>
+</tr>
+<tr>
+<td>INT-007</td>
+<td>Payment gateway</td>
+<td>Subscription payments</td>
+<td>Later</td>
+<td>Out of scope</td>
+</tr>
+<tr>
+<td>INT-008</td>
+<td>Object storage</td>
+<td>Patient documents</td>
+<td>Later</td>
+<td>Out of scope</td>
+</tr>
+</tbody></table></div>
+<h2 id="21-reporting-and-analytics-requirements">21. Reporting and Analytics Requirements</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Report</th>
+<th>Content</th>
+<th>Release</th>
+</tr>
+</thead><tbody><tr>
+<td>REP-001</td>
+<td>Owner dashboard</td>
+<td>Today&#39;s patients seen, collections, outstanding dues</td>
+<td>R1</td>
+</tr>
+<tr>
+<td>REP-002a</td>
+<td>Revenue</td>
+<td>Daily, weekly, monthly collections and charges</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>REP-002b</td>
+<td>Outstanding balances</td>
+<td>Patients with dues, amount, last visit, branch</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>REP-002c</td>
+<td>By branch</td>
+<td>Visits and revenue per branch</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>REP-002d</td>
+<td>By payment method</td>
+<td>Cash, UPI, card, bank transfer</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>REP-003</td>
+<td>Export</td>
+<td>Excel / PDF of any report</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>INA-001</td>
+<td>Inactive patients</td>
+<td>No visit in N days</td>
+<td>R2</td>
+</tr>
+<tr>
+<td>(later)</td>
+<td>Therapist-wise, expenses, new vs returning, progress</td>
+<td></td>
+<td>Later</td>
+</tr>
+</tbody></table></div>
+<p>Reports must reconcile with the ledger: totals equal the sum of entries for the period, with reversals and refunds shown.</p>
+<h2 id="22-error-states-and-edge-cases">22. Error States and Edge Cases</h2>
+<div class="tbl"><table><thead><tr>
+<th>Situation</th>
+<th>Expected handling</th>
+</tr>
+</thead><tbody><tr>
+<td>Internet drops while saving a payment</td>
+<td>Show failure clearly; do not show success; user retries; duplicate protection on retry (idempotency, Rec)</td>
+</tr>
+<tr>
+<td>Two users mark attendance for the same patient at once</td>
+<td>Warn on duplicate same-day visit; both visits allowed only with confirmation</td>
+</tr>
+<tr>
+<td>Wrong patient or wrong amount</td>
+<td>Reversal flow; original stays visible</td>
+</tr>
+<tr>
+<td>Patient has no phone</td>
+<td>Allow guardian&#39;s number; mark the contact type (Rec)</td>
+</tr>
+<tr>
+<td>Two patients share one phone</td>
+<td>Allowed; search shows both</td>
+</tr>
+<tr>
+<td>Visit marked with no active episode</td>
+<td>Prompt to start an episode first</td>
+</tr>
+<tr>
+<td>Plan sessions exceeded</td>
+<td>Notice only</td>
+</tr>
+<tr>
+<td>Patient with dues is discharged</td>
+<td>Prompt; discharge still completes</td>
+</tr>
+<tr>
+<td>Receipt number collision under load</td>
+<td>Prevented by transactional sequence; tested</td>
+</tr>
+<tr>
+<td>Financial-year rollover</td>
+<td>New series starts from 0001 on 1 April</td>
+</tr>
+<tr>
+<td>Refund greater than credit</td>
+<td>Rejected</td>
+</tr>
+<tr>
+<td>Reversing an already reversed entry</td>
+<td>Refused</td>
+</tr>
+<tr>
+<td>User&#39;s permission removed mid-task</td>
+<td>Next action is refused with an explanation</td>
+</tr>
+<tr>
+<td>Staff moves branches</td>
+<td>Owner reassigns; old records keep the original branch tag</td>
+</tr>
+<tr>
+<td>Tenant suspended</td>
+<td>Behaviour per OQ-11</td>
+</tr>
+<tr>
+<td>Lost or shared device</td>
+<td>Owner revokes trusted device; forced OTP</td>
+</tr>
+<tr>
+<td>Import with bad data</td>
+<td>Row-level errors; nothing partial is committed without confirmation</td>
+</tr>
+<tr>
+<td>Plan limit reached</td>
+<td>Clear message; no data loss</td>
+</tr>
+<tr>
+<td>Email not received (OTP)</td>
+<td>Resend with rate limit; alternate recovery via Owner/super-admin (Rec)</td>
+</tr>
+<tr>
+<td>Clock or timezone differences</td>
+<td>Store UTC; display IST</td>
+</tr>
+</tbody></table></div>
+<h2 id="23-dependencies-and-risks">23. Dependencies and Risks</h2>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Risk / dependency</th>
+<th>Impact</th>
+<th>Mitigation</th>
+</tr>
+</thead><tbody><tr>
+<td>R-1</td>
+<td>Receptionists can read clinical notes</td>
+<td>Privacy exposure</td>
+<td>Audit log of views; Owner can remove permission</td>
+</tr>
+<tr>
+<td>R-2</td>
+<td>Fully flexible permissions</td>
+<td>Complexity, misconfiguration, lock-out</td>
+<td>Default templates; tests; warnings; audit of changes</td>
+</tr>
+<tr>
+<td>R-3</td>
+<td>No calendar: double-booking and availability problems not solved</td>
+<td>Less value for clinics wanting booking</td>
+<td>Data model leaves room for appointments; add in a later release</td>
+</tr>
+<tr>
+<td>R-4</td>
+<td>No document upload</td>
+<td>Clinics keep paper or WhatsApp copies</td>
+<td>Reconsider in the first post-MVP release</td>
+</tr>
+<tr>
+<td>R-5</td>
+<td>PWA limits (iOS push, no app store)</td>
+<td>Fewer notification options later</td>
+<td>Acceptable for MVP</td>
+</tr>
+<tr>
+<td>R-6</td>
+<td>English-only</td>
+<td>Smaller adoption in some regions</td>
+<td>Externalise strings now</td>
+</tr>
+<tr>
+<td>R-7</td>
+<td>AI-generated code in a health and finance system</td>
+<td>Security and correctness defects</td>
+<td>Code review, automated tests, independent security review</td>
+</tr>
+<tr>
+<td>R-8</td>
+<td>Custom backend with no ready-made auth/isolation</td>
+<td>More to build and secure</td>
+<td>Established libraries; RLS evaluation</td>
+</tr>
+<tr>
+<td>R-9</td>
+<td>Express has no enforced structure</td>
+<td>Inconsistent code</td>
+<td>Layered conventions (NFR-011)</td>
+</tr>
+<tr>
+<td>R-10</td>
+<td>Render may lack an India region</td>
+<td>Health data stored abroad</td>
+<td>Test data only; legal review; plan host move</td>
+</tr>
+<tr>
+<td>R-11</td>
+<td>Email OTP weaker than authenticator</td>
+<td>Account takeover via email</td>
+<td>Owner-level monitoring; later authenticator option</td>
+</tr>
+<tr>
+<td>R-12</td>
+<td>Two-month pilot vs scope</td>
+<td>Slip or quality compromise</td>
+<td>Move the dashboard to R2 first; cut non-essential polish</td>
+</tr>
+<tr>
+<td>R-13</td>
+<td>Real patient data in pilot before legal review</td>
+<td>Legal exposure</td>
+<td>Test data or consented, compliant host only</td>
+</tr>
+<tr>
+<td>R-14</td>
+<td>Budget undefined (OQ-7)</td>
+<td>Security review and legal advice unfunded</td>
+<td>Fix a budget before launch</td>
+</tr>
+<tr>
+<td>R-15</td>
+<td>Ledger design errors</td>
+<td>Wrong balances, lost trust</td>
+<td>Append-only design, transactional writes, reconciliation tests</td>
+</tr>
+</tbody></table></div>
+<p><strong>Dependencies:</strong> legal advice (data location, retention, consent); chartered accountant (receipt numbering, GST); email vendor; hosting decision; at least one pilot clinic; security reviewer; domain name and SSL.</p>
+<h2 id="24-success-metrics">24. Success Metrics</h2>
+<p>Proposed targets (Rec) for approval:</p>
+<div class="tbl"><table><thead><tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead><tbody><tr>
+<td>Pilot clinics live</td>
+<td>2 clinics for at least 4 weeks</td>
+</tr>
+<tr>
+<td>New patient registration time</td>
+<td>Under 60 seconds at the front desk</td>
+</tr>
+<tr>
+<td>Visits recorded in the system the same day</td>
+<td>At least 95%</td>
+</tr>
+<tr>
+<td>Ledger discrepancies found by pilot owners</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Receptionist satisfaction (simple survey)</td>
+<td>4 of 5 or better</td>
+</tr>
+<tr>
+<td>Paper/Excel still used for records after week 4</td>
+<td>Under 10% of visits</td>
+</tr>
+<tr>
+<td>Onboarding time (R2, with Excel import)</td>
+<td>Under 1 day per clinic</td>
+</tr>
+<tr>
+<td>Critical security findings open at launch</td>
+<td>0</td>
+</tr>
+<tr>
+<td>System availability (R2)</td>
+<td>99.5% monthly</td>
+</tr>
+</tbody></table></div>
+<p>Business metrics (clinic count, subscription conversion, churn) are not set until budget, pricing, and expected clinic counts are known (OQ-7, OQ-8, OQ-12).</p>
+<h2 id="25-release-plan">25. Release Plan</h2>
+<div class="tbl"><table><thead><tr>
+<th>Release</th>
+<th>Timeline</th>
+<th>Content</th>
+<th>Gate</th>
+</tr>
+</thead><tbody><tr>
+<td><strong>R0 — Foundations</strong></td>
+<td>Weeks 1 to 2</td>
+<td>Repo, hosting (test data), auth skeleton, tenancy and permission model, CI, test harness for tenant isolation</td>
+<td>Isolation tests pass</td>
+</tr>
+<tr>
+<td><strong>R1 — Pilot</strong></td>
+<td>Up to about week 8</td>
+<td>AUTH, TEN, USR, PAT, CLN, VIS, BILL, AUD; basic dashboard if time allows</td>
+<td>Pilot clinic runs a full day; ledger reconciles; legal answer on data location before real data</td>
+</tr>
+<tr>
+<td><strong>R2 — Full MVP</strong></td>
+<td>Months 4 to 6</td>
+<td>IMP, REP full, EXP, ADM console, SUB groundwork, INA flag, security review fixes, restore test, onboarding polish</td>
+<td>Security review passed; legal and CA items resolved or accepted</td>
+</tr>
+<tr>
+<td><strong>Later phases</strong></td>
+<td>After R2, priority by feedback</td>
+<td>Document upload, WhatsApp/SMS, calendar and booking, reminders, progress tracking, expenses, packages, more roles, authenticator 2FA, translations</td>
+<td>—</td>
+</tr>
+</tbody></table></div>
+<p>Timeline is aspirational for a solo, AI-assisted build and depends on budget and legal outcomes (R-12, R-14).</p>
+<h2 id="26-open-questions-and-assumptions">26. Open Questions and Assumptions</h2>
+<h3 id="26-1-open-questions">26.1 Open questions</h3>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Question</th>
+<th>Needed by</th>
+</tr>
+</thead><tbody><tr>
+<td>OQ-1</td>
+<td>Confirm the treatment plan&#39;s estimated cost is informational only (inferred from Q18).</td>
+<td>Before R1 build of CLN-003</td>
+</tr>
+<tr>
+<td>OQ-2</td>
+<td>Which clinic details must appear on receipts (logo, registration number, address, GST number)?</td>
+<td>Before BILL-006</td>
+</tr>
+<tr>
+<td>OQ-4</td>
+<td>Excel import: columns, duplicate rule, treatment of old balances and visit history.</td>
+<td>Before R2</td>
+</tr>
+<tr>
+<td>OQ-5</td>
+<td>Production hosting and data location.</td>
+<td>Before any real patient data</td>
+</tr>
+<tr>
+<td>OQ-6</td>
+<td>Record retention period; tenant data handling on cancellation.</td>
+<td>Before launch</td>
+</tr>
+<tr>
+<td>OQ-7</td>
+<td>Budget for build, security review, legal advice, and running costs.</td>
+<td>Before R1 end</td>
+</tr>
+<tr>
+<td>OQ-8</td>
+<td>Expected number of clinics in year one.</td>
+<td>Before R2 sizing</td>
+</tr>
+<tr>
+<td>OQ-9</td>
+<td>Should reports allocate payments to specific visits, or stay account-level?</td>
+<td>Before REP-002</td>
+</tr>
+<tr>
+<td>OQ-10</td>
+<td>Can the super-admin ever view patient data (support access)? Recommended: no by default.</td>
+<td>Before ADM-001</td>
+</tr>
+<tr>
+<td>OQ-11</td>
+<td>Behaviour of a suspended or cancelled tenant (Rec: read-only plus export).</td>
+<td>Before SUB-001</td>
+</tr>
+<tr>
+<td>OQ-12</td>
+<td>Subscription pricing model and trial length.</td>
+<td>Before billing is built</td>
+</tr>
+<tr>
+<td>OQ-13</td>
+<td>Accessibility target (WCAG 2.1 AA proposed).</td>
+<td>Before UI build</td>
+</tr>
+<tr>
+<td>OQ-14</td>
+<td>Back-dated entries and entries at the wrong branch: who may correct them?</td>
+<td>Before BILL build</td>
+</tr>
+</tbody></table></div>
+<h3 id="26-2-assumptions">26.2 Assumptions</h3>
+<div class="tbl"><table><thead><tr>
+<th>ID</th>
+<th>Assumption</th>
+</tr>
+</thead><tbody><tr>
+<td>A-1</td>
+<td>Subscription groundwork only: plans, limits, flags, trial status; no payment collection in the MVP. (C)</td>
+</tr>
+<tr>
+<td>A-2</td>
+<td>Returning patients are found by name or phone search to avoid duplicates.</td>
+</tr>
+<tr>
+<td>A-3</td>
+<td>One fixed assessment form; no configurable templates.</td>
+</tr>
+<tr>
+<td>A-4</td>
+<td>Owners enter clinic details and logo for receipts during setup.</td>
+</tr>
+<tr>
+<td>A-5</td>
+<td>Build cost is the product owner&#39;s time plus AI tool subscriptions; security review, legal, and hosting are budgeted separately.</td>
+</tr>
+<tr>
+<td>A-6</td>
+<td>Sized for 5 to 25 clinics in year one.</td>
+</tr>
+<tr>
+<td>A-7</td>
+<td>Planned session count is a guide, not a limit.</td>
+</tr>
+<tr>
+<td>A-8</td>
+<td>Payments apply at account level, not per visit.</td>
+</tr>
+<tr>
+<td>A-9</td>
+<td>Default permission templates for the Physiotherapist role are as in section 16.</td>
+</tr>
+<tr>
+<td>A-10</td>
+<td>Staff cannot back-date entries; the Owner can, with a log entry.</td>
+</tr>
+</tbody></table></div>
+<h3 id="appendix-a-decision-log-confirmed">Appendix A — Decision log (confirmed)</h3>
+<div class="tbl"><table><thead><tr>
+<th>Ref</th>
+<th>Decision</th>
+</tr>
+</thead><tbody><tr>
+<td>Q1</td>
+<td>Multi-tenant SaaS; each tenant can have multiple branches</td>
+</tr>
+<tr>
+<td>Q2</td>
+<td>Target: small clinics, 2 to 5 therapists, 1 to 2 branches</td>
+</tr>
+<tr>
+<td>Q3</td>
+<td>Priorities: patient records, appointments, billing; progress tracking and follow-ups later</td>
+</tr>
+<tr>
+<td>Q4</td>
+<td>Pricing later; architecture must support it</td>
+</tr>
+<tr>
+<td>Q5</td>
+<td>Roles: Owner/Admin, Receptionist, Physiotherapist, Super-admin; no patient login</td>
+</tr>
+<tr>
+<td>Q6, Q7</td>
+<td>Receptionist can view clinical notes read-only; permissions are owner-managed</td>
+</tr>
+<tr>
+<td>Q8</td>
+<td>Permissions per role; no overrides or custom roles in MVP</td>
+</tr>
+<tr>
+<td>Q9</td>
+<td>Patients are mainly walk-ins</td>
+</tr>
+<tr>
+<td>Q10</td>
+<td>Mandatory fields: name, phone, age, gender</td>
+</tr>
+<tr>
+<td>Q11</td>
+<td>First visit: assessment and treatment plan; treatment may start same day</td>
+</tr>
+<tr>
+<td>Q12</td>
+<td>Plan includes diagnosis, goals, sessions and frequency, therapy types, estimated cost</td>
+</tr>
+<tr>
+<td>Q13</td>
+<td>Attendance always marked; short note optional</td>
+</tr>
+<tr>
+<td>Q14</td>
+<td>Follow-ups are not pre-booked; attendance marked when the patient comes</td>
+</tr>
+<tr>
+<td>Q15</td>
+<td>No calendar in MVP</td>
+</tr>
+<tr>
+<td>Q16, Q18</td>
+<td>Flexible payment timing; running account; no fixed packages</td>
+</tr>
+<tr>
+<td>Q17</td>
+<td>Payment methods: cash, UPI, card, bank transfer</td>
+</tr>
+<tr>
+<td>Q19</td>
+<td>Default fee with override</td>
+</tr>
+<tr>
+<td>Q20</td>
+<td>Receipt per payment; invoice on request; no GST invoice</td>
+</tr>
+<tr>
+<td>Q21</td>
+<td>Discharge by therapist; inactive flag</td>
+</tr>
+<tr>
+<td>Q22</td>
+<td>Dashboard and reports as listed in section 21</td>
+</tr>
+<tr>
+<td>Q23, Q28</td>
+<td>One patient record across branches; any branch can search all</td>
+</tr>
+<tr>
+<td>Q24</td>
+<td>Staff assigned to one branch</td>
+</tr>
+<tr>
+<td>Q25</td>
+<td>Nothing deleted; reversals</td>
+</tr>
+<tr>
+<td>Q26</td>
+<td>Refund or credit case by case</td>
+</tr>
+<tr>
+<td>Q27</td>
+<td>Dues warning, not a block</td>
+</tr>
+<tr>
+<td>Q29, Q30</td>
+<td>Only Excel import added; no document upload</td>
+</tr>
+<tr>
+<td>Q31</td>
+<td>Responsive web app with PWA</td>
+</tr>
+<tr>
+<td>Q32</td>
+<td>Online only</td>
+</tr>
+<tr>
+<td>Q33, Q34</td>
+<td>Receptionist home and patient profile as specified</td>
+</tr>
+<tr>
+<td>Q35</td>
+<td>English only</td>
+</tr>
+<tr>
+<td>Q36 to Q38</td>
+<td>AI-assisted build; custom backend; TypeScript, Express, PostgreSQL, React</td>
+</tr>
+<tr>
+<td>Q39, Q40</td>
+<td>Render for prototype, test data only; production host later</td>
+</tr>
+<tr>
+<td>Q41</td>
+<td>Email and password, email OTP on new devices</td>
+</tr>
+<tr>
+<td>Q42</td>
+<td>Daily backups plus owner export</td>
+</tr>
+<tr>
+<td>Q43, Q44</td>
+<td>Two releases: Pilot (about 2 months) and Full MVP (4 to 6 months)</td>
+</tr>
+<tr>
+<td>Q45, Q46</td>
+<td>Budget and clinic count undecided</td>
+</tr>
+<tr>
+<td>Q48</td>
+<td>Episodes for returning patients</td>
+</tr>
+<tr>
+<td>Q49</td>
+<td>Fee changes apply to future visits</td>
+</tr>
+<tr>
+<td>Q50</td>
+<td>Receipt numbers per branch per financial year</td>
+</tr>
+<tr>
+<td>Q51</td>
+<td>Scope approved</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="27-requirements-traceability-matrix">27. Requirements Traceability Matrix</h2>
+<div class="tbl"><table><thead><tr>
+<th>Problem / objective</th>
+<th>Requirement IDs</th>
+<th>Business rules</th>
+<th>User stories</th>
+<th>Release</th>
+<th>Test basis</th>
+</tr>
+</thead><tbody><tr>
+<td>Messy records (P1)</td>
+<td>PAT-001 to PAT-005, CLN-001 to CLN-004, VIS-002, VIS-003</td>
+<td>BR-PAT-1/4, BR-CLN-1/4/8</td>
+<td>US-08 to US-13, US-15, US-24, US-25</td>
+<td>R1</td>
+<td>Section 11: PAT, CLN</td>
+</tr>
+<tr>
+<td>Visits hard to manage (P2)</td>
+<td>VIS-001, VIS-003, INA-001</td>
+<td>BR-VIS-1/4/5</td>
+<td>US-14, US-32</td>
+<td>R1/R2</td>
+<td>VIS-001</td>
+</tr>
+<tr>
+<td>Billing and dues (P3)</td>
+<td>BILL-001 to BILL-008</td>
+<td>BR-BILL-1 to 20</td>
+<td>US-16 to US-23</td>
+<td>R1</td>
+<td>BILL</td>
+</tr>
+<tr>
+<td>Control and privacy</td>
+<td>USR-001, USR-002, AUD-001, AUTH-001 to 004</td>
+<td>BR-USR, BR-AUD-1</td>
+<td>US-01 to 03, US-06, US-07, US-31</td>
+<td>R1</td>
+<td>AUTH, USR, AUD</td>
+</tr>
+<tr>
+<td>Multi-tenant SaaS (BO-4)</td>
+<td>TEN-001, TEN-002, ADM-001, SEC-001</td>
+<td>BR-TEN-1</td>
+<td>US-04, US-05, US-33</td>
+<td>R1/R2</td>
+<td>TEN</td>
+</tr>
+<tr>
+<td>Subscription readiness (BO-5)</td>
+<td>SUB-001</td>
+<td>BR-SUB-1</td>
+<td>US-33</td>
+<td>R2</td>
+<td>SUB</td>
+</tr>
+<tr>
+<td>Move off paper/Excel (BO-2)</td>
+<td>IMP-001, EXP-001</td>
+<td>—</td>
+<td>US-29, US-30</td>
+<td>R2</td>
+<td>IMP, EXP</td>
+</tr>
+<tr>
+<td>Owner visibility</td>
+<td>REP-001 to REP-003</td>
+<td>BR-REP-1</td>
+<td>US-26 to US-28</td>
+<td>R1/R2</td>
+<td>REP</td>
+</tr>
+<tr>
+<td>Trust and safety</td>
+<td>SEC-001 to SEC-012, NFR-002, NFR-007, NFR-009</td>
+<td>—</td>
+<td>—</td>
+<td>R1/R2</td>
+<td>Security review, restore test</td>
+</tr>
+<tr>
+<td>Compliance flags</td>
+<td>REG-1 to REG-8</td>
+<td>—</td>
+<td>—</td>
+<td>Pre-launch</td>
+<td>Professional review</td>
+</tr>
+</tbody></table></div>
+<hr>
+<h2 id="next-deliverables-offered-not-yet-created">Next deliverables (offered, not yet created)</h2>
+<p>MVP feature checklist; user stories with full acceptance criteria; functional requirements specification; user flow diagrams; database ER diagram; API requirements; role and permission matrix (detailed); development backlog; release roadmap; QA test scenarios. Tell me which one you want next.</p>
+
+</main>
+</div>
+</body>
+</html>
