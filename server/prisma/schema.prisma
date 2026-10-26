@@ -1,7 +1,12 @@
-// Prisma schema. Intentionally has no models yet: this step only scaffolds the backend.
-// Models come from docs/ER-Diagram.md in a later step.
+// Prisma schema. Release 0 covers platform, tenancy, users and permissions, sessions and audit
+// (docs/ER-Diagram.md sections 3.1, 3.2, 3.5). Patient, clinical and billing tables arrive with R1.
 //
 // Prisma 7: the connection URL lives in prisma.config.ts, not here.
+//
+// Conventions (ER section 1): snake_case in the database, uuid keys, timestamptz, enums as text with CHECK
+// constraints (added by hand in the migration SQL, as are the case-insensitive email index and other rules
+// Prisma cannot express). Tenant-owned parents expose unique (tenant_id, id) and children use composite
+// foreign keys, so a row can never point at another clinic's parent (ER section 5.2).
 
 generator client {
   provider = "prisma-client"
@@ -11,4 +16,239 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- platform and tenancy (ER 3.1)
+
+model Plan {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  limits        Json           @default("{}")
+  featureFlags  Json           @default("{}") @map("feature_flags")
+  isActive      Boolean        @default(true) @map("is_active")
+  subscriptions Subscription[]
+
+  @@map("plan")
+}
+
+model Tenant {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String
+  phone               String?
+  address             String?
+  logoUrl             String?  @map("logo_url")
+  registrationDetails String?  @map("registration_details")
+  inactiveAfterDays   Int      @default(30) @map("inactive_after_days")
+  /// active, suspended, cancelled
+  status              String   @default("active")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subscriptions Subscription[]
+  branches      Branch[]
+  roles         Role[]
+  users         UserAccount[]
+  auditLogs     AuditLog[]
+
+  @@map("tenant")
+}
+
+model Subscription {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  planId      String    @map("plan_id") @db.Uuid
+  /// trial, active, suspended, cancelled
+  status      String    @default("trial")
+  trialEndsOn DateTime? @map("trial_ends_on") @db.Date
+  startedAt   DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt     DateTime? @map("ended_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  @@index([tenantId])
+  @@map("subscription")
+}
+
+model Branch {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  name     String
+  /// Unique per tenant; locked after the first receipt (CON-10, enforced in the application).
+  code     String
+  address  String?
+  phone    String?
+  isActive Boolean @default(true) @map("is_active")
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id])
+  users  UserAccount[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, code])
+  @@map("branch")
+}
+
+// ---------------------------------------------------------------- users, roles, permissions (ER 3.2)
+
+model Role {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String  @map("tenant_id") @db.Uuid
+  /// owner, receptionist, physiotherapist (CON-15)
+  key      String
+  name     String
+  isSystem Boolean @default(true) @map("is_system")
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  permissions RolePermission[]
+  users       UserAccount[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, key])
+  @@map("role")
+}
+
+/// Global catalogue fixed by the product (API-Requirements section 4).
+model Permission {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// for example payment.record
+  key         String  @unique
+  description String?
+
+  roles RolePermission[]
+
+  @@map("permission")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model UserAccount {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// null for super-admin
+  tenantId         String?   @map("tenant_id") @db.Uuid
+  /// null for owner and super-admin
+  branchId         String?   @map("branch_id") @db.Uuid
+  /// null for super-admin
+  roleId           String?   @map("role_id") @db.Uuid
+  /// Unique case-insensitively across the platform (CON-13): index on lower(email) in the migration SQL.
+  email            String
+  fullName         String    @map("full_name")
+  passwordHash     String    @map("password_hash")
+  isSuperAdmin     Boolean   @default(false) @map("is_super_admin")
+  isActive         Boolean   @default(true) @map("is_active")
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt      DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  branch Branch? @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  role   Role?   @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Restrict)
+
+  trustedDevices      TrustedDevice[]
+  otpChallenges       OtpChallenge[]
+  passwordResetTokens PasswordResetToken[]
+  sessions            UserSession[]
+  auditLogs           AuditLog[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId])
+  @@map("user_account")
+}
+
+model TrustedDevice {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @map("token_hash")
+  /// browser and device description
+  label      String?
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash])
+  @@index([userId])
+  @@map("trusted_device")
+}
+
+model OtpChallenge {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  codeHash   String    @map("code_hash")
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  attempts   Int       @default(0)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("otp_challenge")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash])
+  @@index([userId])
+  @@map("password_reset_token")
+}
+
+/// Server-side session (httpOnly cookie carries only the opaque token; only its hash is stored).
+/// Not in the ER document: added for the decided session design (server/CLAUDE.md).
+model UserSession {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @map("token_hash")
+  csrfToken  String    @map("csrf_token")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  user UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenHash])
+  @@index([userId])
+  @@map("user_session")
+}
+
+// ---------------------------------------------------------------- audit (ER 3.5)
+
+/// Append-only (SEC-008): the application database role gets INSERT and SELECT only.
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// null for platform events
+  tenantId   String?  @map("tenant_id") @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  branchId   String?  @map("branch_id") @db.Uuid
+  /// for example patient.view, payment.record
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id") @db.Uuid
+  /// before and after values, reasons
+  details    Json?
+  ipAddress  String?  @map("ip_address") @db.Inet
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user   UserAccount? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, targetType, targetId])
+  @@map("audit_log")
 }
