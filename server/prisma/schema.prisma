@@ -1,0 +1,14 @@
+// Prisma schema. Intentionally has no models yet: this step only scaffolds the backend.
+// Models come from docs/ER-Diagram.md in a later step.
+//
+// Prisma 7: the connection URL lives in prisma.config.ts, not here.
+
+generator client {
+  provider = "prisma-client"
+  // Inside src/ so the TypeScript build can compile it. Generated, so git-ignored.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
