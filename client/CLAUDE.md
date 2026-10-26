@@ -1,0 +1,66 @@
+# CLAUDE.md: client
+
+React PWA for the physiotherapy clinic product. Read `../docs/PRD.md` (requirements), `../docs/API-Requirements.md`
+(the contract with the server) and `../docs/User-Stories.md` (acceptance criteria) before building a feature.
+Requirement IDs (`PAT-001`, `BILL-003`, ...) in those files are the source of truth; cite them in commits and tests.
+
+## Commands
+
+```bash
+npm run dev        # Vite on :5173, API proxied to :4000 when VITE_USE_MOCK_API=false
+npm test           # Vitest (money, financial year, mock business rules)
+npm run typecheck  # tsc -b
+npm run lint       # oxlint; warnings inside src/components/ui/ are expected (generated shadcn files)
+npm run build      # tsc -b && vite build, also generates the service worker
+npm run generate-pwa-assets   # PNG icons from public/favicon.svg
+```
+
+Run typecheck, lint, test and build before saying a change is done.
+
+## Stack
+
+Vite 8 · React 19 · TypeScript 6 (strict, `noUncheckedIndexedAccess`, `erasableSyntaxOnly`) · Tailwind v4 ·
+shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query · React Hook Form · vite-plugin-pwa.
+
+## Layout
+
+- `src/api/` is the only code that knows about the backend: `types.ts` (the `Api` contract), `mock.ts` (default, in-browser),
+  `http.ts` (real `/api/v1` client), `errors.ts`. Screens import from `@/api`, never from `mock`/`http`.
+- `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
+- `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
+- `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.
+
+## Rules
+
+- **Money is a string with two decimals** (`"500.00"`). Do arithmetic only in integer paise via `lib/money.ts`. Never use floats.
+- **All UI text goes in `src/strings/en.ts`.** English only for the MVP, but keep text out of components.
+- **Permissions are UI hints.** Hide actions with `useCan` or `<Can>`; the server enforces every one again. Permission keys
+  are the `PermissionKey` union (see API doc section 4).
+- **Online only.** Disable saving with `useOnlineStatus` and show `t.offline.blocked`. Never imply a save worked when it did not.
+- **Idempotency.** Attendance and payments send an `Idempotency-Key`; keep the same key after a `NETWORK` error, regenerate it
+  after any other error (see `MarkAttendanceDialog`).
+- **No delete actions** for clinical or financial data. Corrections are reversals (not built yet).
+- Dates and "today" use India time (`lib/date.ts`). Financial year is April to March.
+- Match the receptionist's pace: big tap targets (`h-10`), minimal typing, dialogs reset on every open.
+- Reference design: grey frame, left sidebar, white content panel, blue primary, breadcrumb page header, underlined tabs,
+  bordered cards (`SectionCard`), soft pills (`SoftPill`). Reuse these instead of inventing new patterns.
+
+## Gotchas
+
+- `erasableSyntaxOnly` is on: no `enum`, no constructor parameter properties, no `namespace`. Declare class fields explicitly.
+- shadcn here is Base UI, not Radix. Use `render`, not `asChild`. For link-styled buttons use
+  `<Link className={buttonVariants({...})}>`, not `<Button render={<Link/>}>`. `DropdownMenuLabel` must sit inside a
+  `DropdownMenuGroup`. For simple dropdowns prefer a native `<select>` (`selectClassName` in `common/Field.tsx`).
+- The shadcn `cn` helper comes from the `cn` package (`src/lib/utils.ts` re-exports it). That is shadcn's own package; keep it.
+- `@hookform/resolvers` is deliberately not installed (peer-dependency conflict). Validate with React Hook Form rules or zod.
+- Add components with `npx shadcn@latest add <name>`; do not hand-copy them.
+- Tests pin the time zone to `Asia/Kolkata` in `vitest.config.ts`; the mock seed assumes India time.
+- The mock keeps data in `localStorage` key `physiocms.mockdb.v1`. Clear it to reset. Demo logins: `owner@`, `reception@`,
+  `therapist@demo.clinic`, password `demo1234`, email code `123456`.
+- The service worker caches the app shell only. Never add runtime caching for `/api/` (patient data must not be cached).
+- The default receptionist cannot start an episode (PRD matrix). Open decision; do not silently change the permission.
+
+## Not built yet
+
+Assessment and treatment-plan forms, discharge, reversals and refunds, PDF receipts and invoices, owner dashboard,
+staff and role screens, reports, import/export, audit log viewer. Build on the `dev` branch via a feature branch.
