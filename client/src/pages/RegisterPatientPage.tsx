@@ -10,7 +10,14 @@ import { SectionCard } from '@/components/common/SectionCard'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { t } from '@/strings/en'
@@ -175,7 +182,9 @@ export function RegisterPatientPage() {
           </div>
 
           <details className="mt-6 rounded-lg border">
-            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">{t.register.moreDetails}</summary>
+            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
+              {t.register.moreDetails}
+            </summary>
             <div className="grid gap-5 border-t p-4 sm:grid-cols-2">
               <Field id="phoneContactType" label={t.register.phoneContactType}>
                 <select id="phoneContactType" className={selectClassName} {...register('phoneContactType')}>

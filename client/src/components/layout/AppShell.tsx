@@ -76,7 +76,11 @@ export function AppShell() {
       {/* Mobile sidebar */}
       {menuOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <button className="absolute inset-0 bg-black/40" aria-label={t.nav.closeMenu} onClick={() => setMenuOpen(false)} />
+          <button
+            className="absolute inset-0 bg-black/40"
+            aria-label={t.nav.closeMenu}
+            onClick={() => setMenuOpen(false)}
+          />
           <aside className="absolute inset-y-0 left-0 flex w-64 flex-col gap-8 bg-app px-5 py-6 shadow-xl">
             <div className="flex items-center justify-between">
               <Logo />
@@ -93,7 +97,13 @@ export function AppShell() {
         <div className="flex flex-1 flex-col overflow-hidden bg-background md:rounded-2xl md:border md:shadow-sm">
           <OfflineBanner />
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 md:px-6">
-            <Button variant="ghost" size="icon-lg" className="md:hidden" aria-label={t.nav.menu} onClick={() => setMenuOpen(true)}>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              className="md:hidden"
+              aria-label={t.nav.menu}
+              onClick={() => setMenuOpen(true)}
+            >
               <Menu aria-hidden />
             </Button>
             <Logo className="md:hidden" />

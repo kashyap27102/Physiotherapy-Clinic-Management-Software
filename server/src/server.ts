@@ -27,7 +27,9 @@ async function shutdown(signal: string): Promise<void> {
   forceExit.unref()
 
   server.close(async (error) => {
-    await disconnectPrisma().catch((disconnectError: unknown) => logger.error({ err: disconnectError }, 'Database disconnect failed'))
+    await disconnectPrisma().catch((disconnectError: unknown) =>
+      logger.error({ err: disconnectError }, 'Database disconnect failed'),
+    )
     process.exit(error ? 1 : 0)
   })
 }

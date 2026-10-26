@@ -34,7 +34,10 @@ export function LoginPage() {
       if (result.status === 'otp_required') setChallengeId(result.challengeId)
       else signedIn(result.user)
     },
-    onError: (e) => setError(isApiError(e, 'INVALID_CREDENTIALS') ? t.auth.invalidCredentials : errorMessage(e, t.common.genericError)),
+    onError: (e) =>
+      setError(
+        isApiError(e, 'INVALID_CREDENTIALS') ? t.auth.invalidCredentials : errorMessage(e, t.common.genericError),
+      ),
   })
 
   const verify = useMutation({
@@ -98,7 +101,12 @@ export function LoginPage() {
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-                  <Button type="submit" size="lg" className="h-10 w-full" disabled={!email || !password || login.isPending}>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-10 w-full"
+                    disabled={!email || !password || login.isPending}
+                  >
                     {login.isPending ? t.auth.signingIn : t.auth.signIn}
                   </Button>
                 </form>
@@ -124,7 +132,12 @@ export function LoginPage() {
                     />
                   </Field>
                   <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" className="size-4" checked={trustDevice} onChange={(e) => setTrustDevice(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      className="size-4"
+                      checked={trustDevice}
+                      onChange={(e) => setTrustDevice(e.target.checked)}
+                    />
                     {t.auth.otpTrust}
                   </label>
                   {error && (
@@ -132,7 +145,12 @@ export function LoginPage() {
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-                  <Button type="submit" size="lg" className="h-10 w-full" disabled={code.length !== 6 || verify.isPending}>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-10 w-full"
+                    disabled={code.length !== 6 || verify.isPending}
+                  >
                     {verify.isPending ? t.auth.otpVerifying : t.auth.otpVerify}
                   </Button>
                   <Button

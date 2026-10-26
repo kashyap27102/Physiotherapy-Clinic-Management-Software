@@ -11,5 +11,9 @@ function subscribe(onChange: () => void) {
 
 /** The product is online-only (PRD Q32): screens use this to block saving when offline. */
 export function useOnlineStatus(): boolean {
-  return useSyncExternalStore(subscribe, () => navigator.onLine, () => true)
+  return useSyncExternalStore(
+    subscribe,
+    () => navigator.onLine,
+    () => true,
+  )
 }

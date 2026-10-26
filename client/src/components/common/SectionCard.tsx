@@ -27,7 +27,13 @@ export function SectionCard({ title, action, badge, className, bodyClassName, ch
 }
 
 /** Soft green pill used for counts and "active" states (like "2 sessions" in the reference). */
-export function SoftPill({ children, tone = 'success' }: { children: ReactNode; tone?: 'success' | 'primary' | 'muted' | 'danger' }) {
+export function SoftPill({
+  children,
+  tone = 'success',
+}: {
+  children: ReactNode
+  tone?: 'success' | 'primary' | 'muted' | 'danger'
+}) {
   const tones = {
     success: 'bg-success-soft text-success',
     primary: 'bg-accent text-accent-foreground',
@@ -35,7 +41,12 @@ export function SoftPill({ children, tone = 'success' }: { children: ReactNode; 
     danger: 'bg-destructive/10 text-destructive',
   }
   return (
-    <span className={cn('inline-flex h-5 items-center rounded-full px-2 text-xs font-medium whitespace-nowrap', tones[tone])}>
+    <span
+      className={cn(
+        'inline-flex h-5 items-center rounded-full px-2 text-xs font-medium whitespace-nowrap',
+        tones[tone],
+      )}
+    >
       {children}
     </span>
   )

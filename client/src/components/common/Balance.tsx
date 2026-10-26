@@ -28,7 +28,11 @@ export function BalanceBanner({ balance }: { balance: Balance }) {
         ? 'border-emerald-600/40 bg-emerald-600/5 text-emerald-700 dark:text-emerald-400'
         : 'border-border bg-muted/40 text-muted-foreground'
   const title =
-    balance.state === 'due' ? t.balance.dueTitle : balance.state === 'credit' ? t.balance.creditTitle : t.balance.zeroTitle
+    balance.state === 'due'
+      ? t.balance.dueTitle
+      : balance.state === 'credit'
+        ? t.balance.creditTitle
+        : t.balance.zeroTitle
   return (
     <div className={cn('rounded-xl border px-4 py-3', tone)} role="status">
       <div className="text-xs font-medium uppercase tracking-wide">{title}</div>

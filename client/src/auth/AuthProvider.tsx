@@ -22,10 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signedIn = useCallback((user: SessionUser) => {
-    queryClient.clear()
-    setState({ status: 'authenticated', user })
-  }, [queryClient])
+  const signedIn = useCallback(
+    (user: SessionUser) => {
+      queryClient.clear()
+      setState({ status: 'authenticated', user })
+    },
+    [queryClient],
+  )
 
   const signOut = useCallback(async () => {
     try {
