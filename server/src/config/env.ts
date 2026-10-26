@@ -33,6 +33,12 @@ const schema = z.object({
     .default('false')
     .transform((value) => value === 'true'),
 
+  /** Resend API key. Without it the API still boots; sending email answers 503. Never log this value. */
+  RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+
+  /** Sender shown on every email, for example "Clinic Software <no-reply@yourdomain.com>". Must be a Resend-verified sender. */
+  EMAIL_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
+
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(300),
 })
 

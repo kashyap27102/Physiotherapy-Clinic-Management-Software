@@ -32,6 +32,22 @@ jobs:
 
   server:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
     defaults:
       run:
         working-directory: server
@@ -44,10 +60,11 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm run prisma:generate
-        env:
-          DATABASE_URL: postgresql://user:pass@localhost:5432/ci
+      - run: npm run prisma:migrate:deploy
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+        env:
+          TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       - run: npm run build

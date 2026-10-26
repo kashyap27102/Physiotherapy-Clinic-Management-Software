@@ -42,9 +42,10 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
 - **Error format**: always `{ error: { code, message, fields?, details?, requestId } }`. Throw `AppError` or helpers
   (`notFound`, `forbidden`, `validationError`). Use `parseInput(schema, data)` for body, query and params (422 with per-field messages).
   Unexpected errors become a generic 500; never put internals in a message.
-- **Tenant isolation**: every query is scoped by the signed-in user's tenant, taken from the session, never from the client.
+- **Tenant isolation**: feature modules get their database handle only from `forTenant(tenantId)` (`src/db/tenantScope.ts`), which narrows every read/update/delete to the clinic and stamps every create; never use `getPrisma()` or raw SQL in a feature module. New Prisma models must be given a policy there (compile error otherwise). Every query is scoped by the signed-in user's tenant, taken from the session, never from the client.
   A record of another clinic answers **404**, never 403. Add a cross-tenant test for every new endpoint.
 - **Authorization** is checked on the server for every action with permission keys (API doc section 4), in the service layer.
+- **Email** goes through `getEmailSender()` (`src/lib/email`, Resend over plain fetch); build messages with `templates.ts`. Unconfigured or failing email answers 503. Tests swap it with `setEmailSender`. Never log recipients, subjects, bodies, codes or links.
 - **Money** is `numeric(12,2)` in the database and a string in JSON. No floats. Balances are computed from ledger entries.
 - **Append-only**: ledger entries, billing documents, audit entries and versioned clinical rows are never updated or deleted.
   Corrections are reversal entries. The app's database role gets INSERT and SELECT only on those tables.
@@ -68,8 +69,8 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
   `prisma` tag is an 8.0 release candidate that does not match the client.
 - Do **not** run `prisma init`. It downloads third-party agent skill files and writes a placeholder `.env` with fake credentials.
 - `getPrisma()` throws a 503 `SERVICE_UNAVAILABLE` when `DATABASE_URL` is empty; the app must keep booting without a database.
-- Tests set `NODE_ENV=test` and an empty `DATABASE_URL` in `vitest.config.ts`; keep tests independent of a real database
-  (integration tests against a real database come with the first migration).
+- Tests set `NODE_ENV=test` and an empty `DATABASE_URL` in `vitest.config.ts`; keep ordinary tests independent of a real database.
+  Database tests are named `*.db.test.ts`, read `TEST_DATABASE_URL` and are skipped without it (set it in `.env`; CI uses a Postgres service).
 - Keep shell commands simple on Windows: chaining many heredocs in one Bash call can fail to parse; write files with the file tool.
 - The folder was renamed from `backend` to `server`. If a rename or delete is ever denied, VS Code's file watcher is the usual cause.
 
