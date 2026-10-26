@@ -1,0 +1,16 @@
+{
+  "name": "physio-clinic-cms",
+  "private": true,
+  "description": "Repo-level tooling only (git hooks). The app lives in client/ and server/.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css,md,html,yml,yaml}": "prettier --write --ignore-path .prettierignore"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.0",
+    "prettier": "^3.6.0"
+  }
+}
