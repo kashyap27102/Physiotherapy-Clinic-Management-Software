@@ -45,6 +45,7 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
 - **Tenant isolation**: feature modules get their database handle only from `forTenant(tenantId)` (`src/db/tenantScope.ts`), which narrows every read/update/delete to the clinic and stamps every create; never use `getPrisma()` or raw SQL in a feature module. New Prisma models must be given a policy there (compile error otherwise). Every query is scoped by the signed-in user's tenant, taken from the session, never from the client.
   A record of another clinic answers **404**, never 403. Add a cross-tenant test for every new endpoint.
 - **Authorization** is checked on the server for every action with permission keys (API doc section 4), in the service layer.
+- **Email** goes through `getEmailSender()` (`src/lib/email`, Resend over plain fetch); build messages with `templates.ts`. Unconfigured or failing email answers 503. Tests swap it with `setEmailSender`. Never log recipients, subjects, bodies, codes or links.
 - **Money** is `numeric(12,2)` in the database and a string in JSON. No floats. Balances are computed from ledger entries.
 - **Append-only**: ledger entries, billing documents, audit entries and versioned clinical rows are never updated or deleted.
   Corrections are reversal entries. The app's database role gets INSERT and SELECT only on those tables.

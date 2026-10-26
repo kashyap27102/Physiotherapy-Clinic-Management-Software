@@ -21,7 +21,7 @@
 - [x] Tenant-scoped data access layer and **automated tenant-isolation tests** (SEC-001)
 - [x] Central permission-check middleware (SEC-006)
 - [x] Centralised error format, request validation, and structured logging without patient data (NFR-010)
-- [ ] Email delivery service connected (INT-001)
+- [x] Email delivery service connected (INT-001). Resend adapter built; send a real test with `npm run email:test` in `server`
 - [ ] Error monitoring connected (INT-005)
 - [x] UI text kept in a strings file for future translation (NFR-003)
 
