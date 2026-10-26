@@ -18,7 +18,8 @@ import { queryKeys } from '@/lib/queryKeys'
 import { t } from '@/strings/en'
 
 // Underlined tab style from the reference design.
-const tabListClass = 'group-data-horizontal/tabs:h-11 mb-6 w-full justify-start gap-2 overflow-x-auto rounded-none border-b p-0'
+const tabListClass =
+  'group-data-horizontal/tabs:h-11 mb-6 w-full justify-start gap-2 overflow-x-auto rounded-none border-b p-0'
 const tabClass =
   'h-full flex-none px-3 data-active:text-primary group-data-horizontal/tabs:after:-bottom-px group-data-[variant=line]/tabs-list:after:bg-primary'
 
@@ -64,7 +65,11 @@ export function PatientProfilePage() {
     <>
       <PageHeader
         crumbs={[{ label: t.nav.patients, to: '/' }, { label: patient.fullName }]}
-        badge={<SoftPill tone={patient.status === 'active' ? 'success' : 'muted'}>{t.patient.status[patient.status]}</SoftPill>}
+        badge={
+          <SoftPill tone={patient.status === 'active' ? 'success' : 'muted'}>
+            {t.patient.status[patient.status]}
+          </SoftPill>
+        }
         actions={
           <>
             {canPay && (

@@ -31,7 +31,10 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 /* ------------------------------- Overview tab ------------------------------- */
 
 export function OverviewTab({ patient }: { patient: PatientDetail }) {
-  const episodes = useQuery({ queryKey: queryKeys.patientEpisodes(patient.id), queryFn: () => api.patients.episodes(patient.id) })
+  const episodes = useQuery({
+    queryKey: queryKeys.patientEpisodes(patient.id),
+    queryFn: () => api.patients.episodes(patient.id),
+  })
   const active = episodes.data?.find((e) => e.status === 'active')
 
   return (
@@ -50,7 +53,10 @@ export function OverviewTab({ patient }: { patient: PatientDetail }) {
           <Detail label={t.patient.emergencyContact} value={patient.emergencyContact} />
           <Detail label={t.patient.occupation} value={patient.occupation} />
           <Detail label={t.patient.referringDoctor} value={patient.referringDoctor} />
-          <Detail label={t.patient.registeredAt} value={`${patient.registeredBranch} · ${formatDate(patient.createdAt)}`} />
+          <Detail
+            label={t.patient.registeredAt}
+            value={`${patient.registeredBranch} · ${formatDate(patient.createdAt)}`}
+          />
           <div className="sm:col-span-2 lg:col-span-3">
             <Detail label={t.patient.notes} value={patient.notes} />
           </div>
@@ -77,7 +83,10 @@ function EpisodeCard({ episode }: { episode: EpisodeSummary }) {
     <details className="group rounded-xl border bg-muted/30">
       <summary className="cursor-pointer list-none px-4 py-3.5 [&::-webkit-details-marker]:hidden">
         <div className="flex items-center gap-2">
-          <ChevronRight className="size-4 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+          <ChevronRight
+            className="size-4 text-muted-foreground transition-transform group-open:rotate-90"
+            aria-hidden
+          />
           <Stethoscope className="size-4 text-primary" aria-hidden />
           <span className="font-semibold">{title}</span>
         </div>
@@ -132,7 +141,10 @@ function EpisodeCard({ episode }: { episode: EpisodeSummary }) {
               <Detail label={t.episode.frequency} value={episode.plan.frequency} />
               <Detail label={t.episode.therapyTypes} value={episode.plan.therapyTypes} />
               <Detail label={t.episode.plannedSessions} value={planned ? String(planned) : null} />
-              <Detail label={t.episode.estimatedCost} value={episode.plan.estimatedCost ? formatINR(episode.plan.estimatedCost) : null} />
+              <Detail
+                label={t.episode.estimatedCost}
+                value={episode.plan.estimatedCost ? formatINR(episode.plan.estimatedCost) : null}
+              />
             </dl>
           ) : (
             <p className="text-sm text-muted-foreground">{t.episode.noPlan}</p>
@@ -145,14 +157,23 @@ function EpisodeCard({ episode }: { episode: EpisodeSummary }) {
 
 export function TreatmentTab({ patientId }: { patientId: string }) {
   const canSeeClinical = useCan('clinical.view')
-  const episodes = useQuery({ queryKey: queryKeys.patientEpisodes(patientId), queryFn: () => api.patients.episodes(patientId) })
+  const episodes = useQuery({
+    queryKey: queryKeys.patientEpisodes(patientId),
+    queryFn: () => api.patients.episodes(patientId),
+  })
 
   if (!canSeeClinical) return <p className="text-sm text-muted-foreground">{t.patient.clinicalHidden}</p>
   return (
     <SectionCard title={t.patient.tabs.treatment}>
       {episodes.isLoading && <Loading />}
-      {episodes.data && episodes.data.length === 0 && <p className="text-sm text-muted-foreground">{t.patient.noActiveEpisode}</p>}
-      <div className="space-y-3">{episodes.data?.map((episode) => <EpisodeCard key={episode.id} episode={episode} />)}</div>
+      {episodes.data && episodes.data.length === 0 && (
+        <p className="text-sm text-muted-foreground">{t.patient.noActiveEpisode}</p>
+      )}
+      <div className="space-y-3">
+        {episodes.data?.map((episode) => (
+          <EpisodeCard key={episode.id} episode={episode} />
+        ))}
+      </div>
     </SectionCard>
   )
 }
@@ -173,12 +194,18 @@ function sessionNumbers(visits: VisitRecord[]): Map<string, number> {
 }
 
 export function VisitsTab({ patientId }: { patientId: string }) {
-  const visits = useQuery({ queryKey: queryKeys.patientVisits(patientId), queryFn: () => api.patients.visits(patientId) })
+  const visits = useQuery({
+    queryKey: queryKeys.patientVisits(patientId),
+    queryFn: () => api.patients.visits(patientId),
+  })
   const numbers = visits.data ? sessionNumbers(visits.data) : new Map<string, number>()
   const count = visits.data ? visits.data.filter((v) => !v.reversed).length : 0
 
   return (
-    <SectionCard title={t.patient.tabs.visits} badge={visits.data ? <SoftPill>{t.patient.sessionsDone(count)}</SoftPill> : undefined}>
+    <SectionCard
+      title={t.patient.tabs.visits}
+      badge={visits.data ? <SoftPill>{t.patient.sessionsDone(count)}</SoftPill> : undefined}
+    >
       {visits.isLoading && <Loading />}
       {visits.data && visits.data.length === 0 && <p className="text-sm text-muted-foreground">{t.patient.noVisits}</p>}
       <ol className="relative space-y-3 border-l-2 border-border pl-6">
@@ -211,7 +238,11 @@ export function VisitsTab({ patientId }: { patientId: string }) {
                 </span>
                 <span className="rounded-full border px-2 py-0.5 text-xs text-foreground">{formatINR(visit.fee)}</span>
               </div>
-              {visit.feeOverrideReason && <p className="mt-1.5 text-xs text-muted-foreground">{t.visit.feeChanged}: {visit.feeOverrideReason}</p>}
+              {visit.feeOverrideReason && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {t.visit.feeChanged}: {visit.feeOverrideReason}
+                </p>
+              )}
             </div>
           </li>
         ))}
@@ -239,14 +270,22 @@ export function PaymentsTab({ patientId }: { patientId: string }) {
   if (!canSee) return <p className="text-sm text-muted-foreground">{t.patient.paymentsHidden}</p>
   return (
     <SectionCard title={t.patient.tabs.payments} bodyClassName="p-0">
-      {ledger.isLoading && <div className="p-5"><Loading /></div>}
-      {ledger.data && ledger.data.length === 0 && <p className="p-5 text-sm text-muted-foreground">{t.patient.noPayments}</p>}
+      {ledger.isLoading && (
+        <div className="p-5">
+          <Loading />
+        </div>
+      )}
+      {ledger.data && ledger.data.length === 0 && (
+        <p className="p-5 text-sm text-muted-foreground">{t.patient.noPayments}</p>
+      )}
       <ul className="divide-y">
         {ledger.data?.map((entry) => (
           <li key={entry.id} className="flex flex-wrap items-center gap-3 px-5 py-3.5">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className={cn('text-sm font-medium', entry.reversedByEntryId && 'line-through')}>{t.ledger[entry.type]}</span>
+                <span className={cn('text-sm font-medium', entry.reversedByEntryId && 'line-through')}>
+                  {t.ledger[entry.type]}
+                </span>
                 {entry.reversedByEntryId && <SoftPill tone="danger">{t.ledger.reversed}</SoftPill>}
                 {entry.method && <SoftPill tone="muted">{t.payment.methods[entry.method]}</SoftPill>}
                 <SoftPill tone="muted">{entry.branchName}</SoftPill>

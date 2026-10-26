@@ -157,7 +157,8 @@ export const t = {
     submitting: 'Registering…',
     created: 'Patient registered.',
     duplicateTitle: 'Possible duplicate',
-    duplicateBody: 'A patient with this phone number already exists. Family members can share a number, so you may still continue.',
+    duplicateBody:
+      'A patient with this phone number already exists. Family members can share a number, so you may still continue.',
     openExisting: 'Open',
     createAnyway: 'Create anyway',
     errors: {

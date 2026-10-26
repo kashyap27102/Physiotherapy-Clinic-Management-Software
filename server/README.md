@@ -72,17 +72,17 @@ rules, permission checks) → data access with Prisma, as in PRD NFR-011.
 
 ## Endpoints today
 
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/api/v1/health` | Liveness, no data |
-| GET | `/api/v1/health/ready` | Readiness; `503` if the database is configured but unreachable. Addition to the API doc |
-| GET | `/api/v1/version` | Name and version |
+| Method | Path                   | Notes                                                                                   |
+| ------ | ---------------------- | --------------------------------------------------------------------------------------- |
+| GET    | `/api/v1/health`       | Liveness, no data                                                                       |
+| GET    | `/api/v1/health/ready` | Readiness; `503` if the database is configured but unreachable. Addition to the API doc |
+| GET    | `/api/v1/version`      | Name and version                                                                        |
 
 ## Decisions recorded
 
-| Topic | Decision |
-|---|---|
-| Database access | Prisma |
-| Development database | Hosted (Render or Neon), test data only |
-| Sessions | Server-side sessions stored in PostgreSQL, `httpOnly` cookie, CSRF protection (not built yet) |
-| Scope of this step | Skeleton only |
+| Topic                | Decision                                                                                      |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| Database access      | Prisma                                                                                        |
+| Development database | Hosted (Render or Neon), test data only                                                       |
+| Sessions             | Server-side sessions stored in PostgreSQL, `httpOnly` cookie, CSRF protection (not built yet) |
+| Scope of this step   | Skeleton only                                                                                 |

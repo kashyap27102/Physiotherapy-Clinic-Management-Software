@@ -48,9 +48,7 @@ export interface SessionUser {
   permissions: PermissionKey[]
 }
 
-export type LoginResult =
-  | { status: 'ok'; user: SessionUser }
-  | { status: 'otp_required'; challengeId: string }
+export type LoginResult = { status: 'ok'; user: SessionUser } | { status: 'otp_required'; challengeId: string }
 
 export interface Paged<T> {
   items: T[]

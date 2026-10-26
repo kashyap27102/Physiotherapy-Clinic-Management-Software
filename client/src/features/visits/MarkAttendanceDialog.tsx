@@ -6,7 +6,14 @@ import { useCan, useUser } from '@/auth/hooks'
 import { Field, inputClassName, selectClassName } from '@/components/common/Field'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR, isValidAmount } from '@/lib/money'
@@ -106,11 +113,17 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
     <>
       <DialogHeader>
         <DialogTitle>{t.attendance.title}</DialogTitle>
-        <DialogDescription>{patient ? `${patient.fullName} · ${patient.phone}` : t.attendance.description}</DialogDescription>
+        <DialogDescription>
+          {patient ? `${patient.fullName} · ${patient.phone}` : t.attendance.description}
+        </DialogDescription>
       </DialogHeader>
 
       {patientQuery.isLoading && <p className="text-sm text-muted-foreground">{t.common.loading}</p>}
-      {patientQuery.isError && <Alert variant="destructive"><AlertDescription>{t.patient.notFound}</AlertDescription></Alert>}
+      {patientQuery.isError && (
+        <Alert variant="destructive">
+          <AlertDescription>{t.patient.notFound}</AlertDescription>
+        </Alert>
+      )}
 
       {patient && patient.balance?.state === 'due' && (
         <Alert variant="destructive">

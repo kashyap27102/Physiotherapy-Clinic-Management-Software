@@ -6,7 +6,14 @@ import { BalanceBadge } from '@/components/common/Balance'
 import { Field, inputClassName } from '@/components/common/Field'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR, fromPaise, toPaise } from '@/lib/money'
@@ -25,9 +32,7 @@ interface Props {
 export function RecordPaymentDialog({ patientId, open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        {open && <PaymentForm patientId={patientId} onClose={() => onOpenChange(false)} />}
-      </DialogContent>
+      <DialogContent>{open && <PaymentForm patientId={patientId} onClose={() => onOpenChange(false)} />}</DialogContent>
     </Dialog>
   )
 }
@@ -84,7 +89,9 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
     <>
       <DialogHeader>
         <DialogTitle>{t.payment.title}</DialogTitle>
-        <DialogDescription>{patient ? `${patient.fullName} · ${patient.phone}` : t.payment.description}</DialogDescription>
+        <DialogDescription>
+          {patient ? `${patient.fullName} · ${patient.phone}` : t.payment.description}
+        </DialogDescription>
       </DialogHeader>
 
       {patientQuery.isLoading && <p className="text-sm text-muted-foreground">{t.common.loading}</p>}
@@ -111,7 +118,12 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
             onChange={(event) => setAmountText(event.target.value)}
           />
           {current?.state === 'due' && (
-            <Button type="button" variant="outline" className="h-10 shrink-0" onClick={() => setAmountText(current.amount)}>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 shrink-0"
+              onClick={() => setAmountText(current.amount)}
+            >
               {t.payment.payFullDues}
             </Button>
           )}
@@ -143,14 +155,23 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
         label={method === 'bank_transfer' ? t.payment.referenceRequired : t.payment.reference}
         error={method === 'bank_transfer' && referenceMissing && amountText ? t.payment.referenceError : undefined}
       >
-        <Input id="pay-ref" className={inputClassName} value={reference} onChange={(event) => setReference(event.target.value)} />
+        <Input
+          id="pay-ref"
+          className={inputClassName}
+          value={reference}
+          onChange={(event) => setReference(event.target.value)}
+        />
       </Field>
 
       {preview && (
         <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
           <span className="text-muted-foreground">{t.payment.balanceAfter}</span>
           <span className="font-medium">
-            {preview.state === 'zero' ? t.balance.zero : preview.state === 'due' ? t.balance.due(formatINR(preview.amount)) : t.balance.credit(formatINR(preview.amount))}
+            {preview.state === 'zero'
+              ? t.balance.zero
+              : preview.state === 'due'
+                ? t.balance.due(formatINR(preview.amount))
+                : t.balance.credit(formatINR(preview.amount))}
           </span>
         </div>
       )}
@@ -166,7 +187,14 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
         <Button variant="outline" size="lg" onClick={onClose}>
           {t.common.cancel}
         </Button>
-        <Button size="lg" disabled={!canSubmit || record.isPending} onClick={() => { setFormError(null); record.mutate() }}>
+        <Button
+          size="lg"
+          disabled={!canSubmit || record.isPending}
+          onClick={() => {
+            setFormError(null)
+            record.mutate()
+          }}
+        >
           {record.isPending ? t.payment.submitting : t.payment.submit}
         </Button>
       </DialogFooter>

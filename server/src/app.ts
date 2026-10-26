@@ -34,7 +34,8 @@ export function createApp(): Express {
         // Response headers are noise in the access log (and cookies must never be logged).
         res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       },
-      customLogLevel: (_req, res, error) => (error || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
+      customLogLevel: (_req, res, error) =>
+        error || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info',
     }),
   )
 

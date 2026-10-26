@@ -29,7 +29,10 @@ describe('mock backend business rules', () => {
     const login = await api.auth.login('reception@demo.clinic', 'demo1234')
     expect(login.status).toBe('otp_required')
     if (login.status !== 'otp_required') return
-    await expectError(api.auth.verifyOtp({ challengeId: login.challengeId, code: '000000', trustDevice: false }), 'OTP_INVALID')
+    await expectError(
+      api.auth.verifyOtp({ challengeId: login.challengeId, code: '000000', trustDevice: false }),
+      'OTP_INVALID',
+    )
     await expectError(api.auth.login('reception@demo.clinic', 'wrong'), 'INVALID_CREDENTIALS')
   })
 
@@ -61,15 +64,24 @@ describe('mock backend business rules', () => {
     expect(again.receipt.number).toBe(paid.receipt.number)
 
     // Advance payments become credit.
-    const advance = await api.payments.create({ patientId: ravi.id, amount: '2500', method: 'upi' }, crypto.randomUUID())
+    const advance = await api.payments.create(
+      { patientId: ravi.id, amount: '2500', method: 'upi' },
+      crypto.randomUUID(),
+    )
     expect(advance.balanceAfter).toEqual({ amount: '2500.00', state: 'credit' })
   })
 
   it('validates payments', async () => {
     await signIn('reception@demo.clinic')
     const ravi = await findPatient('ravi')
-    await expectError(api.payments.create({ patientId: ravi.id, amount: '0', method: 'cash' }, crypto.randomUUID()), 'VALIDATION_FAILED')
-    await expectError(api.payments.create({ patientId: ravi.id, amount: '100', method: 'bank_transfer' }, crypto.randomUUID()), 'VALIDATION_FAILED')
+    await expectError(
+      api.payments.create({ patientId: ravi.id, amount: '0', method: 'cash' }, crypto.randomUUID()),
+      'VALIDATION_FAILED',
+    )
+    await expectError(
+      api.payments.create({ patientId: ravi.id, amount: '100', method: 'bank_transfer' }, crypto.randomUUID()),
+      'VALIDATION_FAILED',
+    )
   })
 
   it('enforces permissions on the server side', async () => {
@@ -78,7 +90,10 @@ describe('mock backend business rules', () => {
     const ravi = await findPatient('ravi')
     // Receptionist has no fee.override and no episode.manage by default.
     await expectError(
-      api.visits.create({ patientId: ravi.id, confirmSecondVisitToday: true, feeOverride: { amount: '300', reason: 'discount' } }, crypto.randomUUID()),
+      api.visits.create(
+        { patientId: ravi.id, confirmSecondVisitToday: true, feeOverride: { amount: '300', reason: 'discount' } },
+        crypto.randomUUID(),
+      ),
       'PERMISSION_DENIED',
     )
     await expectError(api.episodes.start(kiran.id), 'PERMISSION_DENIED')
@@ -96,7 +111,10 @@ describe('mock backend business rules', () => {
     await signIn('therapist@demo.clinic')
     const ravi = await findPatient('ravi')
     expect(ravi.balance).toBeNull() // therapist default has no ledger.view
-    await expectError(api.payments.create({ patientId: ravi.id, amount: '100', method: 'cash' }, crypto.randomUUID()), 'PERMISSION_DENIED')
+    await expectError(
+      api.payments.create({ patientId: ravi.id, amount: '100', method: 'cash' }, crypto.randomUUID()),
+      'PERMISSION_DENIED',
+    )
     await expectError(api.patients.ledger(ravi.id), 'PERMISSION_DENIED')
   })
 

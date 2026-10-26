@@ -10,7 +10,10 @@ const schema = z.object({
   /** Optional while the API has no database-backed endpoints. Never log this value. */
   DATABASE_URL: z.preprocess(
     emptyToUndefined,
-    z.string().regex(/^postgres(ql)?:\/\//, 'must start with postgresql://').optional(),
+    z
+      .string()
+      .regex(/^postgres(ql)?:\/\//, 'must start with postgresql://')
+      .optional(),
   ),
 
   /** Comma-separated list of browser origins allowed to call the API (the client app). */

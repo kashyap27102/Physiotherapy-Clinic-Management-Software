@@ -3,7 +3,7 @@ import { CalendarCheck, IndianRupee, Plus, Search } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type PatientListItem, type TodayVisit } from '@/api'
-import { Can, } from '@/auth/guards'
+import { Can } from '@/auth/guards'
 import { BalanceBadge } from '@/components/common/Balance'
 import { SectionCard, SoftPill } from '@/components/common/SectionCard'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -37,7 +37,11 @@ export function HomePage() {
         crumbs={[{ label: t.nav.patients }]}
         actions={
           <Can permission="patient.register">
-            <Link to="/patients/new" state={{ prefill: text.trim() }} className={buttonVariants({ className: 'h-10 gap-2 px-4 text-sm' })}>
+            <Link
+              to="/patients/new"
+              state={{ prefill: text.trim() }}
+              className={buttonVariants({ className: 'h-10 gap-2 px-4 text-sm' })}
+            >
               <Plus aria-hidden />
               {t.home.registerNew}
             </Link>
@@ -46,7 +50,10 @@ export function HomePage() {
       />
 
       <div className="relative mb-6">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
         <Input
           type="search"
           aria-label={t.home.searchLabel}
@@ -65,7 +72,11 @@ export function HomePage() {
             <div className="flex flex-col items-start gap-3 p-5">
               <p className="text-sm text-muted-foreground">{t.home.noResults}</p>
               <Can permission="patient.register">
-                <Link to="/patients/new" state={{ prefill: text.trim() }} className={buttonVariants({ variant: 'outline', className: 'h-10 px-4' })}>
+                <Link
+                  to="/patients/new"
+                  state={{ prefill: text.trim() }}
+                  className={buttonVariants({ variant: 'outline', className: 'h-10 px-4' })}
+                >
                   {t.home.registerWithQuery}
                 </Link>
               </Can>
@@ -85,7 +96,9 @@ export function HomePage() {
         bodyClassName="p-0"
       >
         {today.isLoading && <ListSkeleton />}
-        {today.data && today.data.length === 0 && <p className="p-5 text-sm text-muted-foreground">{t.home.todayEmpty}</p>}
+        {today.data && today.data.length === 0 && (
+          <p className="p-5 text-sm text-muted-foreground">{t.home.todayEmpty}</p>
+        )}
         <ul className="divide-y">
           {today.data?.map((visit) => (
             <TodayRow key={visit.id} visit={visit} onPay={() => setPayFor(visit.patientId)} />
@@ -93,7 +106,9 @@ export function HomePage() {
         </ul>
       </SectionCard>
 
-      {attendFor && <MarkAttendanceDialog patientId={attendFor} open onOpenChange={(open) => !open && setAttendFor(null)} />}
+      {attendFor && (
+        <MarkAttendanceDialog patientId={attendFor} open onOpenChange={(open) => !open && setAttendFor(null)} />
+      )}
       {payFor && <RecordPaymentDialog patientId={payFor} open onOpenChange={(open) => !open && setPayFor(null)} />}
     </>
   )
