@@ -1,6 +1,6 @@
-import { Building2, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, Users, X } from 'lucide-react'
+import { Building2, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, ShieldCheck, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth, useCan, useUser } from '@/auth/hooks'
 import { OfflineBanner } from '@/components/common/OfflineBanner'
 import { Logo } from '@/components/layout/Logo'
@@ -55,6 +55,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function AppShell() {
   const user = useUser()
   const { signOut } = useAuth()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Escape closes the mobile menu; link clicks close it through SidebarNav's onNavigate.
@@ -136,6 +137,10 @@ export function AppShell() {
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => void navigate('/account/security')}>
+                    <ShieldCheck className="size-4" aria-hidden />
+                    {t.security.menuLink}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => void signOut()}>
                     <LogOut className="size-4" aria-hidden />
                     {t.common.signOut}

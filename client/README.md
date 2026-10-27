@@ -14,26 +14,25 @@ React Hook Form · `vite-plugin-pwa` · Vitest.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # unit tests (money, financial year, mock business rules)
+npm test           # unit tests (money, password strength)
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-## Demo mode (default)
+## Backend
 
-There is no backend yet, so the client runs against an in-browser mock (`src/api/mock.ts`) with sample data kept in
-`localStorage`. Sign in with `owner@demo.clinic`, `reception@demo.clinic` or `therapist@demo.clinic`, password
-`demo1234`, email code `123456`. Clear the `physiocms.mockdb.v1` key to reset the data.
+The client talks only to the real Express API (`server/`). Start it with `npm run dev` in `server` (port 4000); the Vite
+dev server proxies `/api` there, so the session cookies stay same-origin. Sign-in needs a user in the database and a
+working email setup (`RESEND_API_KEY`) for the code sent to new devices.
 
-To use the real Express API instead, copy `.env.example` to `.env` and set `VITE_USE_MOCK_API=false`. The Vite dev
-server proxies `/api` to `http://localhost:4000`.
+Screens whose server endpoints are not built yet (patients, visits, payments) show an error until those modules land.
 
 ## Structure
 
 ```
 src/
-  api/          Api contract (types.ts), mock.ts, http.ts, errors.ts: the only place that knows about the backend
+  api/          Api contract (types.ts), http.ts (axios), errors.ts: the only place that knows about the backend
   auth/         session context, hooks (useUser, useCan), route guards
   components/   ui/ (shadcn), layout/ (shell, sidebar, header), common/ (balance, section card, form field)
   features/     billing/, patients/, visits/: screens' dialogs and tabs

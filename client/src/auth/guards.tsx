@@ -1,14 +1,19 @@
 import type { ReactNode } from 'react'
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom'
 import type { PermissionKey } from '@/api'
+import { LogoMark } from '@/components/layout/Logo'
 import { buttonVariants } from '@/components/ui/button'
 import { t } from '@/strings/en'
 import { useAuth, useCan } from './hooks'
 
 export function FullPageSpinner() {
   return (
-    <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground" role="status">
-      {t.common.loading}
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-app" role="status">
+      <LogoMark className="size-12 animate-pulse" />
+      <span className="sr-only">{t.common.loading}</span>
+      <span className="h-1 w-24 overflow-hidden rounded-full bg-border" aria-hidden>
+        <span className="block h-full w-1/2 animate-[loading-bar_1.1s_ease-in-out_infinite] rounded-full bg-primary" />
+      </span>
     </div>
   )
 }
@@ -19,6 +24,13 @@ export function RequireAuth() {
   const location = useLocation()
   if (state.status === 'loading') return <FullPageSpinner />
   if (state.status === 'anonymous') return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  return <Outlet />
+}
+
+/** A clinic that has just registered has no branch yet; everything waits until setup is done. */
+export function RequireSetupComplete() {
+  const { state } = useAuth()
+  if (state.status === 'authenticated' && state.user.needsSetup) return <Navigate to="/setup" replace />
   return <Outlet />
 }
 

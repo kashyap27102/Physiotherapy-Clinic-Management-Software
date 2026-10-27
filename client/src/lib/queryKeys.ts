@@ -9,6 +9,7 @@ export const queryKeys = {
   todayVisits: ['visits', 'today'] as const,
   defaultFee: ['clinic', 'fee'] as const,
   therapists: ['clinic', 'therapists'] as const,
+  trustedDevices: ['auth', 'devices'] as const,
 }
 
 /** Refresh everything a visit, payment or episode change can affect. */

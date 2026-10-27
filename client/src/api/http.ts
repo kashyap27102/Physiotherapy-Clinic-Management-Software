@@ -1,10 +1,62 @@
 // Real backend client. Endpoint paths follow docs/API-Requirements.md.
-// Not exercised until the Express backend exists (set VITE_USE_MOCK_API=false to use it).
+// Auth endpoints are live; patients, visits, payments and clinic answer 404 until their server modules are built.
 
+import axios, { isAxiosError, type Method } from 'axios'
 import { ApiError, type ApiErrorCode, type FieldError } from './errors'
-import type { Api, LoginResult, Paged, PatientListItem, SessionUser } from './types'
+import { notifySessionExpired } from './sessionEvents'
+import type {
+  Api,
+  Branch,
+  LoginResult,
+  Paged,
+  PatientListItem,
+  PermissionKey,
+  RoleKey,
+  SessionUser,
+  TrustedDevice,
+} from './types'
 
 const BASE = '/api/v1'
+
+/**
+ * The session's CSRF token (API-AUTH-1). The server hands it over on sign-in and on /auth/me; it lives only in
+ * memory, never in storage, and goes back as X-CSRF-Token on every request that changes data.
+ */
+let csrfToken: string | null = null
+
+/** What the server sends for the signed-in user (login, OTP verify, /auth/me). */
+interface ServerProfile {
+  id: string
+  email: string
+  fullName: string
+  isSuperAdmin: boolean
+  tenant: { id: string; name: string } | null
+  branch: { id: string; name: string; code: string } | null
+  role: { key: string; name: string } | null
+  permissions: string[]
+  needsSetup: boolean
+  csrfToken: string
+}
+
+const ROLE_KEYS: readonly RoleKey[] = ['owner', 'receptionist', 'physiotherapist']
+
+function toSessionUser(profile: ServerProfile): SessionUser {
+  csrfToken = profile.csrfToken
+  const roleKey = profile.role?.key
+  return {
+    id: profile.id,
+    fullName: profile.fullName,
+    email: profile.email,
+    role: profile.isSuperAdmin ? 'super_admin' : (ROLE_KEYS.find((key) => key === roleKey) ?? 'receptionist'),
+    tenantName: profile.tenant?.name ?? '',
+    branch: profile.branch ? { id: profile.branch.id, name: profile.branch.name } : null,
+    permissions: profile.permissions as PermissionKey[],
+    needsSetup: profile.needsSetup,
+  }
+}
+
+/** Auth calls answer 401 as part of their normal flow, so they never mean "your session just expired". */
+const AUTH_FLOW = /^\/auth\/(login|otp\/|register|password\/(forgot|reset)|me$)/
 
 interface RequestOptions {
   body?: unknown
@@ -16,48 +68,63 @@ interface ErrorBody {
   error?: { code?: string; message?: string; fields?: FieldError[]; details?: unknown }
 }
 
-async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-  const url = new URL(BASE + path, window.location.origin)
-  for (const [key, value] of Object.entries(options.query ?? {})) {
-    if (value !== undefined && value !== '') url.searchParams.set(key, String(value))
-  }
-  const headers: Record<string, string> = { Accept: 'application/json', 'X-Requested-With': 'fetch' }
-  if (options.body !== undefined) headers['Content-Type'] = 'application/json'
-  if (options.idempotencyKey) headers['Idempotency-Key'] = options.idempotencyKey
+/** One axios instance for the whole app: same-origin `/api/v1` (proxied by Vite in development), cookies included. */
+const client = axios.create({
+  baseURL: BASE,
+  withCredentials: true,
+  timeout: 30_000,
+  headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+})
 
-  let response: Response
+client.interceptors.request.use((config) => {
+  if (config.method !== 'get' && csrfToken) config.headers.set('X-CSRF-Token', csrfToken)
+  return config
+})
+
+/** Turns any axios failure into an ApiError in the server's error format (API-Requirements section 2.1). */
+function toApiError(error: unknown, path: string): ApiError {
+  if (!isAxiosError<ErrorBody>(error) || !error.response) {
+    return new ApiError(0, 'NETWORK', 'Cannot reach the server. Check your internet connection.')
+  }
+  const { status, data } = error.response
+  const body = data?.error
+  if (status === 401 && body?.code === 'UNAUTHENTICATED' && !AUTH_FLOW.test(path)) {
+    csrfToken = null
+    notifySessionExpired()
+  }
+  return new ApiError(
+    status,
+    (body?.code as ApiErrorCode | undefined) ?? 'UNKNOWN',
+    body?.message ?? 'Something went wrong. Please try again.',
+    body?.fields ?? [],
+    body?.details,
+  )
+}
+
+async function request<T>(method: Method, path: string, options: RequestOptions = {}): Promise<T> {
+  const params = Object.fromEntries(
+    Object.entries(options.query ?? {}).filter(([, value]) => value !== undefined && value !== ''),
+  )
   try {
-    response = await fetch(url, {
+    const response = await client.request<T>({
       method,
-      headers,
-      credentials: 'include',
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      url: path,
+      params,
+      data: options.body,
+      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
     })
-  } catch {
-    throw new ApiError(0, 'NETWORK', 'Cannot reach the server. Check your internet connection.')
+    return (response.status === 204 ? undefined : response.data) as T
+  } catch (error) {
+    throw toApiError(error, path)
   }
-
-  if (response.status === 204) return undefined as T
-  const payload = (await response.json().catch(() => ({}))) as unknown
-
-  if (!response.ok) {
-    const error = (payload as ErrorBody).error
-    throw new ApiError(
-      response.status,
-      (error?.code as ApiErrorCode | undefined) ?? 'UNKNOWN',
-      error?.message ?? 'Something went wrong. Please try again.',
-      error?.fields ?? [],
-      error?.details,
-    )
-  }
-  return payload as T
 }
 
 export const httpApi: Api = {
   auth: {
     async login(email, password): Promise<LoginResult> {
       try {
-        return await request<LoginResult>('POST', '/auth/login', { body: { email, password } })
+        const profile = await request<ServerProfile>('POST', '/auth/login', { body: { email, password } })
+        return { status: 'ok', user: toSessionUser(profile) }
       } catch (error) {
         if (error instanceof ApiError && error.code === 'OTP_REQUIRED') {
           const details = (error.details ?? {}) as { challengeId?: string }
@@ -66,16 +133,53 @@ export const httpApi: Api = {
         throw error
       }
     },
-    verifyOtp: (input) => request<SessionUser>('POST', '/auth/otp/verify', { body: input }),
+    async verifyOtp(input) {
+      return toSessionUser(await request<ServerProfile>('POST', '/auth/otp/verify', { body: input }))
+    },
+    resendOtp: (challengeId) => request<{ challengeId: string }>('POST', '/auth/otp/resend', { body: { challengeId } }),
     async me() {
       try {
-        return await request<SessionUser>('GET', '/auth/me')
+        return toSessionUser(await request<ServerProfile>('GET', '/auth/me'))
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
         throw error
       }
     },
-    logout: () => request<void>('POST', '/auth/logout'),
+    async logout() {
+      try {
+        await request<void>('POST', '/auth/logout')
+      } finally {
+        csrfToken = null
+      }
+    },
+    async forgotPassword(email) {
+      await request('POST', '/auth/password/forgot', { body: { email } })
+    },
+    async resetPassword(input) {
+      await request('POST', '/auth/password/reset', { body: input })
+    },
+    async changePassword(input) {
+      await request('POST', '/auth/password/change', { body: input })
+    },
+    async devices() {
+      const result = await request<{ devices: TrustedDevice[] }>('GET', '/auth/devices')
+      return result.devices
+    },
+    revokeDevice: (id) => request<void>('DELETE', `/auth/devices/${id}`),
+    register: (input) => request<{ registrationId: string }>('POST', '/auth/register', { body: input }),
+    async verifyRegistration(input) {
+      return toSessionUser(await request<ServerProfile>('POST', '/auth/register/verify', { body: input }))
+    },
+    resendRegistration: (registrationId) =>
+      request<{ registrationId: string }>('POST', '/auth/register/resend', { body: { registrationId } }),
+  },
+
+  branches: {
+    async list() {
+      const result = await request<{ branches: Branch[] }>('GET', '/branches')
+      return result.branches
+    },
+    create: (input) => request<Branch>('POST', '/branches', { body: input }),
   },
 
   patients: {
