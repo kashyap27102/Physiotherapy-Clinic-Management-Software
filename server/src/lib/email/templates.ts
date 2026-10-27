@@ -16,6 +16,32 @@ export function otpEmail(to: string, code: string, minutesValid: number): EmailM
   }
 }
 
+export function registrationCodeEmail(to: string, code: string, minutesValid: number): EmailMessage {
+  return {
+    to,
+    subject: 'Confirm your clinic registration',
+    text: [
+      `Your verification code is ${code}.`,
+      `Enter it to finish creating your clinic account. It expires in ${minutesValid} minutes.`,
+      'If you did not try to register a clinic, ignore this email.',
+    ].join('\n\n'),
+  }
+}
+
+/** Sent instead of a code when someone registers with an email that already has an account. */
+export function accountExistsEmail(to: string, signInLink: string, resetLink: string): EmailMessage {
+  return {
+    to,
+    subject: 'You already have an account',
+    text: [
+      'Someone, probably you, tried to register a new clinic with this email address, but it already has an account.',
+      `Sign in here: ${signInLink}`,
+      `Forgot your password? Reset it here: ${resetLink}`,
+      'If this was not you, you can ignore this email.',
+    ].join('\n\n'),
+  }
+}
+
 export function passwordResetEmail(to: string, link: string, minutesValid: number): EmailMessage {
   return {
     to,

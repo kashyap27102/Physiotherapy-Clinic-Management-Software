@@ -59,6 +59,10 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
   `X-CSRF-Token` (returned by login and `/auth/me`) and an allowed `Origin`. Idle limit 30 min, hard limit 12 h (env). Password change/reset,
   device revoke and deactivation end sessions at once. Passwords are Argon2id via `node:crypto`. Auth tables use the unscoped `getPrisma()`
   on purpose (the tenant client denies them); everything else in a feature module still uses `forTenant`.
+- **Registration** (`src/modules/registration`, TEN-001): clinics self-register. A sign-up waits in `pending_registration` until
+  its email code is verified; then one transaction creates the clinic, a 14-day trial on the `Pilot` plan, the three roles from
+  `auth/roleTemplates.ts` (BR-USR-7) and the owner. An email that already has an account gets the same answer and a decoy id.
+  `needsSetup` on the profile is true until the clinic has a branch (`POST /branches`, `modules/branches`).
 - **Auth tests**: `test/auth.test.ts` needs no database; `test/auth.db.test.ts` runs the whole flow against `TEST_DATABASE_URL` (slow on a hosted DB).
 - **No real patient data** in any development or test database until the legal review on data location is done (PRD REG-2).
 

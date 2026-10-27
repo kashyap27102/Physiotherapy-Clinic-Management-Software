@@ -24,6 +24,8 @@ export interface Profile {
   branch: { id: string; name: string; code: string } | null
   role: { key: string; name: string } | null
   permissions: string[]
+  /** True while the clinic has no branch yet: the owner goes through the setup step before anything else. */
+  needsSetup: boolean
   /** Sent back as `X-CSRF-Token` on every request that changes data. */
   csrfToken: string
 }
@@ -57,9 +59,10 @@ function assertMaySignIn(user: SignInUser): void {
 async function loadProfile(userId: string, csrfToken: string, permissions: Iterable<string>): Promise<Profile> {
   const user = await getPrisma().userAccount.findUniqueOrThrow({
     where: { id: userId },
-    include: { tenant: true, branch: true, role: true },
+    include: { tenant: { include: { _count: { select: { branches: true } } } }, branch: true, role: true },
   })
   return {
+    needsSetup: user.tenant !== null && user.tenant._count.branches === 0,
     id: user.id,
     email: user.email,
     fullName: user.fullName,
@@ -85,7 +88,8 @@ async function permissionsFor(userId: string): Promise<string[]> {
   return user.role?.permissions.map((row) => row.permission.key) ?? []
 }
 
-async function startSession(user: SignInUser & { id: string }, client: ClientInfo): Promise<SignedIn> {
+/** Starts a session for a user who has proved who they are, with the audit entry. Also used by registration. */
+export async function startSession(user: Pick<SignInUser, 'id' | 'tenantId'>, client: ClientInfo): Promise<SignedIn> {
   const { token, csrfToken } = await createSession(user.id)
   await getPrisma().userAccount.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
   await recordAudit({ action: 'auth.login', tenantId: user.tenantId, userId: user.id, ip: client.ip })
@@ -228,11 +232,23 @@ export async function verifyOtp(
   if (claimed.count !== 1) throw invalidCode()
 
   assertMaySignIn(user)
+  return signInAfterCode(user, input.trustDevice, client)
+}
 
+/**
+ * The last step after an emailed code was verified (login or registration): optionally trusts this browser
+ * for the next deviceTrustDays (AUTH-002), then starts the session.
+ */
+export async function signInAfterCode(
+  user: Pick<SignInUser, 'id' | 'tenantId'>,
+  trustDevice: boolean,
+  client: ClientInfo,
+): Promise<SignedIn> {
   let deviceToken: string | undefined
-  if (input.trustDevice) {
+  if (trustDevice) {
+    const now = new Date()
     deviceToken = newToken()
-    const device = await db.trustedDevice.create({
+    const device = await getPrisma().trustedDevice.create({
       data: {
         userId: user.id,
         tokenHash: hashToken(deviceToken),

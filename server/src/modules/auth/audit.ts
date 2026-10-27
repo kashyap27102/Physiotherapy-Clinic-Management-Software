@@ -2,7 +2,7 @@ import { isIP } from 'node:net'
 import { getPrisma } from '../../db/prisma.js'
 import type { Prisma } from '../../generated/prisma/client.js'
 
-/** Audit actions written by the authentication module (PRD AUD-001, API-Requirements section 7). */
+/** Audit actions written so far (PRD AUD-001, API-Requirements section 7): sign-in, registration, clinic setup. */
 export type AuthAuditAction =
   | 'auth.login'
   | 'auth.login_failed'
@@ -15,6 +15,8 @@ export type AuthAuditAction =
   | 'auth.password_reset'
   | 'auth.password_changed'
   | 'auth.logout'
+  | 'tenant.registered'
+  | 'branch.created'
 
 interface AuditEntry {
   action: AuthAuditAction

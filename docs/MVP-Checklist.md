@@ -38,12 +38,13 @@
 
 ### Clinics, branches, and staff
 
-- [ ] **TEN-001** Minimal tenant creation by super-admin (clinic and first owner) — Must
+- [x] **TEN-001** Clinic self-registration with email code; clinic, 14-day trial, roles and owner created on verify — Must (replaces creation by super-admin, decided 2026-10-27)
+- [x] **TEN-001** First-sign-in setup: first branch required before using the app — Must
 - [ ] **TEN-001** Owner edits clinic profile: name, address, phone, logo, receipt details — Must
-- [ ] **TEN-002** Branch create, edit, deactivate; branch code locked after first receipt — Must
+- [ ] **TEN-002** Branch create, edit, deactivate; branch code locked after first receipt — Must (create and list done)
 - [ ] **USR-001** Staff create, edit, deactivate; one branch each — Must
 - [ ] **USR-002** Owner edits permissions for Receptionist and Physiotherapist roles — Must
-- [ ] Default permission templates created for every new tenant (BR-USR-7)
+- [x] Default permission templates created for every new tenant (BR-USR-7)
 - [ ] Lock-out protection warning when removing key permissions
 
 ### Patients
