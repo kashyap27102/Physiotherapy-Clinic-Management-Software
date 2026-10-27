@@ -7,12 +7,15 @@ import { notifySessionExpired } from './sessionEvents'
 import type {
   Api,
   Branch,
+  Clinic,
   LoginResult,
   Paged,
   PatientListItem,
   PermissionKey,
   RoleKey,
+  RoleSummary,
   SessionUser,
+  StaffMember,
   TrustedDevice,
 } from './types'
 
@@ -62,6 +65,8 @@ interface RequestOptions {
   body?: unknown
   query?: Record<string, string | number | boolean | undefined>
   idempotencyKey?: string
+  /** For raw uploads such as the clinic logo; JSON otherwise. */
+  contentType?: string
 }
 
 interface ErrorBody {
@@ -111,7 +116,10 @@ async function request<T>(method: Method, path: string, options: RequestOptions 
       url: path,
       params,
       data: options.body,
-      headers: options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : undefined,
+      headers: {
+        ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
+        ...(options.contentType ? { 'Content-Type': options.contentType } : {}),
+      },
     })
     return (response.status === 204 ? undefined : response.data) as T
   } catch (error) {
@@ -172,6 +180,9 @@ export const httpApi: Api = {
     },
     resendRegistration: (registrationId) =>
       request<{ registrationId: string }>('POST', '/auth/register/resend', { body: { registrationId } }),
+    async acceptInvitation(input) {
+      await request('POST', '/auth/invitation/accept', { body: input })
+    },
   },
 
   branches: {
@@ -180,6 +191,32 @@ export const httpApi: Api = {
       return result.branches
     },
     create: (input) => request<Branch>('POST', '/branches', { body: input }),
+    update: (id, input) => request<Branch>('PATCH', `/branches/${id}`, { body: input }),
+    deactivate: (id) => request<Branch>('POST', `/branches/${id}/deactivate`),
+    reactivate: (id) => request<Branch>('POST', `/branches/${id}/reactivate`),
+  },
+
+  users: {
+    async list(filter = {}) {
+      const result = await request<{ staff: StaffMember[] }>('GET', '/users', {
+        query: { role: filter.role, branchId: filter.branchId, active: filter.active },
+      })
+      return result.staff
+    },
+    create: (input) => request('POST', '/users', { body: input }),
+    update: (id, input) => request<StaffMember>('PATCH', `/users/${id}`, { body: input }),
+    deactivate: (id) => request<StaffMember>('POST', `/users/${id}/deactivate`),
+    reactivate: (id) => request<StaffMember>('POST', `/users/${id}/reactivate`),
+    resendInvitation: (id) => request<void>('POST', `/users/${id}/resend-invitation`),
+  },
+
+  roles: {
+    async list() {
+      const result = await request<{ roles: RoleSummary[] }>('GET', '/roles')
+      return result.roles
+    },
+    setPermissions: (id, permissions, confirmWarnings = false) =>
+      request<RoleSummary>('PUT', `/roles/${id}/permissions`, { body: { permissions, confirmWarnings } }),
   },
 
   patients: {
@@ -206,6 +243,12 @@ export const httpApi: Api = {
   },
 
   clinic: {
+    get: () => request<Clinic>('GET', '/clinic'),
+    update: (input) => request<Clinic>('PATCH', '/clinic', { body: input }),
+    // The server reads the raw image bytes and checks the real type itself.
+    uploadLogo: (file) =>
+      request<Clinic>('POST', '/clinic/logo', { body: file, contentType: file.type || 'image/png' }),
+    removeLogo: () => request<Clinic>('DELETE', '/clinic/logo'),
     async defaultFee() {
       const result = await request<{ defaultFee: string }>('GET', '/clinic/fee')
       return result.defaultFee

@@ -58,6 +58,66 @@ export interface Branch {
   address: string | null
   phone: string | null
   isActive: boolean
+  /** Active staff assigned here. */
+  staffCount: number
+  /** True once the branch has issued a receipt; the code can no longer change. */
+  codeLocked: boolean
+}
+
+export interface BranchInput {
+  name: string
+  code: string
+  address?: string | null
+  phone?: string | null
+}
+
+export interface Clinic {
+  id: string
+  name: string
+  phone: string | null
+  address: string | null
+  /** Printed on receipts, for example a registration number or GSTIN. */
+  registrationDetails: string | null
+  inactiveAfterDays: number
+  /** Changes with the logo so the browser refetches it; null when there is no logo. */
+  logoVersion: string | null
+}
+
+export type StaffRoleKey = 'receptionist' | 'physiotherapist'
+
+export interface StaffMember {
+  id: string
+  fullName: string
+  email: string
+  role: { key: RoleKey; name: string }
+  /** Null for the owner, who works across branches. */
+  branch: { id: string; name: string; code: string } | null
+  isActive: boolean
+  lastLoginAt: string | null
+  /** Invited but has not signed in yet. */
+  invited: boolean
+}
+
+export interface StaffInput {
+  fullName: string
+  email: string
+  role: StaffRoleKey
+  branchId: string
+}
+
+export interface RoleSummary {
+  id: string
+  key: RoleKey
+  name: string
+  /** The owner role always has every permission and cannot be edited. */
+  editable: boolean
+  permissions: PermissionKey[]
+  userCount: number
+}
+
+export interface PermissionWarning {
+  permission: PermissionKey
+  message: string
 }
 
 export interface RegisterClinicInput {
@@ -260,10 +320,29 @@ export interface Api {
     register(input: RegisterClinicInput): Promise<{ registrationId: string }>
     verifyRegistration(input: { registrationId: string; code: string; trustDevice: boolean }): Promise<SessionUser>
     resendRegistration(registrationId: string): Promise<{ registrationId: string }>
+    /** An invited staff member chooses their password (USR-001). */
+    acceptInvitation(input: { token: string; newPassword: string }): Promise<void>
   }
   branches: {
     list(): Promise<Branch[]>
-    create(input: { name: string; code: string; address?: string; phone?: string }): Promise<Branch>
+    create(input: BranchInput): Promise<Branch>
+    update(id: string, input: Partial<BranchInput>): Promise<Branch>
+    deactivate(id: string): Promise<Branch>
+    reactivate(id: string): Promise<Branch>
+  }
+  users: {
+    list(filter?: { role?: string; branchId?: string; active?: boolean }): Promise<StaffMember[]>
+    /** `invitationSent` is false when the account was made but the email failed; use resendInvitation. */
+    create(input: StaffInput): Promise<{ staff: StaffMember; invitationSent: boolean }>
+    update(id: string, input: Partial<Pick<StaffInput, 'fullName' | 'role' | 'branchId'>>): Promise<StaffMember>
+    deactivate(id: string): Promise<StaffMember>
+    reactivate(id: string): Promise<StaffMember>
+    resendInvitation(id: string): Promise<void>
+  }
+  roles: {
+    list(): Promise<RoleSummary[]>
+    /** Throws ApiError PERMISSION_WARNING (details.warnings) until called again with confirmWarnings. */
+    setPermissions(id: string, permissions: PermissionKey[], confirmWarnings?: boolean): Promise<RoleSummary>
   }
   patients: {
     search(input: { q: string; page?: number }): Promise<Paged<PatientListItem>>
@@ -284,6 +363,12 @@ export interface Api {
     create(input: RecordPaymentInput, idempotencyKey: string): Promise<RecordPaymentResult>
   }
   clinic: {
+    get(): Promise<Clinic>
+    update(
+      input: Partial<Pick<Clinic, 'name' | 'phone' | 'address' | 'registrationDetails' | 'inactiveAfterDays'>>,
+    ): Promise<Clinic>
+    uploadLogo(file: File): Promise<Clinic>
+    removeLogo(): Promise<Clinic>
     defaultFee(): Promise<Money>
     therapists(): Promise<Therapist[]>
   }

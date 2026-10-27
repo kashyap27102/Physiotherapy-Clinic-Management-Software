@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth, RequirePermission, RequireSetupComplete } from '@/auth/guards'
 import { AppShell } from '@/components/layout/AppShell'
+import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HomePage } from '@/pages/HomePage'
@@ -12,6 +13,10 @@ import { RegisterPatientPage } from '@/pages/RegisterPatientPage'
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { SecurityPage } from '@/pages/SecurityPage'
 import { SetupPage } from '@/pages/SetupPage'
+import { BranchesPage } from '@/pages/settings/BranchesPage'
+import { ClinicSettingsPage } from '@/pages/settings/ClinicSettingsPage'
+import { RolesPage } from '@/pages/settings/RolesPage'
+import { StaffPage } from '@/pages/settings/StaffPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -20,6 +25,8 @@ export const router = createBrowserRouter([
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   // The emailed reset link (AUTH-004) points here; it works whether or not someone is signed in.
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  // The link in a staff invitation email (USR-001).
+  { path: '/accept-invitation', element: <AcceptInvitationPage /> },
   {
     element: <RequireAuth />,
     children: [
@@ -64,6 +71,38 @@ export const router = createBrowserRouter([
                 ),
               },
               { path: 'account/security', element: <SecurityPage /> },
+              {
+                path: 'settings/clinic',
+                element: (
+                  <RequirePermission permission="clinic.manage">
+                    <ClinicSettingsPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'settings/branches',
+                element: (
+                  <RequirePermission permission="clinic.manage">
+                    <BranchesPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'settings/staff',
+                element: (
+                  <RequirePermission permission="staff.manage">
+                    <StaffPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'settings/roles',
+                element: (
+                  <RequirePermission permission="role.manage">
+                    <RolesPage />
+                  </RequirePermission>
+                ),
+              },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

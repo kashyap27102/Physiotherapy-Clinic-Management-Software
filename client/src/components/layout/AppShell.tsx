@@ -1,7 +1,21 @@
-import { Building2, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, ShieldCheck, Users, X } from 'lucide-react'
+import {
+  Building2,
+  ChevronDown,
+  Globe,
+  KeyRound,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ShieldCheck,
+  Store,
+  Users,
+  UsersRound,
+  X,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth, useCan, useUser } from '@/auth/hooks'
+import { initials } from '@/lib/forms'
 import { OfflineBanner } from '@/components/common/OfflineBanner'
 import { Logo } from '@/components/layout/Logo'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
@@ -24,18 +38,18 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-foreground/80 hover:bg-sidebar-accent',
   )
 
-function initials(fullName: string): string {
-  return fullName
-    .split(' ')
-    .filter((part) => part && !part.endsWith('.'))
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase()
-}
-
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const canSeeReports = useCan('report.view')
+  const canManageClinic = useCan('clinic.manage')
+  const canManageStaff = useCan('staff.manage')
+  const canManageRoles = useCan('role.manage')
+  const settings = [
+    canManageClinic && { to: '/settings/clinic', icon: Store, label: t.settings.clinic },
+    canManageClinic && { to: '/settings/branches', icon: Building2, label: t.settings.branches },
+    canManageStaff && { to: '/settings/staff', icon: UsersRound, label: t.settings.staff },
+    canManageRoles && { to: '/settings/roles', icon: KeyRound, label: t.settings.roles },
+  ].filter((item) => item !== false)
+
   return (
     <nav className="flex flex-col gap-1" aria-label="Main">
       <NavLink to="/" end className={navLinkClass} onClick={onNavigate}>
@@ -47,6 +61,19 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <LayoutDashboard className="size-4" aria-hidden />
           {t.nav.dashboard}
         </NavLink>
+      )}
+      {settings.length > 0 && (
+        <>
+          <div className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            {t.settings.section}
+          </div>
+          {settings.map(({ to, icon: Icon, label }) => (
+            <NavLink key={to} to={to} className={navLinkClass} onClick={onNavigate}>
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </NavLink>
+          ))}
+        </>
       )}
     </nav>
   )
