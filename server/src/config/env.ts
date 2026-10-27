@@ -40,6 +40,15 @@ const schema = z.object({
   EMAIL_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
 
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(300),
+
+  /** Sessions end after this much inactivity (PRD BR-AUTH-2; the platform can change it). */
+  SESSION_IDLE_MINUTES: z.coerce.number().int().min(1).max(1440).default(30),
+  /** Hard cap on a session's life, however active the user is. */
+  SESSION_MAX_HOURS: z.coerce.number().int().min(1).max(720).default(12),
+  /** "none" is for a client served from a different site than the API; it forces Secure cookies. */
+  COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
+  /** Where the client app lives; used to build password-reset links. Defaults to the first CORS origin. */
+  APP_URL: z.preprocess(emptyToUndefined, z.url().optional()),
 })
 
 type Parsed = z.infer<typeof schema>

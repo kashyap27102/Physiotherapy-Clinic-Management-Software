@@ -29,12 +29,12 @@
 
 ### Authentication and security
 
-- [ ] **AUTH-001** Email and password login, lockout after repeated failures — Must
-- [ ] **AUTH-002** Email OTP on new or unrecognised device — Must
-- [ ] **AUTH-003** Trusted device list and revoke (own and, for owner, others) — Must
-- [ ] **AUTH-004** Password reset by email link and password change — Must
-- [ ] Session expiry after inactivity (BR-AUTH-2)
-- [ ] Rate limiting on login, OTP, and reset endpoints (SEC-004)
+- [x] **AUTH-001** Email and password login, lockout after repeated failures — Must
+- [x] **AUTH-002** Email OTP on new or unrecognised device — Must
+- [x] **AUTH-003** Trusted device list and revoke (own and, for owner, others) — Must
+- [x] **AUTH-004** Password reset by email link and password change — Must
+- [x] Session expiry after inactivity (BR-AUTH-2)
+- [x] Rate limiting on login, OTP, and reset endpoints (SEC-004)
 
 ### Clinics, branches, and staff
 
