@@ -104,6 +104,13 @@ export function createAuthRouter(limits: AuthLimits = defaultAuthLimits): Router
     res.json({ message: 'Your password has been changed. Please sign in.' })
   })
 
+  // USR-001: an invited staff member chooses their password. The invitation is a single-use link like a reset link,
+  // so the same service handles it; they then sign in normally (with a code on their first device).
+  router.post('/auth/invitation/accept', limit.reset, async (req, res) => {
+    await resetPassword(parseInput(resetBody, req.body), clientOf(req))
+    res.json({ message: 'Your password is set. Please sign in.' })
+  })
+
   router.post('/auth/password/change', requireSignedIn, limit.change, async (req, res) => {
     const auth = requireAuthContext(req)
     if (!req.authSession) throw unauthenticated()

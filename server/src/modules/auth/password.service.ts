@@ -1,5 +1,5 @@
 import { getPrisma } from '../../db/prisma.js'
-import { env } from '../../config/env.js'
+import { appLink } from '../../lib/appLink.js'
 import { getEmailSender } from '../../lib/email/index.js'
 import { passwordResetEmail } from '../../lib/email/templates.js'
 import { AppError, validationError } from '../../lib/errors.js'
@@ -14,13 +14,6 @@ import { hashToken, newToken } from './tokens.js'
 function newPasswordProblem(password: string, email: string): void {
   const problem = passwordProblem(password, email)
   if (problem) throw validationError([{ field: 'newPassword', message: problem }])
-}
-
-function resetLink(token: string): string {
-  const base = env.APP_URL ?? env.CORS_ORIGINS[0] ?? 'http://localhost:5173'
-  const url = new URL('/reset-password', base)
-  url.searchParams.set('token', token)
-  return url.toString()
 }
 
 /**
@@ -62,7 +55,7 @@ export async function requestPasswordReset(email: string, client: ClientInfo): P
   })
   try {
     await getEmailSender().send(
-      passwordResetEmail(user.email, resetLink(token), authConfig.resetMinutes),
+      passwordResetEmail(user.email, appLink('/reset-password', { token }), authConfig.resetMinutes),
       'password-reset',
     )
   } catch (error) {

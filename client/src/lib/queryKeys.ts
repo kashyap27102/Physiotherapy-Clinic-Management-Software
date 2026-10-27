@@ -10,6 +10,10 @@ export const queryKeys = {
   defaultFee: ['clinic', 'fee'] as const,
   therapists: ['clinic', 'therapists'] as const,
   trustedDevices: ['auth', 'devices'] as const,
+  clinic: ['clinic', 'profile'] as const,
+  branches: ['branches'] as const,
+  staff: (filter: object = {}) => ['staff', filter] as const,
+  roles: ['roles'] as const,
 }
 
 /** Refresh everything a visit, payment or episode change can affect. */

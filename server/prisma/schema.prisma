@@ -44,6 +44,7 @@ model Tenant {
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   subscriptions Subscription[]
+  logo          TenantLogo?
   branches      Branch[]
   roles         Role[]
   users         UserAccount[]
@@ -225,6 +226,19 @@ model UserSession {
   @@unique([tokenHash])
   @@index([userId])
   @@map("user_session")
+}
+
+/// The clinic logo (TEN-001): one small image per clinic, kept in the database so no file storage service is needed
+/// yet (OQ-5). Served only to signed-in users of the same clinic. Not in the ER document.
+model TenantLogo {
+  tenantId    String   @id @map("tenant_id") @db.Uuid
+  contentType String   @map("content_type")
+  data        Bytes
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_logo")
 }
 
 /// A clinic sign-up waiting for its email code (TEN-001 self-registration). Nothing else exists until the code is
