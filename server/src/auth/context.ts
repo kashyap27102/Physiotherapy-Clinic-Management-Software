@@ -22,6 +22,8 @@ declare global {
   namespace Express {
     interface Request {
       auth?: AuthContext
+      /** The live session behind `auth`; set together with it by the session middleware. */
+      authSession?: { id: string; csrfToken: string }
     }
   }
 }

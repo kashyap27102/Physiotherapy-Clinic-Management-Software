@@ -1,0 +1,44 @@
+import { isIP } from 'node:net'
+import { getPrisma } from '../../db/prisma.js'
+import type { Prisma } from '../../generated/prisma/client.js'
+
+/** Audit actions written by the authentication module (PRD AUD-001, API-Requirements section 7). */
+export type AuthAuditAction =
+  | 'auth.login'
+  | 'auth.login_failed'
+  | 'auth.account_locked'
+  | 'auth.otp_sent'
+  | 'auth.otp_failed'
+  | 'auth.device_trusted'
+  | 'auth.device_revoked'
+  | 'auth.password_reset_requested'
+  | 'auth.password_reset'
+  | 'auth.password_changed'
+  | 'auth.logout'
+
+interface AuditEntry {
+  action: AuthAuditAction
+  tenantId?: string | null
+  userId?: string | null
+  targetType?: string
+  targetId?: string
+  /** Never put emails, passwords, codes or tokens here (PRD NFR-010). */
+  details?: Prisma.InputJsonValue
+  ip?: string | undefined
+}
+
+/** Appends one audit row. The audit table is insert-only (PRD SEC-008). */
+export async function recordAudit(entry: AuditEntry): Promise<void> {
+  await getPrisma().auditLog.create({
+    data: {
+      action: entry.action,
+      tenantId: entry.tenantId ?? null,
+      userId: entry.userId ?? null,
+      targetType: entry.targetType ?? null,
+      targetId: entry.targetId ?? null,
+      ...(entry.details === undefined ? {} : { details: entry.details }),
+      // The column is inet; anything that is not an IP address would fail the insert.
+      ipAddress: entry.ip && isIP(entry.ip) ? entry.ip : null,
+    },
+  })
+}
