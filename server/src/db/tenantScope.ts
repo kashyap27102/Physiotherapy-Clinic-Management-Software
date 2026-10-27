@@ -39,6 +39,7 @@ const policies = {
   OtpChallenge: { kind: 'denied' },
   PasswordResetToken: { kind: 'denied' },
   UserSession: { kind: 'denied' },
+  PendingRegistration: { kind: 'denied' },
 } as const satisfies Record<Prisma.ModelName, Policy>
 
 const FILTERED = new Set([

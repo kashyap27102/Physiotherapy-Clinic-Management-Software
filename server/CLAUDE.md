@@ -4,8 +4,8 @@ REST API for the physiotherapy clinic product (multi-tenant SaaS, Indian market)
 (endpoints, error format, permission keys, concurrency rules), `../docs/ER-Diagram.md` (tables and constraints) and
 `../docs/PRD.md` (business rules `BR-*`, security `SEC-*`) before building a feature. Cite requirement IDs in commits and tests.
 
-**Stage: skeleton only.** Running today: health, readiness and version endpoints. No database models, sessions, login or
-business endpoints yet. The planned order is models and first migration, then sessions and login, then patients, visits, payments.
+**Stage: foundations and authentication.** Running: health endpoints, login with email code on new devices, trusted devices,
+password reset and change, sessions. No patient or billing endpoints yet; next are clinics and staff, then patients, visits, payments.
 
 ## Commands
 
@@ -54,8 +54,16 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
 - **Idempotency**: `POST` for visits, payments, refunds, reversals and documents honour the `Idempotency-Key` header.
 - **Logging**: only method, path (never the query string), status and request id. Never log request bodies, names, phones,
   emails, codes or tokens (PRD NFR-010). Search terms can be patient names, so keep them out of URLs where possible.
-- **Sessions** (decided, not built): server-side sessions in PostgreSQL, `httpOnly` cookie, CSRF protection, instant revoke on
-  password change, device revoke and user deactivation.
+- **Sessions** (built, `src/modules/auth`): server-side sessions in PostgreSQL; the `sid` httpOnly cookie holds an opaque token (only its
+  hash is stored). `middleware/session.ts` is the only code that sets `req.auth`, reading permissions fresh on every request. Writes need
+  `X-CSRF-Token` (returned by login and `/auth/me`) and an allowed `Origin`. Idle limit 30 min, hard limit 12 h (env). Password change/reset,
+  device revoke and deactivation end sessions at once. Passwords are Argon2id via `node:crypto`. Auth tables use the unscoped `getPrisma()`
+  on purpose (the tenant client denies them); everything else in a feature module still uses `forTenant`.
+- **Registration** (`src/modules/registration`, TEN-001): clinics self-register. A sign-up waits in `pending_registration` until
+  its email code is verified; then one transaction creates the clinic, a 14-day trial on the `Pilot` plan, the three roles from
+  `auth/roleTemplates.ts` (BR-USR-7) and the owner. An email that already has an account gets the same answer and a decoy id.
+  `needsSetup` on the profile is true until the clinic has a branch (`POST /branches`, `modules/branches`).
+- **Auth tests**: `test/auth.test.ts` needs no database; `test/auth.db.test.ts` runs the whole flow against `TEST_DATABASE_URL` (slow on a hosted DB).
 - **No real patient data** in any development or test database until the legal review on data location is done (PRD REG-2).
 
 ## Gotchas
@@ -76,6 +84,6 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
 
 ## Not built yet
 
-Prisma models and migrations (from the ER document), sessions and login (email code on new device, trusted devices), role and
+Prisma models and migrations (from the ER document), invitation accept (`/auth/invitation/accept`, with TEN-001/USR-001), role and
 permission management, patients, episodes, visits, ledger and receipts, reports, import/export, audit log, super-admin.
 Work on a feature branch off `dev`.

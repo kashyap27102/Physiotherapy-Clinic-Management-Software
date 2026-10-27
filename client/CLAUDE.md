@@ -7,8 +7,8 @@ Requirement IDs (`PAT-001`, `BILL-003`, ...) in those files are the source of tr
 ## Commands
 
 ```bash
-npm run dev        # Vite on :5173, API proxied to :4000 when VITE_USE_MOCK_API=false
-npm test           # Vitest (money, financial year, mock business rules)
+npm run dev        # Vite on :5173, /api proxied to the Express server on :4000 (run it from ../server)
+npm test           # Vitest (money, password strength)
 npm run typecheck  # tsc -b
 npm run lint       # oxlint; warnings inside src/components/ui/ are expected (generated shadcn files)
 npm run build      # tsc -b && vite build, also generates the service worker
@@ -24,8 +24,10 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 
 ## Layout
 
-- `src/api/` is the only code that knows about the backend: `types.ts` (the `Api` contract), `mock.ts` (default, in-browser),
-  `http.ts` (real `/api/v1` client), `errors.ts`. Screens import from `@/api`, never from `mock`/`http`.
+- `src/api/` is the only code that knows about the backend: `types.ts` (the `Api` contract), `http.ts` (axios client for
+  `/api/v1`: cookies, CSRF header, error mapping, session-expiry event), `errors.ts`. Screens import from `@/api`, never `http`.
+  There is no mock: every screen talks to the real server.
+- `src/components/auth/` sign-in building blocks (split `AuthLayout`, `PasswordInput`, `OtpInput`, `PasswordStrength`).
 - `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
 - `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
 - `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.
@@ -54,9 +56,9 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 - The shadcn `cn` helper comes from the `cn` package (`src/lib/utils.ts` re-exports it). That is shadcn's own package; keep it.
 - `@hookform/resolvers` is deliberately not installed (peer-dependency conflict). Validate with React Hook Form rules or zod.
 - Add components with `npx shadcn@latest add <name>`; do not hand-copy them.
-- Tests pin the time zone to `Asia/Kolkata` in `vitest.config.ts`; the mock seed assumes India time.
-- The mock keeps data in `localStorage` key `physiocms.mockdb.v1`. Clear it to reset. Demo logins: `owner@`, `reception@`,
-  `therapist@demo.clinic`, password `demo1234`, email code `123456`.
+- Tests pin the time zone to `Asia/Kolkata` in `vitest.config.ts` (date helpers assume India time).
+- Sessions are httpOnly cookies set by the server; the CSRF token is kept in memory in `http.ts` and refreshed by `/auth/me`
+  on load. Never store tokens in `localStorage`. A 401 `UNAUTHENTICATED` outside the auth flow fires `onSessionExpired`.
 - The service worker caches the app shell only. Never add runtime caching for `/api/` (patient data must not be cached).
 - The default receptionist cannot start an episode (PRD matrix). Open decision; do not silently change the permission.
 
