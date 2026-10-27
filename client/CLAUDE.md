@@ -27,7 +27,11 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 - `src/api/` is the only code that knows about the backend: `types.ts` (the `Api` contract), `http.ts` (axios client for
   `/api/v1`: cookies, CSRF header, error mapping, session-expiry event), `errors.ts`. Screens import from `@/api`, never `http`.
   There is no mock: every screen talks to the real server.
-- `src/components/auth/` sign-in building blocks (split `AuthLayout`, `PasswordInput`, `OtpInput`, `PasswordStrength`).
+- `src/components/auth/` sign-in building blocks (split `AuthLayout`, `PasswordInput`, `OtpInput`, `PasswordStrength`,
+  `VerifyCodeStep`, `SetPasswordScreen` for reset and invitation links).
+- `src/pages/settings/` owner settings (Clinic, Branches, Staff, Roles), linked from the sidebar's Settings section by permission.
+  Shared pieces: `ConfirmDialog`, `EmptyState`, `Avatar`, `Switch` in `components/common`; `applyFieldErrors` in `lib/forms.ts`
+  maps server 422 field errors onto react-hook-form.
 - `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
 - `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
 - `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.
@@ -65,4 +69,4 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 ## Not built yet
 
 Assessment and treatment-plan forms, discharge, reversals and refunds, PDF receipts and invoices, owner dashboard,
-staff and role screens, reports, import/export, audit log viewer. Build on the `dev` branch via a feature branch.
+default fee setting, owner view of a staff member's trusted devices, reports, import/export, audit log viewer. Build on the `dev` branch via a feature branch.

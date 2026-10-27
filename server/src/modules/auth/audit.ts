@@ -16,7 +16,18 @@ export type AuthAuditAction =
   | 'auth.password_changed'
   | 'auth.logout'
   | 'tenant.registered'
+  | 'clinic.updated'
+  | 'clinic.logo_changed'
   | 'branch.created'
+  | 'branch.updated'
+  | 'branch.deactivated'
+  | 'branch.reactivated'
+  | 'user.created'
+  | 'user.updated'
+  | 'user.deactivated'
+  | 'user.reactivated'
+  | 'user.invitation_sent'
+  | 'role.permissions_changed'
 
 interface AuditEntry {
   action: AuthAuditAction

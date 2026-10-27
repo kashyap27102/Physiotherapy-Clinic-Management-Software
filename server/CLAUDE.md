@@ -63,6 +63,12 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
   its email code is verified; then one transaction creates the clinic, a 14-day trial on the `Pilot` plan, the three roles from
   `auth/roleTemplates.ts` (BR-USR-7) and the owner. An email that already has an account gets the same answer and a decoy id.
   `needsSetup` on the profile is true until the clinic has a branch (`POST /branches`, `modules/branches`).
+- **Clinic, branches, staff, roles** (`modules/clinic`, `branches`, `users`, `roles`): the clinic row can only be edited through
+  `updateClinicProfile` in `db/tenantScope.ts` (whitelisted fields; the tenant client still refuses tenant updates). The logo is
+  raw image bytes in `tenant_logo` (≤200 KB, type sniffed from content). Staff start with an unusable password and get a
+  7-day invitation link that reuses `password_reset_token`; `/auth/invitation/accept` sets the password. Branch code lock
+  (BR-TEN-2) is `branchHasIssuedDocuments` in `branches.service.ts`, which returns false until billing documents exist. Role
+  edits warn (409 `PERMISSION_WARNING`) before leaving only the owner with a key permission. Tests: `test/clinic-staff.db.test.ts`.
 - **Auth tests**: `test/auth.test.ts` needs no database; `test/auth.db.test.ts` runs the whole flow against `TEST_DATABASE_URL` (slow on a hosted DB).
 - **No real patient data** in any development or test database until the legal review on data location is done (PRD REG-2).
 
@@ -84,6 +90,6 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
 
 ## Not built yet
 
-Prisma models and migrations (from the ER document), invitation accept (`/auth/invitation/accept`, with TEN-001/USR-001), role and
-permission management, patients, episodes, visits, ledger and receipts, reports, import/export, audit log, super-admin.
+Patient, clinical and billing models (from the ER document), patients, episodes, visits, ledger and receipts, default fee,
+reports, import/export, audit log viewer, super-admin.
 Work on a feature branch off `dev`.

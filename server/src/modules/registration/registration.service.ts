@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { ROLE_TEMPLATES } from '../../auth/roleTemplates.js'
-import { env } from '../../config/env.js'
 import { getPrisma } from '../../db/prisma.js'
 import { Prisma } from '../../generated/prisma/client.js'
+import { appLink } from '../../lib/appLink.js'
 import { getEmailSender } from '../../lib/email/index.js'
 import { accountExistsEmail, registrationCodeEmail } from '../../lib/email/templates.js'
 import { AppError, validationError } from '../../lib/errors.js'
@@ -24,11 +24,6 @@ const MAX_SIGNUPS_PER_EMAIL_PER_HOUR = 5
 
 const invalidCode = (message = 'That code is not correct or has expired.') => new AppError(401, 'OTP_INVALID', message)
 const tooMany = (message: string) => new AppError(429, 'RATE_LIMITED', message)
-
-function appLink(path: string): string {
-  const base = env.APP_URL ?? env.CORS_ORIGINS[0] ?? 'http://localhost:5173'
-  return new URL(path, base).toString()
-}
 
 export interface RegisterInput {
   clinicName: string

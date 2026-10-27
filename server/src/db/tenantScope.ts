@@ -30,6 +30,7 @@ const policies = {
   Permission: { kind: 'global' },
   Tenant: { kind: 'self' },
   Subscription: { kind: 'tenant', column: 'tenantId' },
+  TenantLogo: { kind: 'tenant', column: 'tenantId' },
   Branch: { kind: 'tenant', column: 'tenantId' },
   Role: { kind: 'tenant', column: 'tenantId' },
   RolePermission: { kind: 'via', relation: 'role' },
@@ -167,6 +168,34 @@ export function createTenantDb(base: PrismaClient, tenantId: string) {
 }
 
 export type TenantDb = ReturnType<typeof createTenantDb>
+
+/** The only clinic fields an owner can change. Status, plan and ids belong to the platform. */
+export interface ClinicProfileChanges {
+  name?: string
+  phone?: string | null
+  address?: string | null
+  registrationDetails?: string | null
+  inactiveAfterDays?: number
+}
+
+/**
+ * The owner's edit of their own clinic profile (TEN-001). The tenant client cannot update the clinic row at all, so
+ * this is the single, whitelisted exception: it only ever touches the signed-in user's clinic and only these fields.
+ */
+export function updateClinicProfile(tenantId: string, changes: ClinicProfileChanges) {
+  if (!UUID.test(tenantId)) throw scopeError('a valid tenant id is required')
+  const { name, phone, address, registrationDetails, inactiveAfterDays } = changes
+  return getPrisma().tenant.update({
+    where: { id: tenantId },
+    data: {
+      ...(name === undefined ? {} : { name }),
+      ...(phone === undefined ? {} : { phone }),
+      ...(address === undefined ? {} : { address }),
+      ...(registrationDetails === undefined ? {} : { registrationDetails }),
+      ...(inactiveAfterDays === undefined ? {} : { inactiveAfterDays }),
+    },
+  })
+}
 
 /** The one entry point for feature modules: a database handle bound to the signed-in user's clinic. */
 export function forTenant(tenantId: string): TenantDb {
