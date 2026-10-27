@@ -8,6 +8,8 @@ export type AuthState =
 
 export interface AuthContextValue {
   state: AuthState
+  /** True after the server ended the session mid-work (idle timeout, revoked); the login page explains why. */
+  sessionExpired: boolean
   signedIn: (user: SessionUser) => void
   signOut: () => Promise<void>
 }

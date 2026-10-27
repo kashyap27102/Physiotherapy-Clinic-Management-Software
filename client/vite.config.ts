@@ -45,7 +45,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Backend (Express) will run here; unused while VITE_USE_MOCK_API=true.
+      // The Express API (server/, npm run dev) listens here. Cookies use path /api/v1, so the proxy keeps them working.
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },

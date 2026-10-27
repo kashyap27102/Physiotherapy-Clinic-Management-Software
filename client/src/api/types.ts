@@ -46,9 +46,40 @@ export interface SessionUser {
   /** Null for owners and platform admins, who are not tied to one branch. */
   branch: { id: string; name: string } | null
   permissions: PermissionKey[]
+  /** The clinic has no branch yet (just registered): the owner must finish setup first. */
+  needsSetup: boolean
+}
+
+export interface Branch {
+  id: string
+  name: string
+  /** Part of every receipt number; locked after the first receipt (BR-TEN-2). */
+  code: string
+  address: string | null
+  phone: string | null
+  isActive: boolean
+}
+
+export interface RegisterClinicInput {
+  clinicName: string
+  fullName: string
+  email: string
+  phone: string
+  password: string
+  acceptTerms: boolean
 }
 
 export type LoginResult = { status: 'ok'; user: SessionUser } | { status: 'otp_required'; challengeId: string }
+
+/** A browser that may skip the email code (AUTH-003). */
+export interface TrustedDevice {
+  id: string
+  label: string
+  lastUsedAt: string | null
+  expiresAt: string
+  /** The device making the request. */
+  current: boolean
+}
 
 export interface Paged<T> {
   items: T[]
@@ -215,8 +246,24 @@ export interface Api {
   auth: {
     login(email: string, password: string): Promise<LoginResult>
     verifyOtp(input: { challengeId: string; code: string; trustDevice: boolean }): Promise<SessionUser>
+    /** A new code for the same sign-in; the returned id replaces the old one. */
+    resendOtp(challengeId: string): Promise<{ challengeId: string }>
     me(): Promise<SessionUser | null>
     logout(): Promise<void>
+    /** Always succeeds the same way, whether or not the account exists (US-03a.1). */
+    forgotPassword(email: string): Promise<void>
+    resetPassword(input: { token: string; newPassword: string }): Promise<void>
+    changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>
+    devices(): Promise<TrustedDevice[]>
+    revokeDevice(id: string): Promise<void>
+    /** Clinic self-registration (TEN-001): emails a code; the same answer whether or not the email is taken. */
+    register(input: RegisterClinicInput): Promise<{ registrationId: string }>
+    verifyRegistration(input: { registrationId: string; code: string; trustDevice: boolean }): Promise<SessionUser>
+    resendRegistration(registrationId: string): Promise<{ registrationId: string }>
+  }
+  branches: {
+    list(): Promise<Branch[]>
+    create(input: { name: string; code: string; address?: string; phone?: string }): Promise<Branch>
   }
   patients: {
     search(input: { q: string; page?: number }): Promise<Paged<PatientListItem>>
