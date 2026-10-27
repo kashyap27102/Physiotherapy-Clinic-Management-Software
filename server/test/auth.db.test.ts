@@ -90,13 +90,11 @@ describe.skipIf(!url)('authentication flow', () => {
     await root.otpChallenge.deleteMany({ where: { user: { email: mail(name) } } })
     const login = await agent.post(`${API}/auth/login`).send({ email: mail(name), password: PASSWORD })
     expect(login.status).toBe(401)
-    const verified = await agent
-      .post(`${API}/auth/otp/verify`)
-      .send({
-        challengeId: login.body.error.details.challengeId,
-        code: codeIn(inbox.last(mail(name))),
-        trustDevice: true,
-      })
+    const verified = await agent.post(`${API}/auth/otp/verify`).send({
+      challengeId: login.body.error.details.challengeId,
+      code: codeIn(inbox.last(mail(name))),
+      trustDevice: true,
+    })
     expect(verified.status).toBe(200)
     return { agent, csrf: verified.body.csrfToken as string }
   }
