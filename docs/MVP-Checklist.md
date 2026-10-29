@@ -49,13 +49,14 @@
 
 ### Patients
 
-- [ ] **PAT-001** Register patient: name, phone, age, gender mandatory — Must
-- [ ] Possible-duplicate check by phone and similar name — Must
-- [ ] **PAT-002** Search by name or phone, across all branches — Must
-- [ ] **PAT-003** Patient profile with tabs: Overview, Treatment, Visits, Payments — Must
-- [ ] Balance or advance credit shown prominently on the profile — Must
-- [ ] **PAT-004** Edit patient details with before/after audit — Must
-- [ ] **PAT-005** Cross-branch access with branch tags on visits and payments — Must
+- [x] **PAT-001** Register patient: name, phone, age, gender mandatory — Must (age or date of birth; owners pick the registering branch)
+- [x] Possible-duplicate check by phone and similar name — Must (warns, never blocks)
+- [x] **PAT-002** Search by name or phone, across all branches — Must (plus filters: branch, gender, status, whose phone, registered date; sort; paging)
+- [ ] **PAT-003** Patient profile with tabs: Overview, Treatment, Visits, Payments — Must (Overview done; the other tabs wait for Clinical, Visits and Billing)
+- [ ] Balance or advance credit shown prominently on the profile — Must (banner built; amount is zero until the ledger exists, BILL-002)
+- [x] **PAT-004** Edit patient details with before/after audit — Must
+- [ ] **PAT-005** Cross-branch access with branch tags on visits and payments — Must (access, branch selector and audited views done; branch tags on visits and payments wait for Visits and Billing)
+- [x] Global branch selector in the top bar; the patient list follows it
 
 ### Clinical
 
