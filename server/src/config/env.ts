@@ -39,6 +39,9 @@ const schema = z.object({
   /** Sender shown on every email, for example "Clinic Software <no-reply@yourdomain.com>". Must be a Resend-verified sender. */
   EMAIL_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
 
+  /** Development only: every outgoing email goes to this address instead (the sandbox sender only reaches the Resend account owner). Ignored in test and production. */
+  EMAIL_DEV_REDIRECT_TO: z.preprocess(emptyToUndefined, z.email().optional()),
+
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(300),
 
   /** Sessions end after this much inactivity (PRD BR-AUTH-2; the platform can change it). */

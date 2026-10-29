@@ -177,11 +177,15 @@ function RoleEditor({ role, draft, onDraft, onSaved }: RoleEditorProps) {
     <div className="space-y-4 pb-24">
       {!editable && <FormAlert tone="info">{t.roleSettings.ownerLocked}</FormAlert>}
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
+      {/* Columns (not a grid) so a short card sits right under the one above it instead of leaving a gap. */}
+      <div className="gap-4 xl:columns-2">
         {GROUPS.map((group) => {
           const on = group.permissions.filter((key) => granted.has(key)).length
           return (
-            <section key={group.key} className="overflow-hidden rounded-xl border bg-card shadow-xs">
+            <section
+              key={group.key}
+              className="mb-4 break-inside-avoid overflow-hidden rounded-xl border bg-card shadow-xs"
+            >
               <header className="flex items-center justify-between border-b px-5 py-3.5">
                 <h2 className="text-sm font-semibold">{t.permissionGroups[group.key]}</h2>
                 <span className="text-xs text-muted-foreground tabular-nums">
