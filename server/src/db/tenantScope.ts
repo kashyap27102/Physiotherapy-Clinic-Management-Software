@@ -31,6 +31,7 @@ const policies = {
   Tenant: { kind: 'self' },
   Subscription: { kind: 'tenant', column: 'tenantId' },
   TenantLogo: { kind: 'tenant', column: 'tenantId' },
+  Patient: { kind: 'tenant', column: 'tenantId' },
   Branch: { kind: 'tenant', column: 'tenantId' },
   Role: { kind: 'tenant', column: 'tenantId' },
   RolePermission: { kind: 'via', relation: 'role' },
