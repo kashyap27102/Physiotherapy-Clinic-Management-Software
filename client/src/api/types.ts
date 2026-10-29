@@ -154,16 +154,40 @@ export interface PatientListItem {
   phone: string
   age: number
   gender: Gender
+  phoneContactType: 'self' | 'guardian'
+  status: 'active' | 'inactive'
+  registeredBranch: { id: string; name: string }
+  registeredAt: string
   lastVisitAt: string | null
   lastVisitBranch: string | null
   /** Null when the viewer lacks the ledger.view permission. */
   balance: Balance | null
 }
 
+export type PatientSort = 'newest' | 'oldest' | 'name' | 'name_desc'
+
+export interface PatientSearchInput {
+  q: string
+  /** Only patients registered at this branch; omit for every branch of the clinic. */
+  branchId?: string
+  gender?: Gender
+  status?: 'active' | 'inactive'
+  phoneContactType?: 'self' | 'guardian'
+  /** YYYY-MM-DD, India time, inclusive. */
+  registeredFrom?: string
+  registeredTo?: string
+  sort?: PatientSort
+  page?: number
+  pageSize?: number
+}
+
 export interface CreatePatientInput {
   fullName: string
+  /** As typed; the server normalises it (+91, spaces and a leading 0 are fine). */
   phone: string
-  age: number
+  /** Age in years, or a date of birth (YYYY-MM-DD) from which the age is derived. One of the two is required. */
+  age?: number
+  dateOfBirth?: string
   gender: Gender
   phoneContactType?: 'self' | 'guardian'
   address?: string
@@ -172,13 +196,22 @@ export interface CreatePatientInput {
   referringDoctor?: string
   email?: string
   notes?: string
+  /** Owners work across branches and say where the patient is registered; staff always use their own. */
+  branchId?: string
 }
+
+/** Fields that can be changed later. An empty string clears an optional field. */
+export type UpdatePatientInput = Partial<
+  Omit<CreatePatientInput, 'branchId' | 'dateOfBirth'> & { dateOfBirth: string | null }
+>
 
 export interface PatientDetail {
   id: string
   fullName: string
   phone: string
   phoneContactType: 'self' | 'guardian'
+  /** YYYY-MM-DD when known; the age is then derived from it. */
+  dateOfBirth: string | null
   age: number
   gender: Gender
   address: string | null
@@ -345,12 +378,13 @@ export interface Api {
     setPermissions(id: string, permissions: PermissionKey[], confirmWarnings?: boolean): Promise<RoleSummary>
   }
   patients: {
-    search(input: { q: string; page?: number }): Promise<Paged<PatientListItem>>
+    /** Name, or four or more digits of a phone number. An empty search returns the newest patients. */
+    search(input: PatientSearchInput): Promise<Paged<PatientListItem>>
+    /** Throws ApiError DUPLICATE_PATIENT_WARNING (details.candidates) until called again with confirmDuplicate. */
     create(input: CreatePatientInput, options?: { confirmDuplicate?: boolean }): Promise<PatientDetail>
+    /** Opening a patient is audited on the server. */
     get(id: string): Promise<PatientDetail>
-    episodes(id: string): Promise<EpisodeSummary[]>
-    visits(id: string): Promise<VisitRecord[]>
-    ledger(id: string): Promise<LedgerRecord[]>
+    update(id: string, input: UpdatePatientInput, options?: { confirmDuplicate?: boolean }): Promise<PatientDetail>
   }
   episodes: {
     start(patientId: string): Promise<EpisodeSummary>

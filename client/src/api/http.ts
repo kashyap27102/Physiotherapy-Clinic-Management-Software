@@ -10,6 +10,7 @@ import type {
   Clinic,
   LoginResult,
   Paged,
+  PatientDetail,
   PatientListItem,
   PermissionKey,
   RoleKey,
@@ -220,13 +221,18 @@ export const httpApi: Api = {
   },
 
   patients: {
-    search: ({ q, page }) => request<Paged<PatientListItem>>('GET', '/patients', { query: { q, page } }),
+    search: (input) => request<Paged<PatientListItem>>('GET', '/patients', { query: { ...input } }),
     create: (input, options) =>
-      request('POST', '/patients', { body: input, query: { confirmDuplicate: options?.confirmDuplicate } }),
-    get: (id) => request('GET', `/patients/${id}`),
-    episodes: (id) => request('GET', `/patients/${id}/episodes`),
-    visits: (id) => request('GET', `/patients/${id}/visits`),
-    ledger: (id) => request('GET', `/patients/${id}/ledger`),
+      request<PatientDetail>('POST', '/patients', {
+        body: input,
+        query: { confirmDuplicate: options?.confirmDuplicate },
+      }),
+    get: (id) => request<PatientDetail>('GET', `/patients/${id}`),
+    update: (id, input, options) =>
+      request<PatientDetail>('PATCH', `/patients/${id}`, {
+        body: input,
+        query: { confirmDuplicate: options?.confirmDuplicate },
+      }),
   },
 
   episodes: {

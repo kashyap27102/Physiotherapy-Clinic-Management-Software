@@ -5,7 +5,7 @@ export const queryKeys = {
   patientEpisodes: (id: string) => ['patient', id, 'episodes'] as const,
   patientVisits: (id: string) => ['patient', id, 'visits'] as const,
   patientLedger: (id: string) => ['patient', id, 'ledger'] as const,
-  patientSearch: (q: string) => ['patients', 'search', q] as const,
+  patientSearch: (input: object) => ['patients', 'search', input] as const,
   todayVisits: ['visits', 'today'] as const,
   defaultFee: ['clinic', 'fee'] as const,
   therapists: ['clinic', 'therapists'] as const,
