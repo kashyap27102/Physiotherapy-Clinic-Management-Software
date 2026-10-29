@@ -28,11 +28,16 @@ export type AuthAuditAction =
   | 'user.reactivated'
   | 'user.invitation_sent'
   | 'role.permissions_changed'
+  | 'patient.created'
+  | 'patient.viewed'
+  | 'patient.updated'
 
 interface AuditEntry {
   action: AuthAuditAction
   tenantId?: string | null
   userId?: string | null
+  /** The branch the acting user works in, so a view of a patient from another branch is traceable (US-11.5). */
+  branchId?: string | null
   targetType?: string
   targetId?: string
   /** Never put emails, passwords, codes or tokens here (PRD NFR-010). */
@@ -47,6 +52,7 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
       action: entry.action,
       tenantId: entry.tenantId ?? null,
       userId: entry.userId ?? null,
+      branchId: entry.branchId ?? null,
       targetType: entry.targetType ?? null,
       targetId: entry.targetId ?? null,
       ...(entry.details === undefined ? {} : { details: entry.details }),
