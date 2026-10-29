@@ -32,6 +32,8 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 - `src/pages/settings/` owner settings (Clinic, Branches, Staff, Roles), linked from the sidebar's Settings section by permission.
   Shared pieces: `ConfirmDialog`, `EmptyState`, `Avatar`, `Switch` in `components/common`; `applyFieldErrors` in `lib/forms.ts`
   maps server 422 field errors onto react-hook-form.
+- `src/branchScope/` the top-bar branch choice (`useBranchScope`: `branchId` or null for all branches, remembered per user in localStorage). Lists pass `branchId` to the API; `components/layout/BranchSelect.tsx` is the dropdown. Visits, payments and the dashboard should follow it too.
+- `src/features/patients/` patient list (`PatientTable`, `PatientFilterBar`, `patientFilters.ts` keeps search, filters and page in the address bar), register/edit forms, profile tabs. `components/common/Pagination.tsx` is reusable.
 - `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
 - `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
 - `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.

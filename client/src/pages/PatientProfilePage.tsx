@@ -1,19 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
-import { CalendarCheck, ClipboardList, CreditCard, IndianRupee, Target, UserRound } from 'lucide-react'
+import { ClipboardList, CreditCard, Pencil, Phone, Building2, Target, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, isApiError } from '@/api'
+import { Can } from '@/auth/guards'
 import { useCan } from '@/auth/hooks'
+import { Avatar } from '@/components/common/Avatar'
 import { BalanceBanner } from '@/components/common/Balance'
+import { EmptyState } from '@/components/common/EmptyState'
 import { SoftPill } from '@/components/common/SectionCard'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { RecordPaymentDialog } from '@/features/billing/RecordPaymentDialog'
+import { EditPatientDialog } from '@/features/patients/EditPatientDialog'
 import { OverviewTab, PaymentsTab, TreatmentTab, VisitsTab } from '@/features/patients/PatientTabs'
-import { MarkAttendanceDialog } from '@/features/visits/MarkAttendanceDialog'
+import { formatDate } from '@/lib/date'
+import { formatPhone } from '@/lib/phone'
 import { queryKeys } from '@/lib/queryKeys'
 import { t } from '@/strings/en'
 
@@ -23,80 +26,98 @@ const tabListClass =
 const tabClass =
   'h-full flex-none px-3 data-active:text-primary group-data-horizontal/tabs:after:-bottom-px group-data-[variant=line]/tabs-list:after:bg-primary'
 
+/** PAT-003: one page with the patient's details, balance and history. Every open is audited by the server. */
 export function PatientProfilePage() {
   const { id = '' } = useParams()
-  const canAttend = useCan('visit.mark')
-  const canPay = useCan('payment.record')
-  const [attendOpen, setAttendOpen] = useState(false)
-  const [payOpen, setPayOpen] = useState(false)
+  const canEdit = useCan('patient.edit')
+  const canSeeClinical = useCan('clinical.view')
+  const canSeeLedger = useCan('ledger.view')
+  const [editing, setEditing] = useState(false)
 
-  const patientQuery = useQuery({
+  const query = useQuery({
     queryKey: queryKeys.patient(id),
     queryFn: () => api.patients.get(id),
     retry: (count, error) => !isApiError(error, 'NOT_FOUND') && count < 2,
+    // Each fetch is a recorded "view", so do not refetch just because the window regained focus or remounted.
+    staleTime: 60_000,
   })
-  const patient = patientQuery.data
+  const patient = query.data
 
-  if (patientQuery.isLoading) {
+  if (query.isPending) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
       </div>
     )
   }
 
-  if (patientQuery.isError || !patient) {
+  if (query.isError || !patient) {
+    const notFound = isApiError(query.error, 'NOT_FOUND')
     return (
       <>
         <PageHeader crumbs={[{ label: t.nav.patients, to: '/' }, { label: t.patient.notFound }]} />
-        <Alert variant="destructive" className="max-w-xl">
-          <AlertDescription>{t.patient.notFound}</AlertDescription>
-        </Alert>
-        <Link to="/" className={buttonVariants({ variant: 'outline', className: 'mt-4 h-10 px-4' })}>
-          {t.common.back}
-        </Link>
+        <div className="max-w-xl rounded-xl border bg-card">
+          <EmptyState
+            icon={UserRound}
+            action={
+              <Link to="/" className={buttonVariants({ variant: 'outline', className: 'h-10 px-4' })}>
+                {t.register.back}
+              </Link>
+            }
+          >
+            {notFound ? t.patient.notFoundBody : t.common.genericError}
+          </EmptyState>
+        </div>
       </>
     )
   }
 
   return (
     <>
-      <PageHeader
-        crumbs={[{ label: t.nav.patients, to: '/' }, { label: patient.fullName }]}
-        badge={
-          <SoftPill tone={patient.status === 'active' ? 'success' : 'muted'}>
-            {t.patient.status[patient.status]}
-          </SoftPill>
-        }
-        actions={
-          <>
-            {canPay && (
-              <Button variant="outline" className="h-10 gap-1.5 px-4" onClick={() => setPayOpen(true)}>
-                <IndianRupee aria-hidden />
-                {t.home.takePayment}
-              </Button>
-            )}
-            {canAttend && (
-              <Button className="h-10 gap-1.5 px-4" onClick={() => setAttendOpen(true)}>
-                <CalendarCheck aria-hidden />
-                {t.home.markAttendance}
-              </Button>
-            )}
-          </>
-        }
-      />
+      <PageHeader crumbs={[{ label: t.nav.patients, to: '/' }, { label: patient.fullName }]} />
 
-      <p className="-mt-3 mb-5 text-sm text-muted-foreground">
-        {t.patient.ageYears(patient.age)} · {t.patient.gender[patient.gender]} · {patient.phone}
-      </p>
-
-      {patient.balance && (
-        <div className="mb-6 max-w-sm">
-          <BalanceBanner balance={patient.balance} />
+      <section className="mb-6 grid gap-5 rounded-xl border bg-card p-5 shadow-xs md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="flex min-w-0 items-start gap-4">
+          <Avatar name={patient.fullName} className="size-16 text-xl" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-xl font-semibold tracking-tight">{patient.fullName}</h2>
+              <SoftPill tone={patient.status === 'active' ? 'success' : 'muted'}>
+                {t.patient.status[patient.status]}
+              </SoftPill>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t.patient.ageYears(patient.age)} · {t.patient.gender[patient.gender]}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Phone className="size-3.5" aria-hidden />
+                {formatPhone(patient.phone)}
+                {patient.phoneContactType === 'guardian' && <span>({t.patient.guardianNumber.toLowerCase()})</span>}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Building2 className="size-3.5" aria-hidden />
+                {t.patient.registeredOn(patient.registeredBranch, formatDate(patient.createdAt))}
+              </span>
+            </div>
+            <Can permission="patient.edit">
+              <Button variant="outline" className="mt-4 h-9 gap-1.5 px-3" onClick={() => setEditing(true)}>
+                <Pencil aria-hidden />
+                {t.patient.edit}
+              </Button>
+            </Can>
+          </div>
         </div>
-      )}
+
+        {/* PAT-003 / BILL-008: the balance or advance credit is the first thing the front desk needs to see. */}
+        {patient.balance && (
+          <div className="md:w-64">
+            <BalanceBanner balance={patient.balance} />
+          </div>
+        )}
+      </section>
 
       <Tabs defaultValue="overview">
         <TabsList variant="line" className={tabListClass}>
@@ -104,36 +125,43 @@ export function PatientProfilePage() {
             <UserRound aria-hidden />
             {t.patient.tabs.overview}
           </TabsTrigger>
-          <TabsTrigger value="treatment" className={tabClass}>
-            <Target aria-hidden />
-            {t.patient.tabs.treatment}
-          </TabsTrigger>
+          {canSeeClinical && (
+            <TabsTrigger value="treatment" className={tabClass}>
+              <Target aria-hidden />
+              {t.patient.tabs.treatment}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="visits" className={tabClass}>
             <ClipboardList aria-hidden />
             {t.patient.tabs.visits}
           </TabsTrigger>
-          <TabsTrigger value="payments" className={tabClass}>
-            <CreditCard aria-hidden />
-            {t.patient.tabs.payments}
-          </TabsTrigger>
+          {canSeeLedger && (
+            <TabsTrigger value="payments" className={tabClass}>
+              <CreditCard aria-hidden />
+              {t.patient.tabs.payments}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview">
           <OverviewTab patient={patient} />
         </TabsContent>
-        <TabsContent value="treatment">
-          <TreatmentTab patientId={patient.id} />
-        </TabsContent>
+        {canSeeClinical && (
+          <TabsContent value="treatment">
+            <TreatmentTab />
+          </TabsContent>
+        )}
         <TabsContent value="visits">
-          <VisitsTab patientId={patient.id} />
+          <VisitsTab />
         </TabsContent>
-        <TabsContent value="payments">
-          <PaymentsTab patientId={patient.id} />
-        </TabsContent>
+        {canSeeLedger && (
+          <TabsContent value="payments">
+            <PaymentsTab />
+          </TabsContent>
+        )}
       </Tabs>
 
-      <MarkAttendanceDialog patientId={patient.id} open={attendOpen} onOpenChange={setAttendOpen} />
-      <RecordPaymentDialog patientId={patient.id} open={payOpen} onOpenChange={setPayOpen} />
+      {canEdit && <EditPatientDialog patient={patient} open={editing} onOpenChange={setEditing} />}
     </>
   )
 }

@@ -159,17 +159,17 @@ Notation: **Perm** = permission key required; "any" = any signed-in user. Paths 
 
 ### 5.3 Patients (PAT)
 
-| Method | Path                      | Perm               | Req      | Rel | Notes                                                                                                                   |
-| ------ | ------------------------- | ------------------ | -------- | --- | ----------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/patients`               | `patient.view`     | PAT-002  | R1  | `q` (name or phone), `status`, `page`. Returns last visit and dues indicator                                            |
-| POST   | `/patients`               | `patient.register` | PAT-001  | R1  | Mandatory: name, phone, age or date of birth, gender. Returns duplicate candidates; `?confirmDuplicate=true` to proceed |
-| GET    | `/patients/{id}`          | `patient.view`     | PAT-003  | R1  | Header and overview. Logs a view                                                                                        |
-| PATCH  | `/patients/{id}`          | `patient.edit`     | PAT-004  | R1  | Audit with before and after                                                                                             |
-| GET    | `/patients/{id}/balance`  | `ledger.view`      | BILL-002 | R1  | Dues or advance credit, computed from the ledger                                                                        |
-| GET    | `/patients/{id}/visits`   | `patient.view`     | VIS-003  | R1  | All episodes and branches, newest first                                                                                 |
-| GET    | `/patients/{id}/ledger`   | `ledger.view`      | BILL-002 | R1  | Entries with branch tags; reversed entries marked                                                                       |
-| GET    | `/patients/{id}/episodes` | `patient.view`     | CLN-001  | R1  |                                                                                                                         |
-| GET    | `/patients/inactive`      | `report.view`      | INA-001  | R2  | Active episodes with no visit in N days                                                                                 |
+| Method | Path                      | Perm               | Req      | Rel | Notes                                                                                                                                                                           |
+| ------ | ------------------------- | ------------------ | -------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/patients`               | `patient.view`     | PAT-002  | R1  | `q` (name, or 4+ phone digits), filters `branchId` (registering branch), `gender`, `status`, `phoneContactType`, `registeredFrom`/`registeredTo` (India dates), `sort` (`newest | oldest | name | name_desc`), `page`, `pageSize` (max 50). Rows include registering branch, registered date, last visit, dues indicator |
+| POST   | `/patients`               | `patient.register` | PAT-001  | R1  | Mandatory: name, phone, age or date of birth, gender. Returns duplicate candidates; `?confirmDuplicate=true` to proceed                                                         |
+| GET    | `/patients/{id}`          | `patient.view`     | PAT-003  | R1  | Header and overview. Logs a view                                                                                                                                                |
+| PATCH  | `/patients/{id}`          | `patient.edit`     | PAT-004  | R1  | Audit with before and after                                                                                                                                                     |
+| GET    | `/patients/{id}/balance`  | `ledger.view`      | BILL-002 | R1  | Dues or advance credit, computed from the ledger                                                                                                                                |
+| GET    | `/patients/{id}/visits`   | `patient.view`     | VIS-003  | R1  | All episodes and branches, newest first                                                                                                                                         |
+| GET    | `/patients/{id}/ledger`   | `ledger.view`      | BILL-002 | R1  | Entries with branch tags; reversed entries marked                                                                                                                               |
+| GET    | `/patients/{id}/episodes` | `patient.view`     | CLN-001  | R1  |                                                                                                                                                                                 |
+| GET    | `/patients/inactive`      | `report.view`      | INA-001  | R2  | Active episodes with no visit in N days                                                                                                                                         |
 
 ### 5.4 Clinical (CLN)
 

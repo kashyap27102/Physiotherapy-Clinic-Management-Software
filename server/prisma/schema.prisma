@@ -46,6 +46,7 @@ model Tenant {
   subscriptions Subscription[]
   logo          TenantLogo?
   branches      Branch[]
+  patients      Patient[]
   roles         Role[]
   users         UserAccount[]
   auditLogs     AuditLog[]
@@ -80,8 +81,9 @@ model Branch {
   phone    String?
   isActive Boolean @default(true) @map("is_active")
 
-  tenant Tenant        @relation(fields: [tenantId], references: [id])
-  users  UserAccount[]
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  users    UserAccount[]
+  patients Patient[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -158,6 +160,7 @@ model UserAccount {
   passwordResetTokens PasswordResetToken[]
   sessions            UserSession[]
   auditLogs           AuditLog[]
+  patientsCreated     Patient[]
 
   @@unique([tenantId, id])
   @@index([tenantId])
@@ -260,6 +263,49 @@ model PendingRegistration {
   consumedAt   DateTime? @map("consumed_at") @db.Timestamptz(6)
 
   @@map("pending_registration")
+}
+
+// ---------------------------------------------------------------- patients (ER 3.3)
+
+/// A person treated at the clinic (PAT-001). Belongs to the clinic, not to a branch (BR-PAT-1); the branch where they
+/// were registered is recorded. Phone and name search indexes (including pg_trgm) are in the migration SQL.
+model Patient {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  registeredBranchId String    @map("registered_branch_id") @db.Uuid
+  fullName           String    @map("full_name")
+  /// Ten digits for Indian numbers, or "+" and digits for others.
+  phone              String
+  /// self or guardian (US-08.5)
+  phoneContactType   String    @default("self") @map("phone_contact_type")
+  /// Optional; when known, the age is derived from it (BR-PAT-3).
+  dateOfBirth        DateTime? @map("date_of_birth") @db.Date
+  /// Age on ageRecordedOn, used when there is no date of birth.
+  ageYears           Int       @map("age_years")
+  ageRecordedOn      DateTime  @map("age_recorded_on") @db.Date
+  /// male, female, other, undisclosed
+  gender             String
+  address            String?
+  emergencyContact   String?   @map("emergency_contact")
+  occupation         String?
+  referringDoctor    String?   @map("referring_doctor")
+  email              String?
+  notes              String?
+  /// active or inactive
+  status             String    @default("active")
+  createdById        String    @map("created_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant           Tenant      @relation(fields: [tenantId], references: [id])
+  registeredBranch Branch      @relation(fields: [tenantId, registeredBranchId], references: [tenantId, id])
+  createdBy        UserAccount @relation(fields: [tenantId, createdById], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, phone])
+  @@index([tenantId, createdAt(sort: Desc)])
+  // Partial phone search (US-09.1). The name trigram index is an expression index in the migration SQL.
+  @@index([phone(ops: raw("gin_trgm_ops"))], type: Gin, map: "patient_phone_trgm_idx")
+  @@map("patient")
 }
 
 // ---------------------------------------------------------------- audit (ER 3.5)
