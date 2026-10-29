@@ -222,9 +222,10 @@ describe.skipIf(!url)('authentication flow', () => {
       const login = await agent.post(`${API}/auth/login`).send({ email: mail('staff-a'), password: PASSWORD })
       expect(login.status).toBe(401)
       expect(login.body.error.code).toBe('OTP_REQUIRED')
-      expect(JSON.stringify(login.body)).not.toMatch(/\d{6}/)
 
       const code = codeIn(inbox.last(mail('staff-a')))
+      // The code only travels by email. (Not a "no six digits" pattern: random ids in the body can contain six digits.)
+      expect(JSON.stringify(login.body)).not.toContain(code)
       expect(JSON.stringify(login.body)).not.toContain(code)
       const verified = await agent
         .post(`${API}/auth/otp/verify`)
