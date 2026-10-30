@@ -54,3 +54,8 @@ export const isApiError = (error: unknown, code?: ApiErrorCode): error is ApiErr
 export function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError ? error.message : fallback
 }
+
+/** The `details` object some error codes carry (duplicate candidates, permission warnings); empty when absent. */
+export function errorDetails<T extends object>(error: ApiError): Partial<T> {
+  return (error.details ?? {}) as Partial<T>
+}

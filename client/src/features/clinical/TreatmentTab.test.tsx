@@ -110,6 +110,7 @@ async function render(permissions: PermissionKey[], who: PatientDetail = patient
             sessionExpired: false,
             signedIn: vi.fn(),
             signOut: vi.fn(),
+            retry: vi.fn(),
           }}
         >
           <MemoryRouter>

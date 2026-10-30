@@ -1,15 +1,16 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { IndianRupee } from 'lucide-react'
-import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { api, type TreatmentPlan } from '@/api'
 import { Field, inputClassName, textareaClassName } from '@/components/common/Field'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { cn } from '@/lib/utils'
 import { t } from '@/strings/en'
 import { ClinicalFormShell, clinicalDialogClass, FormSection } from './ClinicalFormShell'
 import {
+  formFieldOf,
   FREQUENCY_SUGGESTIONS,
   isEmptyPlan,
   isValidEstimate,
@@ -20,7 +21,7 @@ import {
   toPlanInput,
   type PlanFormValues,
 } from './clinicalForm'
-import { afterVersionSaved, saveErrorMessage } from './saveVersion'
+import { afterVersionSaved, versionConflictMessage } from './saveVersion'
 
 interface Props {
   episodeId: string
@@ -61,7 +62,6 @@ function PlanForm({
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
-  const [formError, setFormError] = useState<string | null>(null)
   const defaults = planValues(latest, assessmentDiagnosis)
   const { register, handleSubmit, control, setValue, setError, formState } = useForm<PlanFormValues>({
     defaultValues: defaults,
@@ -70,22 +70,24 @@ function PlanForm({
   const frequency = useWatch({ control, name: 'frequency' })
   const therapyTypes = useWatch({ control, name: 'therapyTypes' })
 
-  const save = useMutation({
+  const save = useFormMutation({
+    fields: PLAN_FORM_FIELDS,
+    setError,
+    toName: formFieldOf,
+    onError: versionConflictMessage,
     mutationFn: (values: PlanFormValues) => api.episodes.savePlan(episodeId, toPlanInput(values)),
     onSuccess: async (saved) => {
       await afterVersionSaved(queryClient, episodeId, latest?.version ?? null, saved.version)
       onClose()
     },
-    onError: (error) => setFormError(saveErrorMessage(error, PLAN_FORM_FIELDS, setError)),
   })
 
   const onSubmit = handleSubmit((values) => {
-    setFormError(null)
     if (isEmptyPlan(toPlanInput(values))) {
-      setFormError(t.episode.emptyForm)
+      save.setFormError(t.episode.emptyForm)
       return
     }
-    save.mutate(values)
+    save.submit(values)
   })
 
   // Tapping a therapy adds it to the list, or takes it out again, so most plans need no typing at all.
@@ -111,7 +113,7 @@ function PlanForm({
       onCancel={onClose}
       pending={save.isPending}
       canSave={isDirty || prefilled}
-      error={formError}
+      error={save.formError}
     >
       <FormSection id="plan-aims" title={t.episode.plan}>
         <Field id="plan-diagnosis" label={t.episode.diagnosis} error={errors.diagnosis?.message} optional>

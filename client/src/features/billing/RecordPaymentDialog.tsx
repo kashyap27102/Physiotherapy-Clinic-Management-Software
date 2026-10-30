@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type PaymentMethod } from '@/api'
+import { api, errorMessage, type PaymentMethod } from '@/api'
 import { BalanceBadge } from '@/components/common/Balance'
 import { Field, inputClassName } from '@/components/common/Field'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { FormAlert } from '@/components/auth/FormAlert'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -15,10 +15,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { useIdempotencyKey } from '@/hooks/useIdempotencyKey'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR, fromPaise, toPaise } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 const METHODS: PaymentMethod[] = ['cash', 'upi', 'card', 'bank_transfer']
@@ -57,7 +59,7 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [reference, setReference] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
-  const idempotencyKey = useRef(crypto.randomUUID())
+  const idempotencyKey = useIdempotencyKey()
 
   const patient = patientQuery.data
   const payPaise = toPaise(amountText)
@@ -69,7 +71,7 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
     mutationFn: () =>
       api.payments.create(
         { patientId, amount: fromPaise(payPaise ?? 0), method, reference: reference.trim() || undefined },
-        idempotencyKey.current,
+        idempotencyKey.current(),
       ),
     onSuccess: async (result) => {
       toast.success(t.payment.done(result.receipt.number))
@@ -77,7 +79,7 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
       onClose()
     },
     onError: (error) => {
-      if (!isApiError(error, 'NETWORK')) idempotencyKey.current = crypto.randomUUID()
+      idempotencyKey.afterError(error)
       setFormError(errorMessage(error, t.common.genericError))
     },
   })
@@ -95,6 +97,7 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
       </DialogHeader>
 
       {patientQuery.isLoading && <p className="text-sm text-muted-foreground">{t.common.loading}</p>}
+      {patientQuery.isError && <FormAlert>{t.patient.notFound}</FormAlert>}
 
       {current && (
         <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm">
@@ -176,12 +179,8 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
         </div>
       )}
 
-      {formError && (
-        <Alert variant="destructive">
-          <AlertDescription>{formError}</AlertDescription>
-        </Alert>
-      )}
-      {!online && <p className="text-sm text-amber-700 dark:text-amber-400">{t.offline.blocked}</p>}
+      {formError && <FormAlert>{formError}</FormAlert>}
+      <OfflineNotice />
 
       <DialogFooter>
         <Button variant="outline" size="lg" onClick={onClose}>

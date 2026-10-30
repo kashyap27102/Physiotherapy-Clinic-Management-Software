@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, Loader2, UserRoundPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type PatientListItem } from '@/api'
+import { api, errorDetails, isApiError, type PatientListItem } from '@/api'
 import { useUser } from '@/auth/hooks'
 import { useBranchScope } from '@/branchScope/context'
 import { FormAlert } from '@/components/auth/FormAlert'
@@ -16,9 +16,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { CoreFields, OptionalFields, type PatientFormValues } from '@/features/patients/PatientFormFields'
 import { DuplicateNotice } from '@/features/patients/DuplicateNotice'
 import { blankValues, PATIENT_FORM_FIELDS, toCreateInput } from '@/features/patients/patientForm'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
-import { applyFieldErrors } from '@/lib/forms'
 import { queryKeys } from '@/lib/queryKeys'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 /** PAT-001: register a patient with name, phone, age (or date of birth) and gender; everything else is optional. */
@@ -30,7 +31,6 @@ export function RegisterPatientPage() {
   const prefill = (useLocation().state as { prefill?: string } | null)?.prefill ?? ''
 
   const [duplicates, setDuplicates] = useState<PatientListItem[] | null>(null)
-  const [formError, setFormError] = useState<string | null>(null)
 
   // Owners work in every branch, so they say where the patient is registered. Staff always use their own branch.
   // If the server says it needs a branch the form did not ask for, the picker appears instead of failing silently.
@@ -53,7 +53,9 @@ export function RegisterPatientPage() {
   const values = useWatch({ control })
   const ageMode = values.ageMode ?? 'age'
 
-  const create = useMutation({
+  const create = useFormMutation({
+    fields: PATIENT_FORM_FIELDS,
+    setError,
     mutationFn: ({ input, confirmDuplicate }: { input: PatientFormValues; confirmDuplicate: boolean }) =>
       api.patients.create(toCreateInput(input), { confirmDuplicate }),
     onSuccess: async (patient) => {
@@ -63,22 +65,20 @@ export function RegisterPatientPage() {
     },
     onError: (error) => {
       if (isApiError(error, 'DUPLICATE_PATIENT_WARNING')) {
-        setDuplicates((error.details as { candidates?: PatientListItem[] } | undefined)?.candidates ?? [])
-        return
+        setDuplicates(errorDetails<{ candidates: PatientListItem[] }>(error).candidates ?? [])
+        return true
       }
-      if (isApiError(error, 'VALIDATION_FAILED') && applyFieldErrors(error.fields, PATIENT_FORM_FIELDS, setError)) {
-        if (error.fields.some((field) => field.field === 'branchId')) setServerWantsBranch(true)
-        return
+      // The server wants a branch the form did not ask for: show the picker (the error itself lands on the field).
+      if (isApiError(error, 'VALIDATION_FAILED') && error.fields.some((field) => field.field === 'branchId')) {
+        setServerWantsBranch(true)
       }
-      setFormError(errorMessage(error, t.common.genericError))
     },
   })
 
   const submit = (confirmDuplicate: boolean) =>
     handleSubmit((input) => {
-      setFormError(null)
       setDuplicates(null)
-      create.mutate({ input, confirmDuplicate })
+      create.submit({ input, confirmDuplicate })
     })
 
   return (
@@ -140,8 +140,8 @@ export function RegisterPatientPage() {
           </div>
         </details>
 
-        {formError && <FormAlert>{formError}</FormAlert>}
-        {!online && <FormAlert tone="info">{t.offline.blocked}</FormAlert>}
+        {create.formError && <FormAlert>{create.formError}</FormAlert>}
+        <OfflineNotice />
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Link to="/" className={buttonVariants({ variant: 'outline', className: 'h-11 px-5' })}>

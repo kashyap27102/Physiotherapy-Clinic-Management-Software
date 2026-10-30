@@ -42,6 +42,7 @@ export const t = {
     home: 'Home',
     patients: 'Patients',
     dashboard: 'Dashboard',
+    main: 'Main',
     menu: 'Open menu',
     closeMenu: 'Close menu',
     allBranches: 'All branches',
@@ -74,6 +75,8 @@ export const t = {
     forgotLink: 'Forgot password?',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
+    connectionFailedTitle: 'Cannot reach the server',
+    connectionFailedBody: 'Check your internet connection and try again. You have not been signed out.',
     sessionExpired:
       'Your session ended after a period of inactivity. Please sign in again. Anything you saved is safe.',
     otpSentTo: (email: string) => `We sent a 6-digit code to ${email}. It expires in 10 minutes.`,

@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
-import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
+import { invalidatePatientData } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 import { t } from '@/strings/en'
 
@@ -41,10 +41,8 @@ export function StartEpisodeButton({ patientId, className, size = 'default' }: P
     mutationFn: (branchId?: string) => api.episodes.start(patientId, branchId ? { branchId } : {}),
     onSuccess: async () => {
       toast.success(t.episode.startedToast)
-      await Promise.all([
-        invalidatePatientData(queryClient, patientId),
-        queryClient.invalidateQueries({ queryKey: queryKeys.patientEpisodes(patientId) }),
-      ])
+      // The patient's key is a prefix of its episodes' key, so this refreshes the episode list too.
+      await invalidatePatientData(queryClient, patientId)
       setChoosing(false)
     },
     onError: async (error) => {

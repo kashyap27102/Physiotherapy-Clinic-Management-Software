@@ -58,6 +58,7 @@ async function renderPage(who: SessionUser): Promise<HTMLElement> {
             sessionExpired: false,
             signedIn: vi.fn(),
             signOut: vi.fn(),
+            retry: vi.fn(),
           }}
         >
           <MemoryRouter>

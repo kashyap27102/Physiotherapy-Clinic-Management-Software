@@ -1,28 +1,31 @@
 // Types mirror docs/API-Requirements.md. Money is always a string with two decimals.
 
-export type PermissionKey =
-  | 'clinic.manage'
-  | 'staff.manage'
-  | 'role.manage'
-  | 'device.manage'
-  | 'patient.register'
-  | 'patient.edit'
-  | 'patient.view'
-  | 'clinical.view'
-  | 'clinical.edit'
-  | 'episode.manage'
-  | 'visit.mark'
-  | 'fee.override'
-  | 'ledger.view'
-  | 'payment.record'
-  | 'refund.process'
-  | 'entry.reverse'
-  | 'document.issue'
-  | 'report.view'
-  | 'data.import'
-  | 'data.export'
-  | 'audit.view'
-  | 'platform.admin'
+export const PERMISSION_KEYS = [
+  'clinic.manage',
+  'staff.manage',
+  'role.manage',
+  'device.manage',
+  'patient.register',
+  'patient.edit',
+  'patient.view',
+  'clinical.view',
+  'clinical.edit',
+  'episode.manage',
+  'visit.mark',
+  'fee.override',
+  'ledger.view',
+  'payment.record',
+  'refund.process',
+  'entry.reverse',
+  'document.issue',
+  'report.view',
+  'data.import',
+  'data.export',
+  'audit.view',
+  'platform.admin',
+] as const
+
+export type PermissionKey = (typeof PERMISSION_KEYS)[number]
 
 export type RoleKey = 'owner' | 'receptionist' | 'physiotherapist' | 'super_admin'
 export type Gender = 'male' | 'female' | 'other' | 'undisclosed'
@@ -429,7 +432,7 @@ export interface Api {
   }
   patients: {
     /** Name, or four or more digits of a phone number. An empty search returns the newest patients. */
-    search(input: PatientSearchInput): Promise<Paged<PatientListItem>>
+    search(input: PatientSearchInput, signal?: AbortSignal): Promise<Paged<PatientListItem>>
     /** Throws ApiError DUPLICATE_PATIENT_WARNING (details.candidates) until called again with confirmDuplicate. */
     create(input: CreatePatientInput, options?: { confirmDuplicate?: boolean }): Promise<PatientDetail>
     /** Opening a patient is audited on the server. */

@@ -2,8 +2,9 @@
 // Auth endpoints are live; patients, visits, payments and clinic answer 404 until their server modules are built.
 
 import axios, { isAxiosError, type Method } from 'axios'
-import { ApiError, type ApiErrorCode, type FieldError } from './errors'
+import { ApiError, errorDetails, type ApiErrorCode, type FieldError } from './errors'
 import { notifySessionExpired } from './sessionEvents'
+import { PERMISSION_KEYS } from './types'
 import type {
   Api,
   Assessment,
@@ -17,7 +18,6 @@ import type {
   Paged,
   PatientDetail,
   PatientListItem,
-  PermissionKey,
   RoleKey,
   RoleSummary,
   SessionUser,
@@ -50,7 +50,6 @@ interface ServerProfile {
 const ROLE_KEYS: readonly RoleKey[] = ['owner', 'receptionist', 'physiotherapist']
 
 function toSessionUser(profile: ServerProfile): SessionUser {
-  csrfToken = profile.csrfToken
   const roleKey = profile.role?.key
   return {
     id: profile.id,
@@ -59,9 +58,16 @@ function toSessionUser(profile: ServerProfile): SessionUser {
     role: profile.isSuperAdmin ? 'super_admin' : (ROLE_KEYS.find((key) => key === roleKey) ?? 'receptionist'),
     tenantName: profile.tenant?.name ?? '',
     branch: profile.branch ? { id: profile.branch.id, name: profile.branch.name } : null,
-    permissions: profile.permissions as PermissionKey[],
+    // A key this build does not know is dropped; permissions only hide or show UI, the server enforces them.
+    permissions: PERMISSION_KEYS.filter((key) => profile.permissions.includes(key)),
     needsSetup: profile.needsSetup,
   }
+}
+
+/** Maps the server's profile and remembers its CSRF token for the requests that follow. */
+function startSession(profile: ServerProfile): SessionUser {
+  csrfToken = profile.csrfToken
+  return toSessionUser(profile)
 }
 
 /** Auth calls answer 401 as part of their normal flow, so they never mean "your session just expired". */
@@ -70,6 +76,8 @@ const AUTH_FLOW = /^\/auth\/(login|otp\/|register|password\/(forgot|reset)|me$)/
 interface RequestOptions {
   body?: unknown
   query?: Record<string, string | number | boolean | undefined>
+  /** Lets a caller (React Query) cancel the request. */
+  signal?: AbortSignal
   idempotencyKey?: string
   /** For raw uploads such as the clinic logo; JSON otherwise. */
   contentType?: string
@@ -122,6 +130,7 @@ async function request<T>(method: Method, path: string, options: RequestOptions 
       url: path,
       params,
       data: options.body,
+      signal: options.signal,
       headers: {
         ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
         ...(options.contentType ? { 'Content-Type': options.contentType } : {}),
@@ -138,22 +147,21 @@ export const httpApi: Api = {
     async login(email, password): Promise<LoginResult> {
       try {
         const profile = await request<ServerProfile>('POST', '/auth/login', { body: { email, password } })
-        return { status: 'ok', user: toSessionUser(profile) }
+        return { status: 'ok', user: startSession(profile) }
       } catch (error) {
         if (error instanceof ApiError && error.code === 'OTP_REQUIRED') {
-          const details = (error.details ?? {}) as { challengeId?: string }
-          return { status: 'otp_required', challengeId: details.challengeId ?? '' }
+          return { status: 'otp_required', challengeId: errorDetails<{ challengeId: string }>(error).challengeId ?? '' }
         }
         throw error
       }
     },
     async verifyOtp(input) {
-      return toSessionUser(await request<ServerProfile>('POST', '/auth/otp/verify', { body: input }))
+      return startSession(await request<ServerProfile>('POST', '/auth/otp/verify', { body: input }))
     },
     resendOtp: (challengeId) => request<{ challengeId: string }>('POST', '/auth/otp/resend', { body: { challengeId } }),
     async me() {
       try {
-        return toSessionUser(await request<ServerProfile>('GET', '/auth/me'))
+        return startSession(await request<ServerProfile>('GET', '/auth/me'))
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
         throw error
@@ -182,7 +190,7 @@ export const httpApi: Api = {
     revokeDevice: (id) => request<void>('DELETE', `/auth/devices/${id}`),
     register: (input) => request<{ registrationId: string }>('POST', '/auth/register', { body: input }),
     async verifyRegistration(input) {
-      return toSessionUser(await request<ServerProfile>('POST', '/auth/register/verify', { body: input }))
+      return startSession(await request<ServerProfile>('POST', '/auth/register/verify', { body: input }))
     },
     resendRegistration: (registrationId) =>
       request<{ registrationId: string }>('POST', '/auth/register/resend', { body: { registrationId } }),
@@ -226,7 +234,7 @@ export const httpApi: Api = {
   },
 
   patients: {
-    search: (input) => request<Paged<PatientListItem>>('GET', '/patients', { query: { ...input } }),
+    search: (input, signal) => request<Paged<PatientListItem>>('GET', '/patients', { query: { ...input }, signal }),
     create: (input, options) =>
       request<PatientDetail>('POST', '/patients', {
         body: input,

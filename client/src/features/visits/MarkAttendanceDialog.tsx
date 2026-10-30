@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { api, errorMessage, isApiError } from '@/api'
 import { useCan, useUser } from '@/auth/hooks'
+import { FormAlert } from '@/components/auth/FormAlert'
 import { Field, inputClassName, selectClassName } from '@/components/common/Field'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -16,9 +17,11 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { StartEpisodeButton } from '@/features/clinical/StartEpisodeButton'
+import { useIdempotencyKey } from '@/hooks/useIdempotencyKey'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR, isValidAmount } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 interface Props {
@@ -56,7 +59,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const [confirmSecond, setConfirmSecond] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [reasonError, setReasonError] = useState<string | null>(null)
-  const idempotencyKey = useRef(crypto.randomUUID())
+  const idempotencyKey = useIdempotencyKey()
 
   const attend = useMutation({
     mutationFn: () =>
@@ -67,7 +70,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
           feeOverride: overrideOn ? { amount: feeText.trim(), reason } : undefined,
           confirmSecondVisitToday: confirmSecond || undefined,
         },
-        idempotencyKey.current,
+        idempotencyKey.current(),
       ),
     onSuccess: async (result) => {
       toast.success(t.attendance.done(result.sessionNumber, result.planProgress.planned))
@@ -77,7 +80,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
     },
     onError: (error) => {
       // A network failure may or may not have saved: keep the key so a retry cannot double-charge.
-      if (!isApiError(error, 'NETWORK')) idempotencyKey.current = crypto.randomUUID()
+      idempotencyKey.afterError(error)
       if (isApiError(error, 'DUPLICATE_VISIT_TODAY')) {
         setConfirmSecond(true)
         return
@@ -97,10 +100,6 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   function submit() {
     setFormError(null)
     setReasonError(null)
-    if (overrideOn && !reasonValid) {
-      setReasonError(t.attendance.reasonRequired)
-      return
-    }
     attend.mutate()
   }
 
@@ -114,11 +113,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
       </DialogHeader>
 
       {patientQuery.isLoading && <p className="text-sm text-muted-foreground">{t.common.loading}</p>}
-      {patientQuery.isError && (
-        <Alert variant="destructive">
-          <AlertDescription>{t.patient.notFound}</AlertDescription>
-        </Alert>
-      )}
+      {patientQuery.isError && <FormAlert>{t.patient.notFound}</FormAlert>}
 
       {patient && patient.balance?.state === 'due' && (
         <Alert variant="destructive">
@@ -185,7 +180,11 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
                       onChange={(event) => setFeeText(event.target.value)}
                     />
                   </Field>
-                  <Field id="att-reason" label={t.attendance.overrideReason} error={reasonError ?? undefined}>
+                  <Field
+                    id="att-reason"
+                    label={t.attendance.overrideReason}
+                    error={reasonError ?? (feeText && !reasonValid ? t.attendance.reasonRequired : undefined)}
+                  >
                     <Input
                       id="att-reason"
                       className={inputClassName}
@@ -207,12 +206,8 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
         </div>
       )}
 
-      {formError && (
-        <Alert variant="destructive">
-          <AlertDescription>{formError}</AlertDescription>
-        </Alert>
-      )}
-      {!online && <p className="text-sm text-amber-700 dark:text-amber-400">{t.offline.blocked}</p>}
+      {formError && <FormAlert>{formError}</FormAlert>}
+      <OfflineNotice />
 
       <DialogFooter>
         <Button variant="outline" size="lg" onClick={onClose}>
