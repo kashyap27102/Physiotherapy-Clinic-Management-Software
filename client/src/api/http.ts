@@ -6,8 +6,13 @@ import { ApiError, type ApiErrorCode, type FieldError } from './errors'
 import { notifySessionExpired } from './sessionEvents'
 import type {
   Api,
+  Assessment,
   Branch,
   Clinic,
+  DischargeResult,
+  Episode,
+  EpisodeDetail,
+  TreatmentPlan,
   LoginResult,
   Paged,
   PatientDetail,
@@ -236,7 +241,26 @@ export const httpApi: Api = {
   },
 
   episodes: {
-    start: (patientId) => request('POST', `/patients/${patientId}/episodes`),
+    async list(patientId) {
+      const result = await request<{ items: Episode[] }>('GET', `/patients/${patientId}/episodes`)
+      return result.items
+    },
+    start: (patientId, input = {}) => request<Episode>('POST', `/patients/${patientId}/episodes`, { body: input }),
+    get: (id) => request<EpisodeDetail>('GET', `/episodes/${id}`),
+    async assessments(episodeId) {
+      const result = await request<{ items: Assessment[] }>('GET', `/episodes/${episodeId}/assessments`)
+      return result.items
+    },
+    saveAssessment: (episodeId, input) =>
+      request<Assessment>('POST', `/episodes/${episodeId}/assessments`, { body: input }),
+    async plans(episodeId) {
+      const result = await request<{ items: TreatmentPlan[] }>('GET', `/episodes/${episodeId}/treatment-plans`)
+      return result.items
+    },
+    savePlan: (episodeId, input) =>
+      request<TreatmentPlan>('POST', `/episodes/${episodeId}/treatment-plans`, { body: input }),
+    discharge: (episodeId, note) =>
+      request<DischargeResult>('POST', `/episodes/${episodeId}/discharge`, { body: note ? { note } : {} }),
   },
 
   visits: {

@@ -1,4 +1,4 @@
-import { CreditCard, ClipboardList, Target, type LucideIcon } from 'lucide-react'
+import { CreditCard, ClipboardList, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { PatientDetail } from '@/api'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -76,13 +76,10 @@ function Placeholder({ icon, title, body }: { icon: LucideIcon; title: string; b
 }
 
 /*
- * The three tabs below have nothing to show yet: episodes, visits and payments do not exist until the Clinical, Visits
- * and Billing sections are built (CLN-001, VIS-003, BILL-002). Nobody can create that data today, so "none yet" is
- * accurate. Each tab becomes a real list when its endpoint lands (GET /patients/{id}/episodes, /visits, /ledger).
+ * The two tabs below have nothing to show yet: visits and payments do not exist until the Visits and Billing sections
+ * are built (VIS-003, BILL-002). Nobody can create that data today, so "none yet" is accurate. Each tab becomes a real
+ * list when its endpoint lands (GET /patients/{id}/visits, /ledger). The Treatment tab lives in features/clinical.
  */
-export const TreatmentTab = () => (
-  <Placeholder icon={Target} title={t.patient.treatmentEmptyTitle} body={t.patient.treatmentEmptyBody} />
-)
 export const VisitsTab = () => (
   <Placeholder icon={ClipboardList} title={t.patient.visitsEmptyTitle} body={t.patient.visitsEmptyBody} />
 )

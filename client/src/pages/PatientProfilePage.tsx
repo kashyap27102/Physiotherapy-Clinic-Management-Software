@@ -14,7 +14,8 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EditPatientDialog } from '@/features/patients/EditPatientDialog'
-import { OverviewTab, PaymentsTab, TreatmentTab, VisitsTab } from '@/features/patients/PatientTabs'
+import { TreatmentTab } from '@/features/clinical/TreatmentTab'
+import { OverviewTab, PaymentsTab, VisitsTab } from '@/features/patients/PatientTabs'
 import { formatDate } from '@/lib/date'
 import { formatPhone } from '@/lib/phone'
 import { queryKeys } from '@/lib/queryKeys'
@@ -148,7 +149,7 @@ export function PatientProfilePage() {
         </TabsContent>
         {canSeeClinical && (
           <TabsContent value="treatment">
-            <TreatmentTab />
+            <TreatmentTab patient={patient} />
           </TabsContent>
         )}
         <TabsContent value="visits">
