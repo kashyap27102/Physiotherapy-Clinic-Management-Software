@@ -71,7 +71,8 @@ export function HomePage() {
   const input = toSearchInput(filters, q, branchId)
   const patients = useQuery({
     queryKey: queryKeys.patientSearch(input),
-    queryFn: () => api.patients.search(input),
+    // React Query's signal cancels a search that a newer one has replaced.
+    queryFn: ({ signal }) => api.patients.search(input, signal),
     // Wait for typing to settle, and do not ask the server for what it will refuse (fewer than 4 phone digits).
     enabled: q === typed && !tooShortToSearch(q),
     placeholderData: (previous) => previous,

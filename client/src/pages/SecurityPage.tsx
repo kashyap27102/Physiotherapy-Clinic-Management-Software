@@ -3,7 +3,7 @@ import { Loader2, Monitor, Smartphone, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type TrustedDevice } from '@/api'
+import { api, errorMessage, type TrustedDevice } from '@/api'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { PasswordInput } from '@/components/auth/PasswordInput'
 import { PasswordStrength } from '@/components/auth/PasswordStrength'
@@ -20,10 +20,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatDate, formatDateTime } from '@/lib/date'
 import { PASSWORD_MIN_LENGTH } from '@/lib/passwordStrength'
 import { queryKeys } from '@/lib/queryKeys'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 /** AUTH-003 and AUTH-004 for the signed-in user. */
@@ -39,6 +41,8 @@ export function SecurityPage() {
   )
 }
 
+const PASSWORD_FIELDS = ['currentPassword', 'newPassword'] as const
+
 interface PasswordValues {
   currentPassword: string
   newPassword: string
@@ -47,44 +51,27 @@ interface PasswordValues {
 
 function ChangePasswordCard() {
   const online = useOnlineStatus()
-  const [error, setError] = useState<string | null>(null)
   const form = useForm<PasswordValues>({
     defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
   })
   const { errors } = form.formState
   const newPassword = useWatch({ control: form.control, name: 'newPassword' })
 
-  const change = useMutation({
+  const change = useFormMutation({
+    fields: PASSWORD_FIELDS,
+    setError: form.setError,
     mutationFn: ({ currentPassword, newPassword }: PasswordValues) =>
       api.auth.changePassword({ currentPassword, newPassword }),
     onSuccess: () => {
       form.reset()
       toast.success(t.security.saved)
     },
-    onError: (e) => {
-      if (isApiError(e, 'VALIDATION_FAILED') && e.fields.length > 0) {
-        for (const field of e.fields) {
-          if (field.field === 'currentPassword' || field.field === 'newPassword') {
-            form.setError(field.field, { message: field.message })
-          }
-        }
-      } else {
-        setError(errorMessage(e, t.common.genericError))
-      }
-    },
   })
 
   return (
     <SectionCard title={t.security.passwordTitle}>
       <p className="-mt-1 mb-5 text-sm text-muted-foreground">{t.security.passwordBody}</p>
-      <form
-        className="space-y-4"
-        noValidate
-        onSubmit={form.handleSubmit((values) => {
-          setError(null)
-          change.mutate(values)
-        })}
-      >
+      <form className="space-y-4" noValidate onSubmit={form.handleSubmit((values) => change.submit(values))}>
         <Field id="currentPassword" label={t.security.currentPassword} error={errors.currentPassword?.message}>
           <PasswordInput
             id="currentPassword"
@@ -115,8 +102,8 @@ function ChangePasswordCard() {
             })}
           />
         </Field>
-        {error && <FormAlert>{error}</FormAlert>}
-        {!online && <FormAlert tone="info">{t.offline.blocked}</FormAlert>}
+        {change.formError && <FormAlert>{change.formError}</FormAlert>}
+        <OfflineNotice />
         <div className="flex justify-end pt-1">
           <Button type="submit" className="h-10 px-4" disabled={change.isPending || !online}>
             {change.isPending && <Loader2 className="animate-spin" aria-hidden />}

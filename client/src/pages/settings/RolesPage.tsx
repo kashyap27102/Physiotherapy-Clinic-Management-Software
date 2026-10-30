@@ -2,7 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Crown, Loader2, Lock, Stethoscope, TriangleAlert, UsersRound, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type PermissionKey, type PermissionWarning, type RoleSummary } from '@/api'
+import {
+  api,
+  errorDetails,
+  errorMessage,
+  isApiError,
+  type PermissionKey,
+  type PermissionWarning,
+  type RoleSummary,
+} from '@/api'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Switch } from '@/components/common/Switch'
@@ -161,7 +169,7 @@ function RoleEditor({ role, draft, onDraft, onSaved }: RoleEditorProps) {
     onError: (e) => {
       // US-07.4: the server asks for confirmation before leaving only the owner able to do everyday work.
       if (isApiError(e, 'PERMISSION_WARNING')) {
-        setWarnings((e.details as { warnings?: PermissionWarning[] } | undefined)?.warnings ?? [])
+        setWarnings(errorDetails<{ warnings: PermissionWarning[] }>(e).warnings ?? [])
         return
       }
       setWarnings(null)

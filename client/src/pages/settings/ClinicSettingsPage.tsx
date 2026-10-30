@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ImageUp, Loader2, Trash2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type Clinic } from '@/api'
+import { api, errorMessage, type Clinic } from '@/api'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { Field, inputClassName, textareaClassName } from '@/components/common/Field'
 import { SectionCard } from '@/components/common/SectionCard'
@@ -12,9 +12,10 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { queryKeys } from '@/lib/queryKeys'
-import { applyFieldErrors } from '@/lib/forms'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 const LOGO_MAX_BYTES = 200 * 1024
@@ -65,14 +66,13 @@ const toValues = (clinic: Clinic): ProfileValues => ({
 function ProfileCard({ clinic }: { clinic: Clinic }) {
   const queryClient = useQueryClient()
   const online = useOnlineStatus()
-  const [error, setError] = useState<string | null>(null)
-  const form = useForm<ProfileValues>({ defaultValues: toValues(clinic) })
+  // `values` keeps the form in step when the profile is saved or refetched.
+  const form = useForm<ProfileValues>({ values: toValues(clinic) })
   const { errors, isDirty } = form.formState
 
-  // Keep the form in step when the profile is saved or refetched.
-  useEffect(() => form.reset(toValues(clinic)), [clinic, form])
-
-  const save = useMutation({
+  const save = useFormMutation({
+    fields: PROFILE_FIELDS,
+    setError: form.setError,
     mutationFn: (values: ProfileValues) =>
       api.clinic.update({
         name: values.name.trim(),
@@ -85,23 +85,12 @@ function ProfileCard({ clinic }: { clinic: Clinic }) {
       queryClient.setQueryData(queryKeys.clinic, updated)
       toast.success(t.settings.saved)
     },
-    onError: (e) => {
-      if (isApiError(e, 'VALIDATION_FAILED') && applyFieldErrors(e.fields, PROFILE_FIELDS, form.setError)) return
-      setError(errorMessage(e, t.common.genericError))
-    },
   })
 
   return (
     <SectionCard title={t.clinicSettings.profileTitle}>
       <p className="-mt-1 mb-5 text-sm text-muted-foreground">{t.clinicSettings.profileBody}</p>
-      <form
-        className="space-y-4"
-        noValidate
-        onSubmit={form.handleSubmit((values) => {
-          setError(null)
-          save.mutate(values)
-        })}
-      >
+      <form className="space-y-4" noValidate onSubmit={form.handleSubmit((values) => save.submit(values))}>
         <Field id="name" label={t.clinicSettings.name} error={errors.name?.message}>
           <Input
             id="name"
@@ -158,8 +147,8 @@ function ProfileCard({ clinic }: { clinic: Clinic }) {
           />
         </Field>
 
-        {error && <FormAlert>{error}</FormAlert>}
-        {!online && <FormAlert tone="info">{t.offline.blocked}</FormAlert>}
+        {save.formError && <FormAlert>{save.formError}</FormAlert>}
+        <OfflineNotice />
 
         <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:justify-end">
           <Button

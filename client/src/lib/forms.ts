@@ -1,17 +1,26 @@
-/** Applies server field errors (422) to a react-hook-form form; returns true if any field matched. */
+/**
+ * Applies server field errors (422) to a react-hook-form form. `toName` maps the server's field path onto the form's
+ * field name (default: as is). Returns how many fields matched and how many did not, so a caller can show a general
+ * message only when something was left over.
+ */
 export function applyFieldErrors<T extends string>(
   fields: { field: string; message: string }[],
   known: readonly T[],
   setError: (name: T, error: { message: string }) => void,
-): boolean {
-  let matched = false
+  toName: (serverField: string) => string = (name) => name,
+): { matched: number; unmatched: number } {
+  let matched = 0
+  let unmatched = 0
   for (const { field, message } of fields) {
-    if ((known as readonly string[]).includes(field)) {
-      setError(field as T, { message })
-      matched = true
+    const name = toName(field)
+    if ((known as readonly string[]).includes(name)) {
+      setError(name as T, { message })
+      matched++
+    } else {
+      unmatched++
     }
   }
-  return matched
+  return { matched, unmatched }
 }
 
 /** Up to two initials, skipping titles such as "Dr.". */

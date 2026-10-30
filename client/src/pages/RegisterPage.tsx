@@ -1,9 +1,8 @@
-import { useMutation } from '@tanstack/react-query'
 import { Loader2, Sparkles } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { Link, Navigate } from 'react-router-dom'
-import { api, errorMessage, isApiError, type RegisterClinicInput } from '@/api'
+import { api, type RegisterClinicInput } from '@/api'
 import { useAuth } from '@/auth/hooks'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { FormAlert } from '@/components/auth/FormAlert'
@@ -14,6 +13,7 @@ import { VerifyCodeStep } from '@/components/auth/VerifyCodeStep'
 import { Field, inputClassName } from '@/components/common/Field'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { PASSWORD_MIN_LENGTH } from '@/lib/passwordStrength'
 import { cn } from '@/lib/utils'
 import { t } from '@/strings/en'
@@ -37,7 +37,6 @@ function SectionLabel({ children }: { children: ReactNode }) {
 export function RegisterPage() {
   const { state, signedIn } = useAuth()
   const [registrationId, setRegistrationId] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<RegisterClinicInput>({
     defaultValues: { clinicName: '', fullName: '', email: '', phone: '', password: '', acceptTerms: false },
@@ -46,20 +45,11 @@ export function RegisterPage() {
   const password = useWatch({ control: form.control, name: 'password' })
   const email = useWatch({ control: form.control, name: 'email' })
 
-  const start = useMutation({
+  const start = useFormMutation({
+    fields: FIELDS,
+    setError: form.setError,
     mutationFn: (values: RegisterClinicInput) => api.auth.register({ ...values, email: values.email.trim() }),
     onSuccess: (result) => setRegistrationId(result.registrationId),
-    onError: (e) => {
-      if (isApiError(e, 'VALIDATION_FAILED') && e.fields.length > 0) {
-        for (const field of e.fields) {
-          if ((FIELDS as readonly string[]).includes(field.field)) {
-            form.setError(field.field as FieldName, { message: field.message })
-          }
-        }
-      } else {
-        setError(errorMessage(e, t.common.genericError))
-      }
-    },
   })
 
   if (state.status === 'authenticated') return <Navigate to="/" replace />
@@ -101,14 +91,7 @@ export function RegisterPage() {
         </>
       }
     >
-      <form
-        className="space-y-4"
-        noValidate
-        onSubmit={form.handleSubmit((values) => {
-          setError(null)
-          start.mutate(values)
-        })}
-      >
+      <form className="space-y-4" noValidate onSubmit={form.handleSubmit((values) => start.submit(values))}>
         <SectionLabel>{t.signup.clinicSection}</SectionLabel>
         <Field id="clinicName" label={t.signup.clinicName} error={errors.clinicName?.message}>
           <Input
@@ -205,7 +188,7 @@ export function RegisterPage() {
           )}
         </div>
 
-        {error && <FormAlert>{error}</FormAlert>}
+        {start.formError && <FormAlert>{start.formError}</FormAlert>}
 
         <Button type="submit" className="mt-2 h-11 w-full text-[0.95rem]" disabled={start.isPending}>
           {start.isPending && <Loader2 className="animate-spin" aria-hidden />}

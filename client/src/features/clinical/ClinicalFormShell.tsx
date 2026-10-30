@@ -4,6 +4,7 @@ import { FormAlert } from '@/components/auth/FormAlert'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 /**
@@ -44,7 +45,7 @@ export function ClinicalFormShell({
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto border-y px-5 py-5">
         {children}
         {error && <FormAlert>{error}</FormAlert>}
-        {!online && <FormAlert tone="info">{t.offline.blocked}</FormAlert>}
+        <OfflineNotice />
       </div>
 
       <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">

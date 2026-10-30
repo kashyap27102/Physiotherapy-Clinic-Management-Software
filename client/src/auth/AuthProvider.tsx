@@ -9,6 +9,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null })
   const [sessionExpired, setSessionExpired] = useState(false)
 
+  const [attempt, setAttempt] = useState(0)
+
   useEffect(() => {
     let cancelled = false
     api.auth
@@ -16,12 +18,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((user) => {
         if (!cancelled) setState(user ? { status: 'authenticated', user } : { status: 'anonymous', user: null })
       })
+      // me() answers null for "not signed in"; anything thrown is the server being unreachable, which must not look
+      // like a sign-out.
       .catch(() => {
-        if (!cancelled) setState({ status: 'anonymous', user: null })
+        if (!cancelled) setState({ status: 'error', user: null })
       })
     return () => {
       cancelled = true
     }
+  }, [attempt])
+
+  const retry = useCallback(() => {
+    setState({ status: 'loading', user: null })
+    setAttempt((n) => n + 1)
   }, [])
 
   // BR-AUTH-2 / US-01.6: the server ended the session (idle, password changed, device revoked). Anything already
@@ -57,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient])
 
   const value = useMemo(
-    () => ({ state, sessionExpired, signedIn, signOut }),
-    [state, sessionExpired, signedIn, signOut],
+    () => ({ state, sessionExpired, signedIn, signOut, retry }),
+    [state, sessionExpired, signedIn, signOut, retry],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

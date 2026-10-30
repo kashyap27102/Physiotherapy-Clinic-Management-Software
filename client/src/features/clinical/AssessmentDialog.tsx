@@ -1,21 +1,22 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
 import { api, type Assessment } from '@/api'
 import { Field, inputClassName, textareaClassName } from '@/components/common/Field'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { t } from '@/strings/en'
 import { ClinicalFormShell, clinicalDialogClass, FormSection } from './ClinicalFormShell'
 import {
   ASSESSMENT_FORM_FIELDS,
   assessmentValues,
+  formFieldOf,
   isEmptyAssessment,
   toAssessmentInput,
   type AssessmentFormValues,
 } from './clinicalForm'
 import { PainScale } from './PainScale'
-import { afterVersionSaved, saveErrorMessage } from './saveVersion'
+import { afterVersionSaved, versionConflictMessage } from './saveVersion'
 
 interface Props {
   episodeId: string
@@ -46,28 +47,29 @@ function AssessmentForm({
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
-  const [formError, setFormError] = useState<string | null>(null)
   const { register, handleSubmit, control, setError, formState } = useForm<AssessmentFormValues>({
     defaultValues: assessmentValues(latest),
   })
   const { errors, isDirty } = formState
 
-  const save = useMutation({
+  const save = useFormMutation({
+    fields: ASSESSMENT_FORM_FIELDS,
+    setError,
+    toName: formFieldOf,
+    onError: versionConflictMessage,
     mutationFn: (values: AssessmentFormValues) => api.episodes.saveAssessment(episodeId, toAssessmentInput(values)),
     onSuccess: async (saved) => {
       await afterVersionSaved(queryClient, episodeId, latest?.version ?? null, saved.version)
       onClose()
     },
-    onError: (error) => setFormError(saveErrorMessage(error, ASSESSMENT_FORM_FIELDS, setError)),
   })
 
   const onSubmit = handleSubmit((values) => {
-    setFormError(null)
     if (isEmptyAssessment(toAssessmentInput(values))) {
-      setFormError(t.episode.emptyForm)
+      save.setFormError(t.episode.emptyForm)
       return
     }
-    save.mutate(values)
+    save.submit(values)
   })
 
   return (
@@ -78,7 +80,7 @@ function AssessmentForm({
       onCancel={onClose}
       pending={save.isPending}
       canSave={isDirty}
-      error={formError}
+      error={save.formError}
     >
       <FormSection id="assess-complaint" title={t.episode.chiefComplaint}>
         <Field id="chiefComplaint" label={t.episode.chiefComplaint} error={errors.chiefComplaint?.message} optional>

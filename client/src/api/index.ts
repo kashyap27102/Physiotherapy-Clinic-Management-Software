@@ -5,4 +5,5 @@ import type { Api } from './types'
 export const api: Api = httpApi
 
 export * from './errors'
+export { PERMISSION_KEYS } from './types'
 export type * from './types'

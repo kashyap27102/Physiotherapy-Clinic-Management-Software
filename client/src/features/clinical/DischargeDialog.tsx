@@ -18,6 +18,7 @@ import {
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 interface Props {
@@ -120,7 +121,7 @@ function DischargeForm({
       </Field>
 
       {error && <FormAlert>{error}</FormAlert>}
-      {!online && <FormAlert tone="info">{t.offline.blocked}</FormAlert>}
+      <OfflineNotice />
 
       <DialogFooter>
         <Button variant="outline" className="h-10" onClick={onClose}>

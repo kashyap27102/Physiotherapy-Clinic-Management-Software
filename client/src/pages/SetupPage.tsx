@@ -1,10 +1,9 @@
-import { useMutation } from '@tanstack/react-query'
 import { Building2, Loader2, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError } from '@/api'
+import { api } from '@/api'
 import { Forbidden } from '@/auth/guards'
 import { useAuth, useCan, useUser } from '@/auth/hooks'
 import { AuthIcon, AuthLayout } from '@/components/auth/AuthLayout'
@@ -13,6 +12,7 @@ import { backLinkClass } from '@/components/auth/styles'
 import { Field, inputClassName } from '@/components/common/Field'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { t } from '@/strings/en'
 
 interface BranchValues {
@@ -21,6 +21,8 @@ interface BranchValues {
   address: string
   phone: string
 }
+
+const BRANCH_FIELDS = ['name', 'code', 'address', 'phone'] as const
 
 /** First letters of the name as a suggested branch code: "Koregaon Park" → "KP", "Pune" → "PUN". */
 function suggestCode(name: string): string {
@@ -42,13 +44,14 @@ export function SetupPage() {
   const canManage = useCan('clinic.manage')
   const { signedIn, signOut } = useAuth()
   const navigate = useNavigate()
-  const [error, setError] = useState<string | null>(null)
   const [codeTouched, setCodeTouched] = useState(false)
 
   const form = useForm<BranchValues>({ defaultValues: { name: '', code: '', address: '', phone: '' } })
   const { errors } = form.formState
 
-  const save = useMutation({
+  const save = useFormMutation({
+    fields: BRANCH_FIELDS,
+    setError: form.setError,
     mutationFn: async (values: BranchValues) => {
       await api.branches.create({
         name: values.name.trim(),
@@ -62,22 +65,6 @@ export function SetupPage() {
       if (updated) signedIn(updated)
       toast.success(t.setup.welcome(user.tenantName))
       void navigate('/', { replace: true })
-    },
-    onError: (e) => {
-      if (isApiError(e, 'VALIDATION_FAILED') && e.fields.length > 0) {
-        for (const field of e.fields) {
-          if (
-            field.field === 'name' ||
-            field.field === 'code' ||
-            field.field === 'address' ||
-            field.field === 'phone'
-          ) {
-            form.setError(field.field, { message: field.message })
-          }
-        }
-      } else {
-        setError(errorMessage(e, t.common.genericError))
-      }
     },
   })
 
@@ -114,14 +101,7 @@ export function SetupPage() {
         </button>
       }
     >
-      <form
-        className="space-y-4"
-        noValidate
-        onSubmit={form.handleSubmit((values) => {
-          setError(null)
-          save.mutate(values)
-        })}
-      >
+      <form className="space-y-4" noValidate onSubmit={form.handleSubmit((values) => save.submit(values))}>
         <Field id="name" label={t.setup.name} error={errors.name?.message}>
           <Input
             id="name"
@@ -154,7 +134,7 @@ export function SetupPage() {
           <Input id="phone" type="tel" autoComplete="tel" className={inputClassName} {...form.register('phone')} />
         </Field>
 
-        {error && <FormAlert>{error}</FormAlert>}
+        {save.formError && <FormAlert>{save.formError}</FormAlert>}
 
         <Button type="submit" className="mt-2 h-11 w-full text-[0.95rem]" disabled={save.isPending}>
           {save.isPending && <Loader2 className="animate-spin" aria-hidden />}
