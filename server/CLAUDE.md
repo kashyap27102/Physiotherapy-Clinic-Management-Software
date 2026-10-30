@@ -5,7 +5,7 @@ REST API for the physiotherapy clinic product (multi-tenant SaaS, Indian market)
 `../docs/PRD.md` (business rules `BR-*`, security `SEC-*`) before building a feature. Cite requirement IDs in commits and tests.
 
 **Stage: foundations and authentication.** Running: health endpoints, login with email code on new devices, trusted devices,
-password reset and change, sessions, clinics/branches/staff/roles, patients. No visit or billing endpoints yet; next are visits, then payments.
+password reset and change, sessions, clinics/branches/staff/roles, patients, clinical (episodes, assessments, plans, discharge). No visit or billing endpoints yet; next are visits, then payments.
 
 ## Commands
 
@@ -69,7 +69,8 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
   7-day invitation link that reuses `password_reset_token`; `/auth/invitation/accept` sets the password. Branch code lock
   (BR-TEN-2) is `branchHasIssuedDocuments` in `branches.service.ts`, which returns false until billing documents exist. Role
   edits warn (409 `PERMISSION_WARNING`) before leaving only the owner with a key permission. Tests: `test/clinic-staff.db.test.ts`.
-- **Patients** (`modules/patients`, PAT-001 to PAT-005): a patient belongs to the clinic, not a branch (BR-PAT-1). `patientRules.ts` holds the pure rules (phone normalisation, age/date of birth, name similarity, search query classification). Duplicate check warns with 409 `DUPLICATE_PATIENT_WARNING` and proceeds with `?confirmDuplicate=true`. Owners must send `branchId` on create; staff always use their own branch. `GET /patients` filters by `branchId`, `gender`, `status`, `phoneContactType`, `registeredFrom/To` (India days) and `sort`, paged. Every open of a patient is audited as `patient.viewed` with the viewer's branch. `balanceFor`, `lastVisitAt` and `activeEpisodeId` are seams that stay empty until Billing, Visits and Clinical exist. `npm run seed:patients` adds 25 fictional patients to the one non-test clinic in a dev database (`-- --reset` replaces them; refuses production). Tests: `test/patientRules.test.ts`, `test/patients.db.test.ts`.
+- **Patients** (`modules/patients`, PAT-001 to PAT-005): a patient belongs to the clinic, not a branch (BR-PAT-1). `patientRules.ts` holds the pure rules (phone normalisation, age/date of birth, name similarity, search query classification). Duplicate check warns with 409 `DUPLICATE_PATIENT_WARNING` and proceeds with `?confirmDuplicate=true`. Owners must send `branchId` on create; staff always use their own branch. `GET /patients` filters by `branchId`, `gender`, `status`, `phoneContactType`, `registeredFrom/To` (India days) and `sort`, paged. Every open of a patient is audited as `patient.viewed` with the viewer's branch. `balanceFor` and `lastVisitAt` are seams that stay empty until Billing and Visits exist; `activeEpisodeId` is real. `npm run seed:patients` adds 25 fictional patients to the one non-test clinic in a dev database (`-- --reset` replaces them; refuses production). Tests: `test/patientRules.test.ts`, `test/patients.db.test.ts`.
+- **Clinical** (`modules/clinical`, CLN-001 to CLN-004): episodes, versioned assessments and treatment plans. One active episode per patient (partial unique index, so a race gives one 201 and one 409 `EPISODE_ALREADY_ACTIVE`). Starting an episode makes the patient `active`; discharge (`episode.manage`, note optional, never blocked by dues) makes them `inactive` and the episode read-only (later writes answer 409 `NO_ACTIVE_EPISODE`). Assessment and plan saves insert the next version (unchanged content returns 200 and creates nothing; a simultaneous clash is 409 `VERSION_CONFLICT`); a database trigger refuses UPDATE and DELETE on both tables for every role, so test cleanup disables it briefly. Reads of assessments, plans and episodes are audited. `clinicalRules.ts` holds the pure rules. Seams: `sessionCount` is 0 and `progress` has no visits until Visits exist; discharge returns `balanceFor` for the dues/credit prompt. Tests: `test/clinicalRules.test.ts`, `test/clinical.db.test.ts`.
 - **Auth tests**: `test/auth.test.ts` needs no database; `test/auth.db.test.ts` runs the whole flow against `TEST_DATABASE_URL` (slow on a hosted DB).
 - **No real patient data** in any development or test database until the legal review on data location is done (PRD REG-2).
 
@@ -91,6 +92,6 @@ permission checks) → data access through Prisma. Routes stay thin. `modules/he
 
 ## Not built yet
 
-Clinical and billing models (from the ER document), episodes, visits, ledger and receipts, default fee,
+Visit and billing models (from the ER document), visits, ledger and receipts, default fee,
 reports, import/export, audit log viewer, super-admin.
 Work on a feature branch off `dev`.

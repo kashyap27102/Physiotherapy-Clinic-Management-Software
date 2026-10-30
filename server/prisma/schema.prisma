@@ -43,13 +43,16 @@ model Tenant {
   status              String   @default("active")
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  subscriptions Subscription[]
-  logo          TenantLogo?
-  branches      Branch[]
-  patients      Patient[]
-  roles         Role[]
-  users         UserAccount[]
-  auditLogs     AuditLog[]
+  subscriptions  Subscription[]
+  logo           TenantLogo?
+  branches       Branch[]
+  patients       Patient[]
+  episodes       Episode[]
+  assessments    Assessment[]
+  treatmentPlans TreatmentPlan[]
+  roles          Role[]
+  users          UserAccount[]
+  auditLogs      AuditLog[]
 
   @@map("tenant")
 }
@@ -81,9 +84,10 @@ model Branch {
   phone    String?
   isActive Boolean @default(true) @map("is_active")
 
-  tenant   Tenant        @relation(fields: [tenantId], references: [id])
-  users    UserAccount[]
-  patients Patient[]
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  users           UserAccount[]
+  patients        Patient[]
+  episodesStarted Episode[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -161,6 +165,9 @@ model UserAccount {
   sessions            UserSession[]
   auditLogs           AuditLog[]
   patientsCreated     Patient[]
+  episodesDischarged  Episode[]
+  assessmentsWritten  Assessment[]
+  plansWritten        TreatmentPlan[]
 
   @@unique([tenantId, id])
   @@index([tenantId])
@@ -299,6 +306,7 @@ model Patient {
   tenant           Tenant      @relation(fields: [tenantId], references: [id])
   registeredBranch Branch      @relation(fields: [tenantId, registeredBranchId], references: [tenantId, id])
   createdBy        UserAccount @relation(fields: [tenantId, createdById], references: [tenantId, id])
+  episodes         Episode[]
 
   @@unique([tenantId, id])
   @@index([tenantId, phone])
@@ -306,6 +314,84 @@ model Patient {
   // Partial phone search (US-09.1). The name trigram index is an expression index in the migration SQL.
   @@index([phone(ops: raw("gin_trgm_ops"))], type: Gin, map: "patient_phone_trgm_idx")
   @@map("patient")
+}
+
+// ---------------------------------------------------------------- clinical (ER 3.3, CLN-001 to CLN-004)
+
+/// One course of treatment (BR-CLN-1). At most one active episode per patient: a partial unique index in the
+/// migration SQL (CON-11). Discharged episodes stay for good; a returning patient gets a new episode (BR-CLN-8).
+model Episode {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  patientId       String    @map("patient_id") @db.Uuid
+  startedBranchId String    @map("started_branch_id") @db.Uuid
+  /// active or discharged
+  status          String    @default("active")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  dischargedAt    DateTime? @map("discharged_at") @db.Timestamptz(6)
+  dischargeNote   String?   @map("discharge_note")
+  dischargedById  String?   @map("discharged_by") @db.Uuid
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  patient        Patient         @relation(fields: [tenantId, patientId], references: [tenantId, id])
+  startedBranch  Branch          @relation(fields: [tenantId, startedBranchId], references: [tenantId, id])
+  dischargedBy   UserAccount?    @relation(fields: [tenantId, dischargedById], references: [tenantId, id])
+  assessments    Assessment[]
+  treatmentPlans TreatmentPlan[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, patientId, startedAt(sort: Desc)])
+  @@map("episode")
+}
+
+/// Append-only and versioned (BR-CLN-4): an edit inserts the next version. Insert and select only (SEC-008).
+model Assessment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  episodeId     String   @map("episode_id") @db.Uuid
+  version       Int
+  history       String?
+  pain          String?
+  rangeOfMotion String?  @map("range_of_motion")
+  diagnosis     String?
+  /// chief complaint, pain score and others
+  extraFields   Json     @default("{}") @map("extra_fields")
+  authorId      String   @map("author_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant      @relation(fields: [tenantId], references: [id])
+  episode Episode     @relation(fields: [tenantId, episodeId], references: [tenantId, id])
+  author  UserAccount @relation(fields: [tenantId, authorId], references: [tenantId, id])
+
+  @@unique([episodeId, version])
+  @@index([tenantId, episodeId])
+  @@map("assessment")
+}
+
+/// Append-only and versioned (BR-CLN-4). The estimated cost is informational only and creates no charge (BR-CLN-5).
+model TreatmentPlan {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  episodeId       String   @map("episode_id") @db.Uuid
+  version         Int
+  diagnosis       String?
+  goals           String?
+  plannedSessions Int?     @map("planned_sessions")
+  /// for example 3 times a week
+  frequency       String?
+  therapyTypes    String?  @map("therapy_types")
+  estimatedCost   Decimal? @map("estimated_cost") @db.Decimal(12, 2)
+  notes           String?
+  authorId        String   @map("author_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant      @relation(fields: [tenantId], references: [id])
+  episode Episode     @relation(fields: [tenantId, episodeId], references: [tenantId, id])
+  author  UserAccount @relation(fields: [tenantId, authorId], references: [tenantId, id])
+
+  @@unique([episodeId, version])
+  @@index([tenantId, episodeId])
+  @@map("treatment_plan")
 }
 
 // ---------------------------------------------------------------- audit (ER 3.5)

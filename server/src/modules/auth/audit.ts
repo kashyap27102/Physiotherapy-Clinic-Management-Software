@@ -31,6 +31,13 @@ export type AuthAuditAction =
   | 'patient.created'
   | 'patient.viewed'
   | 'patient.updated'
+  | 'episode.started'
+  | 'episode.discharged'
+  | 'episode.viewed'
+  | 'assessment.created'
+  | 'assessment.viewed'
+  | 'treatment_plan.created'
+  | 'treatment_plan.viewed'
 
 interface AuditEntry {
   action: AuthAuditAction
