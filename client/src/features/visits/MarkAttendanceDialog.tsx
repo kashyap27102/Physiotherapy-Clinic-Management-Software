@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { StartEpisodeButton } from '@/features/clinical/StartEpisodeButton'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR, isValidAmount } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
@@ -56,12 +57,6 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const [formError, setFormError] = useState<string | null>(null)
   const [reasonError, setReasonError] = useState<string | null>(null)
   const idempotencyKey = useRef(crypto.randomUUID())
-
-  const startEpisode = useMutation({
-    mutationFn: () => api.episodes.start(patientId),
-    onSuccess: () => invalidatePatientData(queryClient, patientId),
-    onError: (error) => setFormError(errorMessage(error, t.common.genericError)),
-  })
 
   const attend = useMutation({
     mutationFn: () =>
@@ -136,18 +131,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
         <Alert>
           <AlertTitle>{t.patient.noActiveEpisode}</AlertTitle>
           <AlertDescription>
-            {canStartEpisode ? (
-              <Button
-                size="lg"
-                className="mt-2"
-                disabled={startEpisode.isPending || !online}
-                onClick={() => startEpisode.mutate()}
-              >
-                {startEpisode.isPending ? t.episode.starting : t.episode.start}
-              </Button>
-            ) : (
-              t.episode.askTherapist
-            )}
+            {canStartEpisode ? <StartEpisodeButton patientId={patientId} className="mt-2" /> : t.episode.askTherapist}
           </AlertDescription>
         </Alert>
       )}

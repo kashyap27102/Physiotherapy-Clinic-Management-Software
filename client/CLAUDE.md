@@ -34,6 +34,12 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
   maps server 422 field errors onto react-hook-form.
 - `src/branchScope/` the top-bar branch choice (`useBranchScope`: `branchId` or null for all branches, remembered per user in localStorage). Lists pass `branchId` to the API; `components/layout/BranchSelect.tsx` is the dropdown. Visits, payments and the dashboard should follow it too.
 - `src/features/patients/` patient list (`PatientTable`, `PatientFilterBar`, `patientFilters.ts` keeps search, filters and page in the address bar), register/edit forms, profile tabs. `components/common/Pagination.tsx` is reusable.
+- `src/features/clinical/` the profile's Treatment tab (CLN-001 to CLN-004): `TreatmentTab` (episode picker, summary with
+  `ProgressMeter`, assessment and plan cards), `AssessmentDialog` (with the 0–10 `PainScale`), `PlanDialog` (frequency and
+  therapy chips), `VersionHistoryDialog`, `DischargeDialog`, `StartEpisodeButton` (owners pick a branch, pre-set from the
+  branch scope; reused by `MarkAttendanceDialog`). Pure form rules in `clinicalForm.ts`. Each save is a new version; the
+  server answers the unchanged version when nothing changed, so compare version numbers to tell the user. Opening an
+  episode or a history is audited, so those queries use `staleTime` and never refetch on focus.
 - `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
 - `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
 - `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.
@@ -70,5 +76,5 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 
 ## Not built yet
 
-Assessment and treatment-plan forms, discharge, reversals and refunds, PDF receipts and invoices, owner dashboard,
+Session notes, reversals and refunds, PDF receipts and invoices, owner dashboard,
 default fee setting, owner view of a staff member's trusted devices, reports, import/export, audit log viewer. Build on the `dev` branch via a feature branch.

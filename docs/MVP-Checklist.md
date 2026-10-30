@@ -52,7 +52,7 @@
 - [x] **PAT-001** Register patient: name, phone, age, gender mandatory — Must (age or date of birth; owners pick the registering branch)
 - [x] Possible-duplicate check by phone and similar name — Must (warns, never blocks)
 - [x] **PAT-002** Search by name or phone, across all branches — Must (plus filters: branch, gender, status, whose phone, registered date; sort; paging)
-- [ ] **PAT-003** Patient profile with tabs: Overview, Treatment, Visits, Payments — Must (Overview done; the other tabs wait for Clinical, Visits and Billing)
+- [ ] **PAT-003** Patient profile with tabs: Overview, Treatment, Visits, Payments — Must (Overview and Treatment done; Visits and Payments wait for their sections)
 - [ ] Balance or advance credit shown prominently on the profile — Must (banner built; amount is zero until the ledger exists, BILL-002)
 - [x] **PAT-004** Edit patient details with before/after audit — Must
 - [ ] **PAT-005** Cross-branch access with branch tags on visits and payments — Must (access, branch selector and audited views done; branch tags on visits and payments wait for Visits and Billing)
@@ -60,12 +60,12 @@
 
 ### Clinical
 
-- [ ] **CLN-001** Start an episode; one active episode per patient — Must
-- [ ] **CLN-002** Assessment form: history, pain, range of motion, diagnosis; versioned — Must
-- [ ] **CLN-003** Treatment plan: diagnosis, goals, sessions and frequency, therapy types, estimated cost; versioned — Must
-- [ ] Plan progress shown ("session 6 of 10") and notice when exceeded — Must
-- [ ] **CLN-004** Discharge with optional note; dues prompt that does not block — Must
-- [ ] Reactivate by starting a new episode, history preserved — Must
+- [x] **CLN-001** Start an episode; one active episode per patient — Must
+- [x] **CLN-002** Assessment form: history, pain, range of motion, diagnosis; versioned — Must
+- [x] **CLN-003** Treatment plan: diagnosis, goals, sessions and frequency, therapy types, estimated cost; versioned — Must
+- [ ] Plan progress shown ("session 6 of 10") and notice when exceeded — Must (display built; the count waits for Visits)
+- [x] **CLN-004** Discharge with optional note; dues prompt that does not block — Must (prompt shows the real amount once the ledger exists, BILL-002)
+- [x] Reactivate by starting a new episode, history preserved — Must
 
 ### Visits
 

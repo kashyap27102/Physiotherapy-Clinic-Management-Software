@@ -227,37 +227,87 @@ export interface PatientDetail {
   balance: Balance | null
 }
 
+/** One course of treatment (CLN-001). A patient has at most one active episode. */
+export interface Episode {
+  id: string
+  patientId: string
+  status: 'active' | 'discharged'
+  startedAt: string
+  startedBranch: { id: string; name: string }
+  dischargedAt: string | null
+  dischargeNote: string | null
+  dischargedBy: string | null
+}
+
+export interface AssessmentInput {
+  history?: string
+  pain?: string
+  rangeOfMotion?: string
+  diagnosis?: string
+  extraFields?: { chiefComplaint?: string; painScore?: number }
+}
+
+/** One saved version of the initial assessment (CLN-002). Versions are never changed; an edit adds the next one. */
 export interface Assessment {
+  id: string
+  episodeId: string
   version: number
-  history: string
-  pain: string
-  rangeOfMotion: string
-  diagnosis: string
-  authorName: string
+  history: string | null
+  pain: string | null
+  rangeOfMotion: string | null
+  diagnosis: string | null
+  extraFields: { chiefComplaint?: string; painScore?: number }
+  author: string
   createdAt: string
 }
 
-export interface TreatmentPlan {
-  version: number
-  diagnosis: string
-  goals: string
-  plannedSessions: number | null
-  frequency: string
-  therapyTypes: string
-  /** Informational only: billing is per visit (PRD BR-CLN-5). */
-  estimatedCost: Money | null
-  notes: string | null
+export interface TreatmentPlanInput {
+  diagnosis?: string
+  goals?: string
+  plannedSessions?: number
+  frequency?: string
+  therapyTypes?: string
+  estimatedCost?: Money
+  notes?: string
 }
 
-export interface EpisodeSummary {
+/** One saved version of the treatment plan (CLN-003). */
+export interface TreatmentPlan {
   id: string
-  status: 'active' | 'discharged'
-  startedAt: string
-  dischargedAt: string | null
+  episodeId: string
+  version: number
+  diagnosis: string | null
+  goals: string | null
+  plannedSessions: number | null
+  frequency: string | null
+  therapyTypes: string | null
+  /** Informational only: billing is per visit (PRD BR-CLN-5). */
+  estimatedCost: Money | null
+  /** Also holds free-text exercise instructions (US-13.4). */
+  notes: string | null
+  author: string
+  createdAt: string
+}
+
+export interface PlanProgress {
   sessionsDone: number
-  /** Null when the viewer lacks clinical.view or nothing was recorded. */
+  plannedSessions: number | null
+  exceeded: boolean
+}
+
+/** GET /episodes/{id}: the episode with its latest assessment and plan. Opening it is audited. */
+export interface EpisodeDetail {
+  episode: Episode
   assessment: Assessment | null
   plan: TreatmentPlan | null
+  sessionCount: number
+  progress: PlanProgress
+}
+
+export interface DischargeResult {
+  episode: Episode
+  /** Null when the viewer cannot see balances. */
+  balance: Balance | null
 }
 
 export interface VisitRecord {
@@ -387,7 +437,19 @@ export interface Api {
     update(id: string, input: UpdatePatientInput, options?: { confirmDuplicate?: boolean }): Promise<PatientDetail>
   }
   episodes: {
-    start(patientId: string): Promise<EpisodeSummary>
+    list(patientId: string): Promise<Episode[]>
+    /** Owners work across branches and name one; staff always start at their own. */
+    start(patientId: string, input?: { branchId?: string }): Promise<Episode>
+    /** Opening an episode is audited on the server. */
+    get(id: string): Promise<EpisodeDetail>
+    /** Every version, newest first. Audited. */
+    assessments(episodeId: string): Promise<Assessment[]>
+    /** Saves the next version; returns the current one unchanged when nothing changed. */
+    saveAssessment(episodeId: string, input: AssessmentInput): Promise<Assessment>
+    plans(episodeId: string): Promise<TreatmentPlan[]>
+    savePlan(episodeId: string, input: TreatmentPlanInput): Promise<TreatmentPlan>
+    /** Never blocked by dues (BR-CLN-7); the balance comes back for the settle or refund prompt. */
+    discharge(episodeId: string, note?: string): Promise<DischargeResult>
   }
   visits: {
     today(): Promise<TodayVisit[]>

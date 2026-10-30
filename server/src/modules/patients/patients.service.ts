@@ -89,7 +89,7 @@ type Row = Prisma.PatientGetPayload<{ select: typeof select }>
  * then it answers "nothing due" for anyone allowed to see balances, and nothing for everyone else.
  */
 // oxlint-disable-next-line no-unused-vars
-function balanceFor(auth: AuthContext, _patientId: string): Balance | null {
+export function balanceFor(auth: AuthContext, _patientId: string): Balance | null {
   return auth.permissions.has('ledger.view') ? { amount: '0.00', state: 'zero' } : null
 }
 
@@ -111,7 +111,13 @@ const toListItem = (row: Row, auth: AuthContext): PatientListItem => ({
 
 const isoDate = (date: Date) => date.toISOString().slice(0, 10)
 
-const toDetail = (row: Row, auth: AuthContext): PatientDetail => ({
+/** The patient's one active episode, if any (BR-CLN-2). */
+async function activeEpisodeIdFor(db: TenantDb, patientId: string): Promise<string | null> {
+  const episode = await db.episode.findFirst({ where: { patientId, status: 'active' }, select: { id: true } })
+  return episode?.id ?? null
+}
+
+const toDetail = (row: Row, auth: AuthContext, activeEpisodeId: string | null): PatientDetail => ({
   id: row.id,
   fullName: row.fullName,
   phone: row.phone,
@@ -128,8 +134,7 @@ const toDetail = (row: Row, auth: AuthContext): PatientDetail => ({
   status: row.status as 'active' | 'inactive',
   registeredBranch: row.registeredBranch.name,
   createdAt: row.createdAt,
-  // Episodes do not exist yet (Clinical section).
-  activeEpisodeId: null,
+  activeEpisodeId,
   balance: balanceFor(auth, row.id),
 })
 
@@ -333,7 +338,7 @@ export async function createPatient(
     details: { registeredBranchId: branch.id, confirmedDuplicate: options.confirmDuplicate },
     ip,
   })
-  return toDetail(row, auth)
+  return toDetail(row, auth, null)
 }
 
 /* ------------------------------------------------------------------ view */
@@ -365,7 +370,7 @@ export async function viewPatient(
     targetId: id,
     ip,
   })
-  return toDetail(row, auth)
+  return toDetail(row, auth, await activeEpisodeIdFor(db, id))
 }
 
 /* ---------------------------------------------------------------- update */
@@ -471,5 +476,5 @@ export async function updatePatient(
       ip,
     })
   }
-  return toDetail(after, auth)
+  return toDetail(after, auth, await activeEpisodeIdFor(db, id))
 }
