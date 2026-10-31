@@ -14,6 +14,7 @@ export const PERMISSION_KEYS = [
   'clinical.edit',
   'episode.manage',
   'visit.mark',
+  'visit.backdate',
   'fee.override',
   'ledger.view',
   'payment.record',

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { parseMoney } from '../billing/billingRules.js'
+import { parseIsoDate, parseMoney } from '../billing/billingRules.js'
 
 const uuid = z.uuid({ error: 'Invalid id.' })
 
@@ -27,6 +27,21 @@ export const createVisitBody = z.object({
       reason: z.string().trim().max(500, 'Use at most 500 characters.').default(''),
     })
     .optional(),
+  /** The day the visit really happened, for attendance that was forgotten. Needs `visit.backdate` (checked in the service). */
+  visitDate: z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined || value === '') return null
+      const parts = parseIsoDate(value)
+      if (!parts) {
+        ctx.addIssue({ code: 'custom', message: 'Enter the date as YYYY-MM-DD.' })
+        return z.NEVER
+      }
+      return parts
+    }),
+  backdateReason: z.string().trim().max(500, 'Use at most 500 characters.').default(''),
+  /** Confirms a second visit on the chosen day (today unless a visit date is given). */
   confirmSecondVisitToday: z.boolean().optional(),
 })
 

@@ -324,6 +324,102 @@ describe.skipIf(!url)('visits and billing', () => {
     })
   })
 
+  describe('back-dated attendance (VIS-001, visit.backdate)', () => {
+    /** A patient whose episode began ten days ago, so earlier days are inside it. */
+    const patientStartedEarlier = async () => {
+      const made = await patientWithEpisode()
+      await root.episode.update({
+        where: { id: made.episodeId },
+        data: { startedAt: new Date(Date.now() - 10 * 86_400_000) },
+      })
+      return made
+    }
+    const ago = (days: number) => indiaDay(-days)
+
+    it('is refused for a user without the permission, who can still mark today', async () => {
+      const { patientId } = await patientStartedEarlier()
+      const denied = await attend(front1, patientId, { visitDate: ago(1), backdateReason: 'Forgot yesterday' })
+      expect(denied.status).toBe(403)
+      expect(await root.visit.count({ where: { patientId } })).toBe(0)
+      // Naming today is not back-dating.
+      const today = await attend(front1, patientId, { visitDate: ago(0) })
+      expect(today.status).toBe(201)
+    })
+
+    it('records the visit and its charge on the chosen day, with a reason, and audits it', async () => {
+      const { patientId } = await patientStartedEarlier()
+      const day = ago(3)
+      const res = await attend(ownerA, patientId, { visitDate: day, backdateReason: 'Forgot to mark on that day' })
+      expect(res.status).toBe(201)
+      const visitDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(
+        new Date(res.body.visit.visitedAt),
+      )
+      expect(visitDay).toBe(day)
+      const charge = await root.ledgerEntry.findFirstOrThrow({ where: { visitId: res.body.visit.id } })
+      expect(charge.entryDate.toISOString().slice(0, 10)).toBe(day)
+      expect(await balanceOf(ownerA, patientId)).toEqual({ amount: '500.00', state: 'due' })
+      const audit = await root.auditLog.findFirst({ where: { action: 'visit.backdated', targetId: res.body.visit.id } })
+      expect(audit?.details).toMatchObject({ visitDate: day, reason: 'Forgot to mark on that day' })
+      // It is not one of today's visits, but it is in the patient's history and counts as a session.
+      const todayList = await ownerA.agent.get(`${API}/visits/today`)
+      expect((todayList.body.items as { id: string }[]).map((v) => v.id)).not.toContain(res.body.visit.id)
+      const history = await ownerA.agent.get(`${API}/patients/${patientId}/visits`)
+      expect((history.body.items as { id: string }[]).map((v) => v.id)).toContain(res.body.visit.id)
+      expect(res.body.sessionNumber).toBe(1)
+    })
+
+    it('needs a reason, and refuses a future day or a day before the episode', async () => {
+      const { patientId } = await patientStartedEarlier()
+      const noReason = await attend(ownerA, patientId, { visitDate: ago(1), backdateReason: '  ' })
+      expect(noReason.status).toBe(422)
+      expect(noReason.body.error.fields[0].field).toBe('backdateReason')
+      const future = await attend(ownerA, patientId, { visitDate: indiaDay(2), backdateReason: 'x' })
+      expect(future.status).toBe(422)
+      expect(future.body.error.fields[0].field).toBe('visitDate')
+      const tooEarly = await attend(ownerA, patientId, { visitDate: ago(30), backdateReason: 'x' })
+      expect(tooEarly.status).toBe(422)
+      expect(tooEarly.body.error.fields[0].message).toMatch(/before this episode/)
+      const malformed = await attend(ownerA, patientId, { visitDate: '31/10/2026', backdateReason: 'x' })
+      expect(malformed.status).toBe(422)
+      expect(await root.visit.count({ where: { patientId } })).toBe(0)
+    })
+
+    it('asks before a second visit on the same earlier day', async () => {
+      const { patientId } = await patientStartedEarlier()
+      const body = { visitDate: ago(2), backdateReason: 'Forgot' }
+      expect((await attend(ownerA, patientId, body)).status).toBe(201)
+      const again = await attend(ownerA, patientId, body)
+      expect(again.status).toBe(409)
+      expect(again.body.error.code).toBe('DUPLICATE_VISIT_TODAY')
+      // A visit today does not count as a duplicate of that earlier day.
+      expect((await attend(ownerA, patientId)).status).toBe(201)
+      expect((await attend(ownerA, patientId, { ...body, confirmSecondVisitToday: true })).status).toBe(201)
+    })
+
+    it('works for a receptionist once the owner grants the permission, and stops when it is taken back', async () => {
+      const { patientId } = await patientStartedEarlier()
+      const roles = await ownerA.agent.get(`${API}/roles`)
+      const role = (roles.body.roles as { id: string; key: string; permissions: string[] }[]).find(
+        (r) => r.key === 'receptionist',
+      )!
+      expect(role.permissions).not.toContain('visit.backdate')
+      const owner = (roles.body.roles as { key: string; permissions: string[] }[]).find((r) => r.key === 'owner')!
+      expect(owner.permissions).toContain('visit.backdate')
+      const body = { visitDate: ago(1), backdateReason: 'Front desk was busy' }
+      try {
+        const grant = await put(ownerA, `/roles/${role.id}/permissions`, {
+          permissions: [...role.permissions, 'visit.backdate'],
+          confirmWarnings: true,
+        })
+        expect(grant.status).toBe(200)
+        expect((await attend(front1, patientId, body)).status).toBe(201)
+      } finally {
+        await put(ownerA, `/roles/${role.id}/permissions`, { permissions: role.permissions, confirmWarnings: true })
+      }
+      expect((await attend(front1, patientId, { ...body, confirmSecondVisitToday: true })).status).toBe(403)
+    })
+  })
+
   describe('session notes (VIS-002)', () => {
     it('versions a note and leaves the earlier ones readable', async () => {
       const { patientId } = await patientWithEpisode()

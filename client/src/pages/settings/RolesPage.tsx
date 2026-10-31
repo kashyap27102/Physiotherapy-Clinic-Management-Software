@@ -30,6 +30,7 @@ const GROUPS: { key: keyof typeof t.permissionGroups; permissions: ClinicPermiss
     key: 'billing',
     permissions: [
       'visit.mark',
+      'visit.backdate',
       'ledger.view',
       'payment.record',
       'document.issue',

@@ -39,6 +39,7 @@ export type AuthAuditAction =
   | 'treatment_plan.created'
   | 'treatment_plan.viewed'
   | 'visit.marked'
+  | 'visit.backdated'
   | 'visit.fee_overridden'
   | 'visit.reversed'
   | 'visit.note_created'

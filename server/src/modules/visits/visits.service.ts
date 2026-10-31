@@ -132,6 +132,9 @@ export interface CreateVisitInput {
   therapistId?: string | undefined
   branchId?: string | undefined
   feeOverride?: { amount: number; reason: string } | undefined
+  /** An earlier India day the visit really happened on; null or today means "now". Needs `visit.backdate`. */
+  visitDate?: { year: number; month: number; day: number } | null | undefined
+  backdateReason?: string | undefined
   confirmSecondVisitToday?: boolean | undefined
 }
 
@@ -139,7 +142,8 @@ export interface CreateVisitInput {
  * POST /visits (VIS-001, BILL-001). Marks a patient present: the visit and its charge are written in one transaction,
  * with the fee stored as it was at that moment (BR-BILL-1). Needs an active episode. Dues only warn, never block
  * (BR-VIS-4). A second visit on the same day asks for confirmation. A fee other than the default needs `fee.override`
- * and a reason, which is audited.
+ * and a reason, which is audited. Attendance forgotten on an earlier day can be entered with `visitDate`, but only by a
+ * user holding `visit.backdate`, with a reason; the date cannot be in the future or before the episode began.
  */
 export async function createVisit(db: TenantDb, auth: AuthContext, input: CreateVisitInput, ip: string | undefined) {
   const patient = await db.patient.findFirst({ where: { id: input.patientId }, select: { id: true } })
@@ -147,7 +151,7 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
 
   const episode = await db.episode.findFirst({
     where: { patientId: patient.id, status: 'active' },
-    select: { id: true, startedBranchId: true },
+    select: { id: true, startedBranchId: true, startedAt: true },
   })
   if (!episode) {
     throw new AppError(
@@ -155,6 +159,33 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
       'NO_ACTIVE_EPISODE',
       'This patient has no active episode. Start an episode before marking attendance.',
     )
+  }
+
+  // The day the visit counts for: today, or an earlier day for a permitted user (VIS-001, OQ-14).
+  const today = indiaToday()
+  let { year, month, day } = today
+  let backdated = false
+  let backdateReason: string | null = null
+  if (input.visitDate) {
+    const given = input.visitDate
+    const key = (d: { year: number; month: number; day: number }) => d.year * 10000 + d.month * 100 + d.day
+    if (key(given) !== key(today)) {
+      if (!auth.permissions.has('visit.backdate')) {
+        throw forbidden('Your role cannot mark attendance for an earlier day.')
+      }
+      if (key(given) > key(today)) {
+        throw validationError([{ field: 'visitDate', message: 'The visit date cannot be in the future.' }])
+      }
+      if (key(given) < key(indiaToday(episode.startedAt))) {
+        throw validationError([{ field: 'visitDate', message: 'The visit date is before this episode started.' }])
+      }
+      backdateReason = input.backdateReason?.trim() ?? ''
+      if (!backdateReason) {
+        throw validationError([{ field: 'backdateReason', message: 'Say why attendance is being added late.' }])
+      }
+      ;({ year, month, day } = given)
+      backdated = true
+    }
   }
 
   const branch = await actingBranch(db, auth, input.branchId, episode.startedBranchId)
@@ -184,14 +215,22 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
     }
   }
 
-  const { year, month, day } = indiaToday()
   const dayRange = indiaDayRange(year, month, day)
   const earlier = await db.visit.count({
     where: { patientId: patient.id, visitedAt: { gte: dayRange.start, lt: dayRange.end }, ...notReversed },
   })
   if (earlier > 0 && !input.confirmSecondVisitToday) {
-    throw new AppError(409, 'DUPLICATE_VISIT_TODAY', 'This patient already has a visit today. Mark another session?')
+    throw new AppError(
+      409,
+      'DUPLICATE_VISIT_TODAY',
+      backdated
+        ? 'This patient already has a visit on that day. Mark another session?'
+        : 'This patient already has a visit today. Mark another session?',
+    )
   }
+  // A late entry is stamped at midday of its day (India time), so it sorts inside that day, not at the time of typing.
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const visitedAt = backdated ? new Date(`${year}-${pad(month)}-${pad(day)}T12:00:00+05:30`) : undefined
 
   const before = await netPaiseFor(db, patient.id)
 
@@ -205,6 +244,7 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
         feeAmount: formatMoney(feePaise),
         feeOverrideReason: overrideReason,
         markedById: auth.userId,
+        ...(visitedAt ? { visitedAt } : {}),
       } as Prisma.VisitUncheckedCreateInput,
       select: { id: true },
     })
@@ -227,6 +267,12 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
       episodeId: episode.id,
       fee: formatMoney(feePaise),
     })
+    if (backdated) {
+      await auditIn(tx, auth, ip, 'visit.backdated', 'visit', visit.id, {
+        visitDate: `${year}-${pad(month)}-${pad(day)}`,
+        reason: backdateReason,
+      })
+    }
     if (overrideReason !== null) {
       await auditIn(tx, auth, ip, 'visit.fee_overridden', 'visit', visit.id, {
         defaultFee: formatMoney(standardPaise),

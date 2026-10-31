@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError } from '@/api'
+import { api, ApiError, errorMessage, isApiError } from '@/api'
 import { useCan, useUser } from '@/auth/hooks'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { Field, inputClassName, selectClassName } from '@/components/common/Field'
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { StartEpisodeButton } from '@/features/clinical/StartEpisodeButton'
 import { useIdempotencyKey } from '@/hooks/useIdempotencyKey'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { dayKey } from '@/lib/date'
 import { formatINR, isValidAmount } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
 import { OfflineNotice } from '@/components/common/OfflineNotice'
@@ -47,6 +48,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const online = useOnlineStatus()
   const canOverrideFee = useCan('fee.override')
   const canStartEpisode = useCan('episode.manage')
+  const canBackdate = useCan('visit.backdate')
 
   const patientQuery = useQuery({ queryKey: queryKeys.patient(patientId), queryFn: () => api.patients.get(patientId) })
   const feeQuery = useQuery({ queryKey: queryKeys.defaultFee, queryFn: () => api.clinic.defaultFee() })
@@ -57,6 +59,10 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const [feeText, setFeeText] = useState('')
   const [reason, setReason] = useState('')
   const [confirmSecond, setConfirmSecond] = useState(false)
+  const [earlierDay, setEarlierDay] = useState(false)
+  const [visitDate, setVisitDate] = useState('')
+  const [backdateReason, setBackdateReason] = useState('')
+  const [backdateError, setBackdateError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [reasonError, setReasonError] = useState<string | null>(null)
   const idempotencyKey = useIdempotencyKey()
@@ -69,6 +75,8 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
           therapistId: therapistId || undefined,
           feeOverride: overrideOn ? { amount: feeText.trim(), reason } : undefined,
           confirmSecondVisitToday: confirmSecond || undefined,
+          visitDate: earlierDay ? visitDate : undefined,
+          backdateReason: earlierDay ? backdateReason.trim() : undefined,
         },
         idempotencyKey.current(),
       ),
@@ -87,6 +95,9 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
       }
       if (isApiError(error, 'NO_ACTIVE_EPISODE')) void invalidatePatientData(queryClient, patientId)
       if (isApiError(error, 'FEE_REASON_REQUIRED')) setReasonError(t.attendance.reasonRequired)
+      if (error instanceof ApiError && error.fields.some((f) => f.field === 'backdateReason')) {
+        setBackdateError(t.attendance.backdateReasonRequired)
+      }
       setFormError(errorMessage(error, t.common.genericError))
     },
   })
@@ -95,11 +106,15 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const hasEpisode = !!patient?.activeEpisodeId
   const feeValid = !overrideOn || isValidAmount(feeText)
   const reasonValid = !overrideOn || reason.trim().length > 0
-  const canSubmit = !!patient && hasEpisode && online && feeValid && reasonValid && !attend.isPending
+  const dateValid = !earlierDay || (visitDate !== '' && visitDate <= dayKey(new Date()))
+  const backdateValid = !earlierDay || backdateReason.trim().length > 0
+  const canSubmit =
+    !!patient && hasEpisode && online && feeValid && reasonValid && dateValid && backdateValid && !attend.isPending
 
   function submit() {
     setFormError(null)
     setReasonError(null)
+    setBackdateError(null)
     attend.mutate()
   }
 
@@ -196,6 +211,58 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
                       className={inputClassName}
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
+                    />
+                  </Field>
+                </>
+              )}
+            </div>
+          )}
+
+          {canBackdate && (
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={earlierDay}
+                  onChange={(event) => {
+                    setEarlierDay(event.target.checked)
+                    setConfirmSecond(false)
+                  }}
+                />
+                {t.attendance.earlierDay}
+              </label>
+              {earlierDay && (
+                <>
+                  <Field
+                    id="att-date"
+                    label={t.attendance.visitDate}
+                    error={visitDate && !dateValid ? t.attendance.dateError : undefined}
+                  >
+                    <Input
+                      id="att-date"
+                      type="date"
+                      className={inputClassName}
+                      max={dayKey(new Date())}
+                      value={visitDate}
+                      onChange={(event) => {
+                        setVisitDate(event.target.value)
+                        setConfirmSecond(false)
+                      }}
+                    />
+                  </Field>
+                  <Field
+                    id="att-backdate-reason"
+                    label={t.attendance.backdateReason}
+                    error={backdateError ?? undefined}
+                  >
+                    <Input
+                      id="att-backdate-reason"
+                      className={inputClassName}
+                      maxLength={500}
+                      placeholder={t.attendance.backdateReasonPlaceholder}
+                      value={backdateReason}
+                      onChange={(event) => setBackdateReason(event.target.value)}
                     />
                   </Field>
                 </>

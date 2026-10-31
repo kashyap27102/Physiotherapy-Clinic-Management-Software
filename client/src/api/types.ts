@@ -12,6 +12,7 @@ export const PERMISSION_KEYS = [
   'clinical.edit',
   'episode.manage',
   'visit.mark',
+  'visit.backdate',
   'fee.override',
   'ledger.view',
   'payment.record',
@@ -366,6 +367,10 @@ export interface MarkAttendanceInput {
   confirmSecondVisitToday?: boolean
   /** Owners work across branches; staff always mark at their own. */
   branchId?: string
+  /** YYYY-MM-DD of an earlier day, for attendance that was forgotten. Needs the visit.backdate permission. */
+  visitDate?: string
+  /** Required with an earlier visitDate. */
+  backdateReason?: string
 }
 
 export interface MarkAttendanceResult {

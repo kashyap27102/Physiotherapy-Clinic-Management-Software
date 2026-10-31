@@ -283,6 +283,10 @@ export const t = {
     'clinical.edit': { label: 'Write clinical notes', hint: 'Edit assessments, plans and notes.' },
     'episode.manage': { label: 'Start and discharge', hint: 'Open a treatment episode or discharge a patient.' },
     'visit.mark': { label: 'Mark attendance', hint: 'Record a visit and its charge.' },
+    'visit.backdate': {
+      label: 'Mark attendance for an earlier day',
+      hint: 'Add a visit that was forgotten on its day, with a reason.',
+    },
     'fee.override': { label: 'Change session fee', hint: 'Use a different fee for a visit, with a reason.' },
     'ledger.view': { label: 'View balances', hint: 'Dues, credit and payment history.' },
     'payment.record': { label: 'Record payments', hint: 'Take cash, UPI, card or bank payments.' },
@@ -647,6 +651,12 @@ export const t = {
     therapistNone: 'Not specified',
     fee: 'Session fee',
     defaultFee: 'Default fee',
+    earlierDay: 'This visit was on an earlier day',
+    visitDate: 'Visit date',
+    backdateReason: 'Why is it being added late?',
+    backdateReasonPlaceholder: 'For example: forgot to mark it that day',
+    backdateReasonRequired: 'Say why attendance is being added late.',
+    dateError: 'Choose a day that is not in the future.',
     feeNotSet:
       'No default session fee has been set yet, so this visit would be charged ₹0. Ask the owner to set it in Settings, or change the fee for this visit.',
     overrideFee: 'Change fee for this visit',

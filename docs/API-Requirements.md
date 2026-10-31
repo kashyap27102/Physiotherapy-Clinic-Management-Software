@@ -80,30 +80,31 @@ Every error returns the same shape:
 
 The Owner has all of them. Receptionist and Physiotherapist defaults are in PRD section 16. Every endpoint below names the key it needs.
 
-| Key                | Meaning                                         |
-| ------------------ | ----------------------------------------------- |
-| `clinic.manage`    | Clinic profile, default fee, settings, branches |
-| `staff.manage`     | Staff accounts                                  |
-| `role.manage`      | Edit role permissions                           |
-| `device.manage`    | Revoke other users' trusted devices             |
-| `patient.register` | Create patients                                 |
-| `patient.edit`     | Edit demographics                               |
-| `patient.view`     | Search and open patients                        |
-| `clinical.view`    | View assessments, plans, notes                  |
-| `clinical.edit`    | Edit assessments, plans, notes                  |
-| `episode.manage`   | Start episode, discharge                        |
-| `visit.mark`       | Mark attendance                                 |
-| `fee.override`     | Override the session fee                        |
-| `ledger.view`      | See balances and payment history                |
-| `payment.record`   | Record payments                                 |
-| `refund.process`   | Process refunds                                 |
-| `entry.reverse`    | Reverse entries                                 |
-| `document.issue`   | Print receipts, generate invoices               |
-| `report.view`      | Dashboard and reports                           |
-| `data.import`      | Import patients                                 |
-| `data.export`      | Export data and reports                         |
-| `audit.view`       | View audit log                                  |
-| `platform.admin`   | Super-admin only: tenants, plans                |
+| Key                | Meaning                                               |
+| ------------------ | ----------------------------------------------------- |
+| `clinic.manage`    | Clinic profile, default fee, settings, branches       |
+| `staff.manage`     | Staff accounts                                        |
+| `role.manage`      | Edit role permissions                                 |
+| `device.manage`    | Revoke other users' trusted devices                   |
+| `patient.register` | Create patients                                       |
+| `patient.edit`     | Edit demographics                                     |
+| `patient.view`     | Search and open patients                              |
+| `clinical.view`    | View assessments, plans, notes                        |
+| `clinical.edit`    | Edit assessments, plans, notes                        |
+| `episode.manage`   | Start episode, discharge                              |
+| `visit.mark`       | Mark attendance                                       |
+| `visit.backdate`   | Mark attendance for an earlier day (owner by default) |
+| `fee.override`     | Override the session fee                              |
+| `ledger.view`      | See balances and payment history                      |
+| `payment.record`   | Record payments                                       |
+| `refund.process`   | Process refunds                                       |
+| `entry.reverse`    | Reverse entries                                       |
+| `document.issue`   | Print receipts, generate invoices                     |
+| `report.view`      | Dashboard and reports                                 |
+| `data.import`      | Import patients                                       |
+| `data.export`      | Export data and reports                               |
+| `audit.view`       | View audit log                                        |
+| `platform.admin`   | Super-admin only: tenants, plans                      |
 
 ## 5. Endpoint catalogue
 
@@ -277,7 +278,7 @@ Only the fields that matter for behaviour. Field names are indicative.
 
 ### 6.2 `POST /visits`
 
-- **Request:** `patientId`, optional `therapistId`, optional `feeOverride` `{ amount, reason }`, optional `confirmSecondVisitToday`.
+- **Request:** `patientId`, optional `therapistId`, optional `feeOverride` `{ amount, reason }`, optional `confirmSecondVisitToday`, optional `visitDate` (`YYYY-MM-DD`, an earlier India day) with `backdateReason`. An earlier `visitDate` needs `visit.backdate` (403 otherwise), a reason, and a day that is neither in the future nor before the episode started (422).
 - **Response 201:** `visit`, `charge` entry, `sessionNumber`, `planProgress` (for example 6 of 10, with `planExceeded`), `balanceAfter`, and `duesWarning` `{ amount }` when the patient owed money before this visit.
 
 ### 6.3 `POST /payments`
