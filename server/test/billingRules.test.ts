@@ -5,6 +5,7 @@ import {
   formatDocNumber,
   formatMoney,
   indiaDayRange,
+  invoiceFingerprint,
   netPaise,
   parseIsoDate,
   parseMoney,
@@ -104,5 +105,38 @@ describe('India days', () => {
     expect(parseIsoDate('2026-02-30')).toBeNull()
     expect(parseIsoDate('26-02-28')).toBeNull()
     expect(parseIsoDate('2026-13-01')).toBeNull()
+  })
+})
+
+describe('invoice sameness (BILL-007)', () => {
+  const line = (date: string, amount: string, description = 'Physiotherapy session') => ({ date, description, amount })
+
+  it('treats the same sessions and total as the same invoice', () => {
+    const a = { lines: [line('7 Oct 2026', '350.00'), line('8 Oct 2026', '350.00')], total: '700.00' }
+    const b = { lines: [line('7 Oct 2026', '350.00'), line('8 Oct 2026', '350.00')], total: '700.00' }
+    expect(invoiceFingerprint(a)).toBe(invoiceFingerprint(b))
+  })
+
+  it('treats an added or removed session as a different invoice', () => {
+    const base = { lines: [line('7 Oct 2026', '350.00')], total: '350.00' }
+    const added = { lines: [...base.lines, line('8 Oct 2026', '350.00')], total: '700.00' }
+    expect(invoiceFingerprint(base)).not.toBe(invoiceFingerprint(added))
+  })
+
+  it('treats a changed day, fee or therapist as a different invoice', () => {
+    const base = { lines: [line('7 Oct 2026', '350.00')], total: '350.00' }
+    expect(invoiceFingerprint(base)).not.toBe(invoiceFingerprint({ ...base, lines: [line('9 Oct 2026', '350.00')] }))
+    expect(invoiceFingerprint(base)).not.toBe(
+      invoiceFingerprint({ lines: [line('7 Oct 2026', '300.00')], total: '300.00' }),
+    )
+    expect(invoiceFingerprint(base)).not.toBe(
+      invoiceFingerprint({ ...base, lines: [line('7 Oct 2026', '350.00', 'Physiotherapy session (Prapti Patel)')] }),
+    )
+  })
+
+  it('ignores anything that is not the sessions or the total', () => {
+    const base = { lines: [line('7 Oct 2026', '350.00')], total: '350.00', periodLabel: 'a', balanceLabel: 'b' }
+    const other = { ...base, periodLabel: 'c', balanceLabel: 'd' }
+    expect(invoiceFingerprint(base)).toBe(invoiceFingerprint(other))
   })
 })

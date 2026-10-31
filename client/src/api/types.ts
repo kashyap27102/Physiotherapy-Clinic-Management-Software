@@ -490,6 +490,8 @@ export interface InvoiceResult {
   number: string
   total: Money
   sessions: number
+  /** True when an invoice with exactly these sessions already existed, so no new number was used. */
+  reused: boolean
 }
 
 export interface DefaultFee {

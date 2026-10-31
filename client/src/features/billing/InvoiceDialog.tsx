@@ -72,7 +72,7 @@ function InvoiceForm({ patientId, onClose }: { patientId: string; onClose: () =>
         idempotencyKey.current(),
       ),
     onSuccess: async (result) => {
-      toast.success(t.documents.done(result.number))
+      toast.success(result.reused ? t.documents.reused(result.number) : t.documents.done(result.number))
       await queryClient.invalidateQueries({ queryKey: queryKeys.patientDocuments(patientId) })
       // The new invoice opens straight away so it can be printed or saved.
       window.open(api.documents.pdfUrl(result.id), '_blank', 'noopener')

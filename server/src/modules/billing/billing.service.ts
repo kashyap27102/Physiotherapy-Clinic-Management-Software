@@ -8,6 +8,7 @@ import {
   formatMoney,
   indiaDayRange,
   parseIsoDate,
+  invoiceFingerprint,
   parseMoney,
   toBalance,
   type BalanceView,
@@ -567,7 +568,9 @@ export interface InvoiceInput {
 /**
  * POST /invoices (BILL-007). An invoice on request for one episode or a date range: it lists the sessions charged and
  * keeps that list as a snapshot (DD-5), so a later reversal cannot silently change an invoice already issued. It takes
- * the next invoice number of the branch, and only describes charges; it moves no money.
+ * the next invoice number of the branch, and only describes charges; it moves no money. Asking again for an invoice
+ * whose sessions and total are exactly those of one already issued returns that invoice and its number (`reused`)
+ * instead of burning a new one; if a session was added or reversed since, the content differs and a new invoice is issued.
  */
 export async function createInvoice(db: TenantDb, auth: AuthContext, input: InvoiceInput, ip: string | undefined) {
   const patient = await findPatientRef(db, input.patientId)
@@ -625,6 +628,20 @@ export async function createInvoice(db: TenantDb, auth: AuthContext, input: Invo
           : 'Account settled',
   }
 
+  const fingerprint = invoiceFingerprint(snapshot)
+  const earlier = await db.billingDocument.findMany({
+    where: { patientId: patient.id, docType: 'INVOICE' },
+    orderBy: [{ issuedAt: 'asc' }, { id: 'asc' }],
+    select: { id: true, docNumber: true, linesSnapshot: true },
+  })
+  const same = earlier.find(
+    (doc) =>
+      doc.linesSnapshot !== null && invoiceFingerprint(doc.linesSnapshot as unknown as InvoiceSnapshot) === fingerprint,
+  )
+  if (same) {
+    return { id: same.id, number: same.docNumber, total: snapshot.total, sessions: visits.length, reused: true }
+  }
+
   const branch = await actingBranch(db, auth, input.branchId, patient.registeredBranchId)
   const fy = currentFinancialYear()
   await ensureSequence(db, branch.id, 'INVOICE', fy)
@@ -654,7 +671,13 @@ export async function createInvoice(db: TenantDb, auth: AuthContext, input: Invo
     })
     return issued
   }, MONEY_TX)
-  return { id: document.id, number: document.docNumber, total: snapshot.total, sessions: visits.length }
+  return {
+    id: document.id,
+    number: document.docNumber,
+    total: snapshot.total,
+    sessions: visits.length,
+    reused: false,
+  }
 }
 
 /** "YYYY-MM-DD" already checked by the schema. */

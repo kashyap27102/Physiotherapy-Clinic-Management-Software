@@ -129,5 +129,12 @@ billingRouter.post('/invoices', requirePermission('document.issue'), async (req,
   const body = parseInput(invoiceBody, req.body ?? {})
   const db = tenantDbFor(req)
   const auth = requireAuthContext(req)
-  respond(res, await idempotent(req, async () => ({ status: 201, body: await createInvoice(db, auth, body, req.ip) })))
+  respond(
+    res,
+    await idempotent(req, async () => {
+      const invoice = await createInvoice(db, auth, body, req.ip)
+      // 200 when an identical invoice already existed and no new number was taken.
+      return { status: invoice.reused ? 200 : 201, body: invoice }
+    }),
+  )
 })

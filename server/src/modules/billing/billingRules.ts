@@ -74,6 +74,19 @@ export function formatDocNumber(branchCode: string, docType: DocType, fy: string
   return `${branchCode}/${fy}/${prefix}${String(seq).padStart(4, '0')}`
 }
 
+export interface InvoiceContent {
+  lines: { date: string; description: string; amount: string }[]
+  total: string
+}
+
+/**
+ * What makes two invoices the same invoice: the sessions listed (day, description, amount) and the total. The period
+ * wording and the account balance printed at the foot are left out, because they change without the invoice changing.
+ * If a session is added or reversed, the content differs and a new, corrected invoice is warranted.
+ */
+export const invoiceFingerprint = (content: InvoiceContent): string =>
+  JSON.stringify([content.total, content.lines.map((line) => [line.date, line.description, line.amount])])
+
 /** The UTC instants that bound one India calendar day. India has no daylight saving, so the offset is fixed. */
 export function indiaDayRange(year: number, month: number, day: number): { start: Date; end: Date } {
   const pad = (n: number) => String(n).padStart(2, '0')

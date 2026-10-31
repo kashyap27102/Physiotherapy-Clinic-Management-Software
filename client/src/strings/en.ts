@@ -839,7 +839,8 @@ export const t = {
     printHint: 'Opens in a new tab. Use the print button there to print it.',
     invoiceButton: 'Create invoice',
     invoiceTitle: 'Create invoice',
-    invoiceBody: 'An invoice lists the sessions charged. It does not change the balance.',
+    invoiceBody:
+      'An invoice lists the sessions charged. It does not change the balance. Asking again for the same sessions opens the same invoice; a new number is only used when sessions have been added or reversed.',
     scopeEpisode: 'One episode',
     scopeDates: 'Date range',
     episode: 'Episode',
@@ -850,6 +851,8 @@ export const t = {
     submit: 'Create invoice',
     submitting: 'Creating…',
     done: (number: string) => `Invoice ${number} created.`,
+    reused: (number: string) =>
+      `Invoice ${number} already covers exactly these sessions, so it was opened again and no new number was used.`,
     noEpisodes: 'This patient has no episodes yet.',
     types: { RECEIPT: 'Receipt', REVERSAL_RECEIPT: 'Reversal receipt', INVOICE: 'Invoice' },
   },

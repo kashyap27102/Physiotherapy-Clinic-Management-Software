@@ -878,6 +878,52 @@ describe.skipIf(!url)('visits and billing', () => {
       expect((await keyed(front1, '/invoices', { patientId, from: indiaDay(0), to: indiaDay(-5) })).status).toBe(422)
     })
 
+    it('returns the same invoice and number when asked again for identical sessions', async () => {
+      const { patientId, episodeId } = await patientWithEpisode()
+      await attend(front1, patientId)
+      const first = await keyed(front1, '/invoices', { patientId, episodeId })
+      expect(first.status).toBe(201)
+      expect(first.body.reused).toBe(false)
+      // A new request (new key), as when the button is pressed again.
+      const again = await keyed(front1, '/invoices', { patientId, episodeId })
+      expect(again.status).toBe(200)
+      expect(again.body).toMatchObject({ id: first.body.id, number: first.body.number, reused: true })
+      // Asking by dates that cover the same sessions is the same invoice too.
+      const byDates = await keyed(front1, '/invoices', { patientId, from: indiaDay(-1), to: indiaDay(0) })
+      expect(byDates.status).toBe(200)
+      expect(byDates.body.number).toBe(first.body.number)
+      expect(await root.billingDocument.count({ where: { patientId, docType: 'INVOICE' } })).toBe(1)
+    })
+
+    it('issues a new invoice when a session was added since, and keeps the earlier one', async () => {
+      const { patientId, episodeId } = await patientWithEpisode()
+      await attend(front1, patientId)
+      const first = await keyed(front1, '/invoices', { patientId, episodeId })
+      await attend(front1, patientId, { confirmSecondVisitToday: true })
+      const second = await keyed(front1, '/invoices', { patientId, episodeId })
+      expect(second.status).toBe(201)
+      expect(second.body.number).not.toBe(first.body.number)
+      expect(second.body).toMatchObject({ sessions: 2, total: '1000.00', reused: false })
+      expect(await root.billingDocument.count({ where: { patientId, docType: 'INVOICE' } })).toBe(2)
+      // Asking again now matches the newer one.
+      const again = await keyed(front1, '/invoices', { patientId, episodeId })
+      expect(again.status).toBe(200)
+      expect(again.body.number).toBe(second.body.number)
+    })
+
+    it('issues a corrected invoice when a visit was reversed after the first one', async () => {
+      const { patientId, episodeId } = await patientWithEpisode()
+      await attend(front1, patientId)
+      const wrong = (await attend(front1, patientId, { confirmSecondVisitToday: true })).body.visit.id as string
+      const first = await keyed(front1, '/invoices', { patientId, episodeId })
+      expect(first.body.sessions).toBe(2)
+      await keyed(ownerA, `/visits/${wrong}/reverse`, { reason: 'Marked by mistake' })
+      const corrected = await keyed(front1, '/invoices', { patientId, episodeId })
+      expect(corrected.status).toBe(201)
+      expect(corrected.body).toMatchObject({ sessions: 1, total: '500.00' })
+      expect(corrected.body.number).not.toBe(first.body.number)
+    })
+
     it('can invoice a date range', async () => {
       const { patientId } = await patientWithEpisode()
       await attend(front1, patientId)
