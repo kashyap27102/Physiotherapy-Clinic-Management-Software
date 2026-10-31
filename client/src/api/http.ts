@@ -283,6 +283,7 @@ export const httpApi: Api = {
       return result.items
     },
     create: (input, idempotencyKey) => request('POST', '/visits', { body: input, idempotencyKey }),
+    bulk: (input, idempotencyKey) => request('POST', '/visits/bulk', { body: input, idempotencyKey }),
     async forPatient(patientId) {
       const result = await request<{ items: VisitRecord[] }>('GET', `/patients/${patientId}/visits`)
       return result.items

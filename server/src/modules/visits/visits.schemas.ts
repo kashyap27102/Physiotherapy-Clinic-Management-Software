@@ -45,6 +45,40 @@ export const createVisitBody = z.object({
   confirmSecondVisitToday: z.boolean().optional(),
 })
 
+const isoDate = z.string({ error: 'Choose the day.' }).transform((value, ctx) => {
+  const parts = parseIsoDate(value)
+  if (!parts) {
+    ctx.addIssue({ code: 'custom', message: 'Enter the date as YYYY-MM-DD.' })
+    return z.NEVER
+  }
+  return parts
+})
+
+export const MAX_BULK_ENTRIES = 60
+
+export const bulkVisitsBody = z
+  .object({
+    entries: z
+      .array(z.object({ patientId: uuid, date: isoDate }))
+      .min(1, 'Choose at least one patient and day.')
+      .max(MAX_BULK_ENTRIES, `Mark at most ${MAX_BULK_ENTRIES} visits at a time.`),
+    therapistId: uuid.optional(),
+    /** Owners work across branches; otherwise each visit is at the branch its episode started at. */
+    branchId: uuid.optional(),
+    reason: z.string().trim().max(500, 'Use at most 500 characters.').default(''),
+    confirmDuplicates: z.boolean().optional(),
+  })
+  .superRefine((body, ctx) => {
+    const seen = new Set<string>()
+    for (const [index, entry] of body.entries.entries()) {
+      const key = `${entry.patientId}|${entry.date.year}-${entry.date.month}-${entry.date.day}`
+      if (seen.has(key)) {
+        ctx.addIssue({ code: 'custom', path: ['entries', index], message: 'The same patient and day is listed twice.' })
+      }
+      seen.add(key)
+    }
+  })
+
 export const noteBody = z.object({
   noteText: z
     .string({ error: 'Write the note.' })

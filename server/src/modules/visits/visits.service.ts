@@ -12,7 +12,7 @@ import { sameContent, planProgress } from '../clinical/clinicalRules.js'
 /* ---------------------------------------------------------------- shapes */
 
 /** A visit is "reversed" when its charge has a reversal (DD-3): there is no status column to drift. */
-const notReversed = { ledgerEntries: { none: { entryType: 'CHARGE', reversedBy: { isNot: null } } } } as const
+export const notReversed = { ledgerEntries: { none: { entryType: 'CHARGE', reversedBy: { isNot: null } } } } as const
 
 const visitSelect = {
   id: true,
@@ -127,6 +127,46 @@ export async function listTodayVisits(db: TenantDb, auth: AuthContext, requested
 
 /* ----------------------------------------------------------------- create */
 
+export interface DayParts {
+  year: number
+  month: number
+  day: number
+}
+
+export const dayNumber = (d: DayParts) => d.year * 10000 + d.month * 100 + d.day
+const pad2 = (n: number) => String(n).padStart(2, '0')
+export const isoDay = (d: DayParts) => `${d.year}-${pad2(d.month)}-${pad2(d.day)}`
+
+/**
+ * The India day a visit counts for: today, or an earlier day for a user holding `visit.backdate` (VIS-001, OQ-14).
+ * An earlier day needs a reason, and cannot be in the future or before the episode began. Shared by single and bulk
+ * attendance so both follow the same rule.
+ */
+export function resolveVisitDay(
+  auth: AuthContext,
+  requested: DayParts | null | undefined,
+  reason: string | undefined,
+  episodeStartedAt: Date,
+): { day: DayParts; backdated: boolean; reason: string | null } {
+  const today = indiaToday()
+  if (!requested || dayNumber(requested) === dayNumber(today)) return { day: today, backdated: false, reason: null }
+  if (!auth.permissions.has('visit.backdate')) {
+    throw forbidden('Your role cannot mark attendance for an earlier day.')
+  }
+  if (dayNumber(requested) > dayNumber(today)) {
+    throw validationError([{ field: 'visitDate', message: 'The visit date cannot be in the future.' }])
+  }
+  if (dayNumber(requested) < dayNumber(indiaToday(episodeStartedAt))) {
+    throw validationError([{ field: 'visitDate', message: 'The visit date is before this episode started.' }])
+  }
+  const why = reason?.trim() ?? ''
+  if (!why) throw validationError([{ field: 'backdateReason', message: 'Say why attendance is being added late.' }])
+  return { day: requested, backdated: true, reason: why }
+}
+
+/** A late entry is stamped at midday of its day (India time), so it sorts inside that day, not at the time of typing. */
+export const middayOf = (d: DayParts) => new Date(`${isoDay(d)}T12:00:00+05:30`)
+
 export interface CreateVisitInput {
   patientId: string
   therapistId?: string | undefined
@@ -162,31 +202,12 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
   }
 
   // The day the visit counts for: today, or an earlier day for a permitted user (VIS-001, OQ-14).
-  const today = indiaToday()
-  let { year, month, day } = today
-  let backdated = false
-  let backdateReason: string | null = null
-  if (input.visitDate) {
-    const given = input.visitDate
-    const key = (d: { year: number; month: number; day: number }) => d.year * 10000 + d.month * 100 + d.day
-    if (key(given) !== key(today)) {
-      if (!auth.permissions.has('visit.backdate')) {
-        throw forbidden('Your role cannot mark attendance for an earlier day.')
-      }
-      if (key(given) > key(today)) {
-        throw validationError([{ field: 'visitDate', message: 'The visit date cannot be in the future.' }])
-      }
-      if (key(given) < key(indiaToday(episode.startedAt))) {
-        throw validationError([{ field: 'visitDate', message: 'The visit date is before this episode started.' }])
-      }
-      backdateReason = input.backdateReason?.trim() ?? ''
-      if (!backdateReason) {
-        throw validationError([{ field: 'backdateReason', message: 'Say why attendance is being added late.' }])
-      }
-      ;({ year, month, day } = given)
-      backdated = true
-    }
-  }
+  const {
+    day: visitDay,
+    backdated,
+    reason: backdateReason,
+  } = resolveVisitDay(auth, input.visitDate, input.backdateReason, episode.startedAt)
+  const { year, month, day } = visitDay
 
   const branch = await actingBranch(db, auth, input.branchId, episode.startedBranchId)
 
@@ -228,9 +249,7 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
         : 'This patient already has a visit today. Mark another session?',
     )
   }
-  // A late entry is stamped at midday of its day (India time), so it sorts inside that day, not at the time of typing.
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const visitedAt = backdated ? new Date(`${year}-${pad(month)}-${pad(day)}T12:00:00+05:30`) : undefined
+  const visitedAt = backdated ? middayOf(visitDay) : undefined
 
   const before = await netPaiseFor(db, patient.id)
 
@@ -269,7 +288,7 @@ export async function createVisit(db: TenantDb, auth: AuthContext, input: Create
     })
     if (backdated) {
       await auditIn(tx, auth, ip, 'visit.backdated', 'visit', visit.id, {
-        visitDate: `${year}-${pad(month)}-${pad(day)}`,
+        visitDate: isoDay(visitDay),
         reason: backdateReason,
       })
     }

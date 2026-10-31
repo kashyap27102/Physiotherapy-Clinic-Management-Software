@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, ClipboardList, NotebookPen, Plus, Undo2 } from 'lucide-react'
+import { Building2, CalendarPlus, ClipboardList, NotebookPen, Plus, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 import { api, type PatientDetail, type VisitRecord } from '@/api'
 import { Can } from '@/auth/guards'
@@ -14,6 +14,7 @@ import { formatINR } from '@/lib/money'
 import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 import { t } from '@/strings/en'
+import { BulkDaysDialog } from './BulkDaysDialog'
 import { MarkAttendanceDialog } from './MarkAttendanceDialog'
 import { SessionNoteDialog } from './SessionNoteDialog'
 
@@ -30,6 +31,7 @@ export function VisitsTab({ patient }: { patient: PatientDetail }) {
   })
 
   const [marking, setMarking] = useState(false)
+  const [bulkDays, setBulkDays] = useState(false)
   const [noteFor, setNoteFor] = useState<string | null>(null)
   const [reversing, setReversing] = useState<VisitRecord | null>(null)
 
@@ -47,14 +49,20 @@ export function VisitsTab({ patient }: { patient: PatientDetail }) {
 
   return (
     <div className="space-y-5">
-      <Can permission="visit.mark">
-        <div>
+      <div className="flex flex-wrap gap-2">
+        <Can permission="visit.mark">
           <Button className="h-10 gap-2 px-4" onClick={() => setMarking(true)}>
             <Plus aria-hidden />
             {t.visit.markAttendance}
           </Button>
-        </div>
-      </Can>
+        </Can>
+        <Can permission="visit.bulk">
+          <Button variant="outline" className="h-10 gap-2 px-4" onClick={() => setBulkDays(true)}>
+            <CalendarPlus aria-hidden />
+            {t.bulk.manyDaysButton}
+          </Button>
+        </Can>
+      </div>
 
       <SectionCard
         title={t.patient.tabs.visits}
@@ -123,6 +131,7 @@ export function VisitsTab({ patient }: { patient: PatientDetail }) {
       </SectionCard>
 
       <MarkAttendanceDialog patientId={patient.id} open={marking} onOpenChange={setMarking} />
+      <BulkDaysDialog patientId={patient.id} open={bulkDays} onOpenChange={setBulkDays} />
       {noteFor && (
         <SessionNoteDialog
           patientId={patient.id}

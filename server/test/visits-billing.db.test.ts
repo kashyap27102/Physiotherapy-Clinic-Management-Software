@@ -420,6 +420,182 @@ describe.skipIf(!url)('visits and billing', () => {
     })
   })
 
+  describe('bulk attendance (VIS-001, visit.bulk)', () => {
+    const bulk = (s: Session, body: object, key: string = randomUUID()) => keyed(s, '/visits/bulk', body, key)
+    const startedEarlier = async () => {
+      const made = await patientWithEpisode()
+      await root.episode.update({
+        where: { id: made.episodeId },
+        data: { startedAt: new Date(Date.now() - 10 * 86_400_000) },
+      })
+      return made
+    }
+    const ago = (days: number) => indiaDay(-days)
+    const problemsOf = (res: {
+      body: { error?: { details?: { problems?: { code: string; date: string; patientName: string | null }[] } } }
+    }) => res.body.error?.details?.problems ?? []
+
+    it('is for users holding visit.bulk, and needs visit.backdate as well for earlier days', async () => {
+      const { patientId } = await startedEarlier()
+      const entries = [{ patientId, date: ago(1) }]
+      expect((await bulk(front1, { entries, reason: 'Forgot' })).status).toBe(403)
+      expect((await bulk(physio1, { entries, reason: 'Forgot' })).status).toBe(403)
+
+      const roles = await ownerA.agent.get(`${API}/roles`)
+      const role = (roles.body.roles as { id: string; key: string; permissions: string[] }[]).find(
+        (r) => r.key === 'receptionist',
+      )!
+      try {
+        // Bulk alone is not enough for an earlier day.
+        await put(ownerA, `/roles/${role.id}/permissions`, {
+          permissions: [...role.permissions, 'visit.bulk'],
+          confirmWarnings: true,
+        })
+        const noBackdate = await bulk(front1, { entries, reason: 'Forgot' })
+        expect(noBackdate.status).toBe(403)
+        // Today needs nothing more.
+        const today = await bulk(front1, { entries: [{ patientId, date: ago(0) }] })
+        expect(today.status).toBe(201)
+      } finally {
+        await put(ownerA, `/roles/${role.id}/permissions`, { permissions: role.permissions, confirmWarnings: true })
+      }
+      expect(await root.visit.count({ where: { patientId } })).toBe(1)
+    })
+
+    it('marks several days for one patient in one go, each with its own charge and date', async () => {
+      const { patientId, episodeId } = await startedEarlier()
+      const days = [ago(5), ago(4), ago(2)]
+      const res = await bulk(ownerA, {
+        entries: days.map((date) => ({ patientId, date })),
+        reason: 'Front desk forgot',
+      })
+      expect(res.status).toBe(201)
+      expect(res.body).toMatchObject({ created: 3, totalFee: '1500.00' })
+      expect(await balanceOf(ownerA, patientId)).toEqual({ amount: '1500.00', state: 'due' })
+      const charges = await root.ledgerEntry.findMany({
+        where: { patientId, entryType: 'CHARGE' },
+        orderBy: { entryDate: 'asc' },
+      })
+      expect(charges.map((c) => c.entryDate.toISOString().slice(0, 10))).toEqual([...days].sort())
+      const episode = await physio1.agent.get(`${API}/episodes/${episodeId}`)
+      expect(episode.body.sessionCount).toBe(3)
+      const audits = await root.auditLog.findMany({
+        where: {
+          action: 'visit.backdated',
+          targetId: { in: res.body.visits.map((v: { visitId: string }) => v.visitId) },
+        },
+      })
+      expect(audits).toHaveLength(3)
+      expect(audits[0]?.details).toMatchObject({ reason: 'Front desk forgot', bulk: true })
+    })
+
+    it('marks several patients present for one day', async () => {
+      const a = await patientWithEpisode()
+      const b = await patientWithEpisode()
+      const res = await bulk(ownerA, {
+        entries: [a, b].map(({ patientId }) => ({ patientId, date: ago(0) })),
+        therapistId: physio1Id,
+      })
+      expect(res.status).toBe(201)
+      expect(res.body.created).toBe(2)
+      const today = await ownerA.agent.get(`${API}/visits/today`)
+      const ids = (today.body.items as { id: string }[]).map((v) => v.id)
+      for (const v of res.body.visits as { visitId: string }[]) expect(ids).toContain(v.visitId)
+      expect((today.body.items as { therapistName: string | null }[]).some((v) => v.therapistName !== null)).toBe(true)
+    })
+
+    it('saves nothing when any entry is wrong, and lists every problem', async () => {
+      const good = await startedEarlier()
+      const noEpisode = await newPatient()
+      const res = await bulk(ownerA, {
+        entries: [
+          { patientId: good.patientId, date: ago(2) },
+          { patientId: noEpisode, date: ago(0) },
+          { patientId: good.patientId, date: ago(40) },
+        ],
+        reason: 'Catching up',
+      })
+      expect(res.status).toBe(422)
+      expect(
+        problemsOf(res)
+          .map((p) => p.code)
+          .sort(),
+      ).toEqual(['NO_ACTIVE_EPISODE', 'VALIDATION_FAILED'])
+      expect(await root.visit.count({ where: { patientId: { in: [good.patientId, noEpisode] } } })).toBe(0)
+      expect(await root.ledgerEntry.count({ where: { patientId: good.patientId } })).toBe(0)
+    })
+
+    it('needs a reason for earlier days, refuses future days, and refuses the same entry twice or too many', async () => {
+      const { patientId } = await startedEarlier()
+      const noReason = await bulk(ownerA, { entries: [{ patientId, date: ago(1) }], reason: ' ' })
+      expect(noReason.status).toBe(422)
+      expect(problemsOf(noReason)).toHaveLength(1)
+      const future = await bulk(ownerA, { entries: [{ patientId, date: indiaDay(2) }], reason: 'x' })
+      expect(future.status).toBe(422)
+      const twice = await bulk(ownerA, {
+        entries: [
+          { patientId, date: ago(1) },
+          { patientId, date: ago(1) },
+        ],
+        reason: 'x',
+      })
+      expect(twice.status).toBe(422)
+      const many = await bulk(ownerA, {
+        entries: Array.from({ length: 61 }, (_, i) => ({ patientId, date: indiaDay(-(i % 9)) })),
+        reason: 'x',
+      })
+      expect(many.status).toBe(422)
+      expect(await root.visit.count({ where: { patientId } })).toBe(0)
+    })
+
+    it('warns about a day that already has a visit, and goes ahead once confirmed', async () => {
+      const { patientId } = await startedEarlier()
+      expect((await bulk(ownerA, { entries: [{ patientId, date: ago(3) }], reason: 'Forgot' })).status).toBe(201)
+      const body = {
+        entries: [
+          { patientId, date: ago(3) },
+          { patientId, date: ago(2) },
+        ],
+        reason: 'Forgot',
+      }
+      const warn = await bulk(ownerA, body)
+      expect(warn.status).toBe(409)
+      expect(warn.body.error.code).toBe('DUPLICATE_VISIT_TODAY')
+      expect(problemsOf(warn)).toHaveLength(1)
+      expect(problemsOf(warn)[0]?.date).toBe(ago(3))
+      // Nothing from the warned batch was saved, not even the fine day.
+      expect(await root.visit.count({ where: { patientId } })).toBe(1)
+      const confirmed = await bulk(ownerA, { ...body, confirmDuplicates: true })
+      expect(confirmed.status).toBe(201)
+      expect(await root.visit.count({ where: { patientId } })).toBe(3)
+    })
+
+    it('is idempotent: the same key twice saves the batch once', async () => {
+      const { patientId } = await startedEarlier()
+      const key = randomUUID()
+      const body = {
+        entries: [
+          { patientId, date: ago(2) },
+          { patientId, date: ago(1) },
+        ],
+        reason: 'Forgot',
+      }
+      const first = await bulk(ownerA, body, key)
+      const second = await bulk(ownerA, body, key)
+      expect(second.headers['idempotent-replay']).toBe('true')
+      expect(second.body.visits).toEqual(first.body.visits)
+      expect(await root.visit.count({ where: { patientId } })).toBe(2)
+    })
+
+    it("never touches another clinic's patients", async () => {
+      const { patientId } = await patientWithEpisode()
+      const res = await bulk(ownerB, { entries: [{ patientId, date: ago(0) }] })
+      expect(res.status).toBe(422)
+      expect(problemsOf(res)[0]?.code).toBe('NOT_FOUND')
+      expect(await root.visit.count({ where: { patientId } })).toBe(0)
+    })
+  })
+
   describe('session notes (VIS-002)', () => {
     it('versions a note and leaves the earlier ones readable', async () => {
       const { patientId } = await patientWithEpisode()

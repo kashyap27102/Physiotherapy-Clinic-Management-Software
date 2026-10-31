@@ -15,6 +15,7 @@ export const PERMISSION_KEYS = [
   'episode.manage',
   'visit.mark',
   'visit.backdate',
+  'visit.bulk',
   'fee.override',
   'ledger.view',
   'payment.record',

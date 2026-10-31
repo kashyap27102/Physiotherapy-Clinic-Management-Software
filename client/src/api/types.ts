@@ -13,6 +13,7 @@ export const PERMISSION_KEYS = [
   'episode.manage',
   'visit.mark',
   'visit.backdate',
+  'visit.bulk',
   'fee.override',
   'ledger.view',
   'payment.record',
@@ -382,6 +383,37 @@ export interface MarkAttendanceResult {
   duesWarning: { amount: Money } | null
 }
 
+/** One visit to add in bulk: a patient and the day (YYYY-MM-DD, India time) they attended. */
+export interface BulkVisitEntry {
+  patientId: string
+  date: string
+}
+
+export interface BulkVisitsInput {
+  entries: BulkVisitEntry[]
+  therapistId?: string
+  branchId?: string
+  /** Required when any day is not today. */
+  reason?: string
+  /** Set after the user confirms visits on days that already have one. */
+  confirmDuplicates?: boolean
+}
+
+/** One entry the server refused. Nothing is saved while any entry has a problem. */
+export interface BulkProblem {
+  patientId: string
+  patientName: string | null
+  date: string
+  code: string
+  message: string
+}
+
+export interface BulkVisitsResult {
+  created: number
+  totalFee: Money
+  visits: { visitId: string; patientId: string; patientName: string | null; date: string }[]
+}
+
 export interface RecordPaymentInput {
   patientId: string
   amount: Money
@@ -537,6 +569,8 @@ export interface Api {
     /** Today's visits (India time): the caller's branch, or for an owner the chosen branch (all when omitted). */
     today(branchId?: string): Promise<TodayVisit[]>
     create(input: MarkAttendanceInput, idempotencyKey: string): Promise<MarkAttendanceResult>
+    /** Many visits in one all-or-nothing save (owner). Throws ApiError with details.problems when any entry is refused. */
+    bulk(input: BulkVisitsInput, idempotencyKey: string): Promise<BulkVisitsResult>
     /** Every visit across episodes and branches, newest first (VIS-003). */
     forPatient(patientId: string): Promise<VisitRecord[]>
     /** Reverses the visit's charge; the visit stays listed as reversed (BILL-005). */

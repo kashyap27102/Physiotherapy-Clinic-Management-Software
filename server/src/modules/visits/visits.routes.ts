@@ -3,7 +3,7 @@ import { requireAuthContext, tenantDbFor } from '../../auth/context.js'
 import { parseInput } from '../../lib/errors.js'
 import { idempotent } from '../../lib/idempotency.js'
 import { requirePermission } from '../../middleware/authorize.js'
-import { createVisitBody, idParams, noteBody, reverseBody, todayQuery } from './visits.schemas.js'
+import { bulkVisitsBody, createVisitBody, idParams, noteBody, reverseBody, todayQuery } from './visits.schemas.js'
 import {
   createVisit,
   getVisit,
@@ -14,6 +14,7 @@ import {
   reverseVisit,
   saveNote,
 } from './visits.service.js'
+import { createBulkVisits } from './visitsBulk.service.js'
 
 export const visitsRouter = Router()
 
@@ -29,6 +30,18 @@ visitsRouter.post('/visits', requirePermission('visit.mark'), async (req, res) =
   const outcome = await idempotent(req, async () => ({
     status: 201,
     body: await createVisit(db, auth, body, req.ip),
+  }))
+  if (outcome.replayed) res.setHeader('Idempotent-Replay', 'true')
+  res.status(outcome.status).json(outcome.body)
+})
+
+visitsRouter.post('/visits/bulk', requirePermission('visit.mark', 'visit.bulk'), async (req, res) => {
+  const body = parseInput(bulkVisitsBody, req.body ?? {})
+  const db = tenantDbFor(req)
+  const auth = requireAuthContext(req)
+  const outcome = await idempotent(req, async () => ({
+    status: 201,
+    body: await createBulkVisits(db, auth, body, req.ip),
   }))
   if (outcome.replayed) res.setHeader('Idempotent-Replay', 'true')
   res.status(outcome.status).json(outcome.body)
