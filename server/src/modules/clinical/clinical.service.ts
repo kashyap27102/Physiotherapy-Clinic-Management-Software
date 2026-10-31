@@ -4,6 +4,7 @@ import { Prisma } from '../../generated/prisma/client.js'
 import { AppError, notFound, validationError } from '../../lib/errors.js'
 import { recordAudit } from '../auth/audit.js'
 import { balanceFor } from '../patients/patients.service.js'
+import { sessionCountForEpisode } from '../visits/visits.service.js'
 import {
   isEmptyAssessment,
   isEmptyPlan,
@@ -232,8 +233,8 @@ export async function viewEpisode(db: TenantDb, auth: AuthContext, id: string, i
     db.assessment.findFirst({ where: { episodeId: id }, orderBy: { version: 'desc' }, select: assessmentSelect }),
     db.treatmentPlan.findFirst({ where: { episodeId: id }, orderBy: { version: 'desc' }, select: planSelect }),
   ])
-  // Visits do not exist yet (Visits section); the count becomes the unreversed visits of the episode (ER 4).
-  const sessionsDone = 0
+  // Sessions are the episode's visits whose charge has not been reversed (ER section 4).
+  const sessionsDone = await sessionCountForEpisode(db, id)
   await audit(auth, ip, 'episode.viewed', 'episode', id)
   return {
     episode: toEpisode(episode),
@@ -272,7 +273,7 @@ export async function dischargeEpisode(
     patientId: episode.patientId,
     hasNote: input.note !== null,
   })
-  return { episode: toEpisode(await findEpisode(db, id)), balance: balanceFor(auth, episode.patientId) }
+  return { episode: toEpisode(await findEpisode(db, id)), balance: await balanceFor(db, auth, episode.patientId) }
 }
 
 /* ----------------------------------------------------------- assessments */

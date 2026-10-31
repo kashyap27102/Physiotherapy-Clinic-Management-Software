@@ -151,8 +151,14 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
 
           <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
             <span className="text-muted-foreground">{t.attendance.defaultFee}: </span>
-            <span className="font-medium">{feeQuery.data ? formatINR(feeQuery.data) : '…'}</span>
+            <span className="font-medium">{feeQuery.data ? formatINR(feeQuery.data.defaultFee) : '…'}</span>
           </div>
+
+          {feeQuery.data && !feeQuery.data.isSet && (
+            <Alert>
+              <AlertDescription>{t.attendance.feeNotSet}</AlertDescription>
+            </Alert>
+          )}
 
           {canOverrideFee && (
             <div className="space-y-3">

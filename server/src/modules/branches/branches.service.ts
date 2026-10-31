@@ -38,12 +38,11 @@ type Row = {
 }
 
 /**
- * Whether the branch has issued a receipt or invoice (BR-TEN-2). Billing documents do not exist yet (R1 billing
- * section), so nothing can be locked today. When the document table lands, this is the one place to count them.
+ * Whether the branch has issued a receipt or invoice (BR-TEN-2). The branch code is part of every document number, so
+ * once one exists the code can no longer change.
  */
-// oxlint-disable-next-line no-unused-vars
-async function branchHasIssuedDocuments(_db: TenantDb, _branchId: string): Promise<boolean> {
-  return false
+async function branchHasIssuedDocuments(db: TenantDb, branchId: string): Promise<boolean> {
+  return (await db.billingDocument.count({ where: { branchId } })) > 0
 }
 
 async function toView(db: TenantDb, row: Row): Promise<BranchView> {

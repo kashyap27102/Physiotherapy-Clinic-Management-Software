@@ -23,6 +23,7 @@ import {
   type PatientFilters,
 } from '@/features/patients/patientFilters'
 import { PatientTable } from '@/features/patients/PatientTable'
+import { TodayVisits } from '@/features/visits/TodayVisits'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { queryKeys } from '@/lib/queryKeys'
 import { t } from '@/strings/en'
@@ -150,6 +151,8 @@ export function HomePage() {
       <p className="mb-6 px-1 text-xs text-muted-foreground" aria-live="polite">
         {tooShort ? t.home.searchHint : patients.data && searching ? t.home.resultCount(total) : ' '}
       </p>
+
+      <TodayVisits />
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-xs">
         <header className="flex items-center justify-between gap-3 border-b px-4 py-3.5 sm:px-5">

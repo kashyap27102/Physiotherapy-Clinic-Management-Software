@@ -7,6 +7,7 @@ import { api, errorMessage, type Clinic } from '@/api'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { Field, inputClassName, textareaClassName } from '@/components/common/Field'
 import { SectionCard } from '@/components/common/SectionCard'
+import { DefaultFeeCard } from '@/features/billing/DefaultFeeCard'
 import { LogoMark } from '@/components/layout/Logo'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -38,7 +39,10 @@ export function ClinicSettingsPage() {
       ) : (
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <ProfileCard clinic={clinic.data} />
-          <LogoCard clinic={clinic.data} />
+          <div className="space-y-6">
+            <LogoCard clinic={clinic.data} />
+            <DefaultFeeCard />
+          </div>
         </div>
       )}
     </>

@@ -109,3 +109,42 @@ describe('http client', () => {
     expect(seen.at(-1)!.headers.get('Idempotency-Key')).toBe('key-1')
   })
 })
+
+describe('visits and billing calls', () => {
+  it('unwraps the visit lists and sends the branch only when one is chosen', async () => {
+    respond = () => ({ status: 200, data: { items: [{ id: 'v1' }] } })
+    expect(await httpApi.visits.today()).toEqual([{ id: 'v1' }])
+    expect(seen.at(-1)!.params).toEqual({})
+    await httpApi.visits.today('b1')
+    expect(seen.at(-1)!.params).toEqual({ branchId: 'b1' })
+    expect(await httpApi.visits.forPatient('p1')).toEqual([{ id: 'v1' }])
+    expect(seen.at(-1)!.url).toBe('/patients/p1/visits')
+  })
+
+  it('sends the reason and a key when reversing a visit or a ledger entry', async () => {
+    respond = () => ({ status: 201, data: {} })
+    await httpApi.visits.reverse('v1', 'Marked by mistake', 'key-v')
+    expect(seen.at(-1)!.url).toBe('/visits/v1/reverse')
+    expect(JSON.parse(seen.at(-1)!.data as string)).toEqual({ reason: 'Marked by mistake' })
+    expect(seen.at(-1)!.headers.get('Idempotency-Key')).toBe('key-v')
+
+    await httpApi.ledger.reverse('e1', 'Wrong amount', 'key-e')
+    expect(seen.at(-1)!.url).toBe('/ledger-entries/e1/reverse')
+    expect(seen.at(-1)!.headers.get('Idempotency-Key')).toBe('key-e')
+  })
+
+  it('keeps money as strings end to end for refunds and the default fee', async () => {
+    respond = () => ({ status: 201, data: {} })
+    await httpApi.payments.refund({ patientId: 'p1', amount: '400.00', method: 'cash', reason: 'Stopped' }, 'key-r')
+    expect(JSON.parse(seen.at(-1)!.data as string)).toMatchObject({ amount: '400.00' })
+    expect(seen.at(-1)!.headers.get('Idempotency-Key')).toBe('key-r')
+
+    respond = () => ({ status: 200, data: { defaultFee: '500.00', isSet: true } })
+    expect(await httpApi.clinic.setDefaultFee('500.00')).toEqual({ defaultFee: '500.00', isSet: true })
+    expect(seen.at(-1)!.method).toBe('put')
+  })
+
+  it('points receipts at the PDF endpoint so the browser can open them', () => {
+    expect(httpApi.documents.pdfUrl('d1')).toBe('/api/v1/documents/d1/pdf')
+  })
+})

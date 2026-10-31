@@ -3,6 +3,8 @@ import type { TenantDb } from '../../db/tenantScope.js'
 import { Prisma } from '../../generated/prisma/client.js'
 import { AppError, notFound, validationError } from '../../lib/errors.js'
 import { recordAudit } from '../auth/audit.js'
+import { balancesFor } from '../billing/ledger.js'
+import { lastVisitsFor } from '../visits/visits.service.js'
 import {
   classifyQuery,
   currentAge,
@@ -84,16 +86,26 @@ const select = {
 type Row = Prisma.PatientGetPayload<{ select: typeof select }>
 
 /**
- * The patient's balance, computed from the ledger (BILL-002). The ledger does not exist yet (Billing section), so
- * nobody owes or holds anything today. This is the one place to compute it once ledger entries exist; until
- * then it answers "nothing due" for anyone allowed to see balances, and nothing for everyone else.
+ * The patient's balance, computed from the ledger (BILL-002) across all branches (BILL-008). Null for anyone without
+ * `ledger.view`, so a physiotherapist never sees money.
  */
-// oxlint-disable-next-line no-unused-vars
-export function balanceFor(auth: AuthContext, _patientId: string): Balance | null {
-  return auth.permissions.has('ledger.view') ? { amount: '0.00', state: 'zero' } : null
+export async function balanceFor(db: TenantDb, auth: AuthContext, patientId: string): Promise<Balance | null> {
+  if (!auth.permissions.has('ledger.view')) return null
+  return (await balancesFor(db, [patientId])).get(patientId) ?? null
 }
 
-const toListItem = (row: Row, auth: AuthContext): PatientListItem => ({
+/** What a list of patients needs besides their own rows: balances and the last visit, fetched once for the page. */
+async function listExtras(db: TenantDb, auth: AuthContext, ids: string[]) {
+  const [balances, lastVisits] = await Promise.all([
+    auth.permissions.has('ledger.view') ? balancesFor(db, ids) : Promise.resolve(null),
+    lastVisitsFor(db, ids),
+  ])
+  return (id: string) => ({ balance: balances?.get(id) ?? null, lastVisit: lastVisits.get(id) ?? null })
+}
+
+type Extras = ReturnType<Awaited<ReturnType<typeof listExtras>>>
+
+const toListItem = (row: Row, extras: Extras): PatientListItem => ({
   id: row.id,
   fullName: row.fullName,
   phone: row.phone,
@@ -103,10 +115,9 @@ const toListItem = (row: Row, auth: AuthContext): PatientListItem => ({
   status: row.status as 'active' | 'inactive',
   registeredBranch: row.registeredBranch,
   registeredAt: row.createdAt,
-  // Visits do not exist yet (Visits section); these fill in with VIS-001.
-  lastVisitAt: null,
-  lastVisitBranch: null,
-  balance: balanceFor(auth, row.id),
+  lastVisitAt: extras.lastVisit?.at.toISOString() ?? null,
+  lastVisitBranch: extras.lastVisit?.branchName ?? null,
+  balance: extras.balance,
 })
 
 const isoDate = (date: Date) => date.toISOString().slice(0, 10)
@@ -117,7 +128,7 @@ async function activeEpisodeIdFor(db: TenantDb, patientId: string): Promise<stri
   return episode?.id ?? null
 }
 
-const toDetail = (row: Row, auth: AuthContext, activeEpisodeId: string | null): PatientDetail => ({
+const toDetail = (row: Row, balance: Balance | null, activeEpisodeId: string | null): PatientDetail => ({
   id: row.id,
   fullName: row.fullName,
   phone: row.phone,
@@ -135,7 +146,7 @@ const toDetail = (row: Row, auth: AuthContext, activeEpisodeId: string | null): 
   registeredBranch: row.registeredBranch.name,
   createdAt: row.createdAt,
   activeEpisodeId,
-  balance: balanceFor(auth, row.id),
+  balance,
 })
 
 /* ---------------------------------------------------------------- search */
@@ -206,7 +217,17 @@ export async function searchPatients(db: TenantDb, auth: AuthContext, input: Sea
     }),
     db.patient.count({ where }),
   ])
-  return { items: rows.map((row) => toListItem(row, auth)), page: input.page, pageSize: input.pageSize, total }
+  const extras = await listExtras(
+    db,
+    auth,
+    rows.map((row) => row.id),
+  )
+  return {
+    items: rows.map((row) => toListItem(row, extras(row.id))),
+    page: input.page,
+    pageSize: input.pageSize,
+    total,
+  }
 }
 
 /* ------------------------------------------------------------ duplicates */
@@ -252,7 +273,13 @@ async function findPossibleDuplicates(
     seen.add(row.id)
     merged.push(row)
   }
-  return merged.slice(0, 5).map((row) => toListItem(row, auth))
+  const top = merged.slice(0, 5)
+  const extras = await listExtras(
+    db,
+    auth,
+    top.map((row) => row.id),
+  )
+  return top.map((row) => toListItem(row, extras(row.id)))
 }
 
 const duplicateWarning = (candidates: PatientListItem[]) =>
@@ -338,7 +365,8 @@ export async function createPatient(
     details: { registeredBranchId: branch.id, confirmedDuplicate: options.confirmDuplicate },
     ip,
   })
-  return toDetail(row, auth, null)
+  // A patient who was just registered has no ledger entries yet.
+  return toDetail(row, auth.permissions.has('ledger.view') ? { amount: '0.00', state: 'zero' } : null, null)
 }
 
 /* ------------------------------------------------------------------ view */
@@ -370,7 +398,7 @@ export async function viewPatient(
     targetId: id,
     ip,
   })
-  return toDetail(row, auth, await activeEpisodeIdFor(db, id))
+  return toDetail(row, await balanceFor(db, auth, id), await activeEpisodeIdFor(db, id))
 }
 
 /* ---------------------------------------------------------------- update */
@@ -476,5 +504,5 @@ export async function updatePatient(
       ip,
     })
   }
-  return toDetail(after, auth, await activeEpisodeIdFor(db, id))
+  return toDetail(after, await balanceFor(db, auth, id), await activeEpisodeIdFor(db, id))
 }

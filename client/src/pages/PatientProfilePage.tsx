@@ -1,5 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
-import { ClipboardList, CreditCard, Pencil, Phone, Building2, Target, UserRound } from 'lucide-react'
+import {
+  Banknote,
+  CalendarCheck,
+  ClipboardList,
+  CreditCard,
+  Pencil,
+  Phone,
+  Building2,
+  Target,
+  UserRound,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, isApiError } from '@/api'
@@ -15,7 +25,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EditPatientDialog } from '@/features/patients/EditPatientDialog'
 import { TreatmentTab } from '@/features/clinical/TreatmentTab'
-import { OverviewTab, PaymentsTab, VisitsTab } from '@/features/patients/PatientTabs'
+import { PaymentsTab } from '@/features/billing/PaymentsTab'
+import { RecordPaymentDialog } from '@/features/billing/RecordPaymentDialog'
+import { OverviewTab } from '@/features/patients/PatientTabs'
+import { MarkAttendanceDialog } from '@/features/visits/MarkAttendanceDialog'
+import { VisitsTab } from '@/features/visits/VisitsTab'
 import { formatDate } from '@/lib/date'
 import { formatPhone } from '@/lib/phone'
 import { queryKeys } from '@/lib/queryKeys'
@@ -33,7 +47,11 @@ export function PatientProfilePage() {
   const canEdit = useCan('patient.edit')
   const canSeeClinical = useCan('clinical.view')
   const canSeeLedger = useCan('ledger.view')
+  const canMark = useCan('visit.mark')
+  const canPay = useCan('payment.record')
   const [editing, setEditing] = useState(false)
+  const [marking, setMarking] = useState(false)
+  const [paying, setPaying] = useState(false)
 
   const query = useQuery({
     queryKey: queryKeys.patient(id),
@@ -103,12 +121,26 @@ export function PatientProfilePage() {
                 {t.patient.registeredOn(patient.registeredBranch, formatDate(patient.createdAt))}
               </span>
             </div>
-            <Can permission="patient.edit">
-              <Button variant="outline" className="mt-4 h-9 gap-1.5 px-3" onClick={() => setEditing(true)}>
-                <Pencil aria-hidden />
-                {t.patient.edit}
-              </Button>
-            </Can>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Can permission="visit.mark">
+                <Button className="h-10 gap-1.5 px-4" onClick={() => setMarking(true)}>
+                  <CalendarCheck aria-hidden />
+                  {t.visit.markAttendance}
+                </Button>
+              </Can>
+              <Can permission="payment.record">
+                <Button variant="outline" className="h-10 gap-1.5 px-4" onClick={() => setPaying(true)}>
+                  <Banknote aria-hidden />
+                  {t.visit.recordPayment}
+                </Button>
+              </Can>
+              <Can permission="patient.edit">
+                <Button variant="outline" className="h-10 gap-1.5 px-3" onClick={() => setEditing(true)}>
+                  <Pencil aria-hidden />
+                  {t.patient.edit}
+                </Button>
+              </Can>
+            </div>
           </div>
         </div>
 
@@ -153,16 +185,18 @@ export function PatientProfilePage() {
           </TabsContent>
         )}
         <TabsContent value="visits">
-          <VisitsTab />
+          <VisitsTab patient={patient} />
         </TabsContent>
         {canSeeLedger && (
           <TabsContent value="payments">
-            <PaymentsTab />
+            <PaymentsTab patient={patient} />
           </TabsContent>
         )}
       </Tabs>
 
       {canEdit && <EditPatientDialog patient={patient} open={editing} onOpenChange={setEditing} />}
+      {canMark && <MarkAttendanceDialog patientId={patient.id} open={marking} onOpenChange={setMarking} />}
+      {canPay && <RecordPaymentDialog patientId={patient.id} open={paying} onOpenChange={setPaying} />}
     </>
   )
 }

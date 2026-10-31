@@ -9,6 +9,19 @@ export const requireSignedIn: RequestHandler = (req, _res, next) => {
   next()
 }
 
+/** The signed-in user must hold at least one of the listed permission keys (for example a read both roles need). */
+export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
+  if (keys.length === 0) throw new Error('requireAnyPermission needs at least one permission key')
+  return (req, _res, next) => {
+    const auth = requireAuthContext(req)
+    if (keys.some((key) => auth.permissions.has(key))) {
+      next()
+      return
+    }
+    next(forbidden())
+  }
+}
+
 /**
  * Central permission check (PRD SEC-006): the signed-in user must hold every listed permission key.
  * Not signed in answers 401; signed in without the key answers 403.

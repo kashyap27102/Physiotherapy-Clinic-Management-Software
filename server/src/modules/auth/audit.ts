@@ -38,6 +38,18 @@ export type AuthAuditAction =
   | 'assessment.viewed'
   | 'treatment_plan.created'
   | 'treatment_plan.viewed'
+  | 'visit.marked'
+  | 'visit.fee_overridden'
+  | 'visit.reversed'
+  | 'visit.note_created'
+  | 'visit.note_viewed'
+  | 'fee.default_changed'
+  | 'payment.recorded'
+  | 'refund.processed'
+  | 'ledger.reversed'
+  | 'ledger.viewed'
+  | 'document.issued'
+  | 'document.printed'
 
 interface AuditEntry {
   action: AuthAuditAction
