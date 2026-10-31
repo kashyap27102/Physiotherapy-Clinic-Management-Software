@@ -8,8 +8,11 @@ export const queryKeys = {
   episodePlans: (id: string) => ['episode', id, 'plans'] as const,
   patientVisits: (id: string) => ['patient', id, 'visits'] as const,
   patientLedger: (id: string) => ['patient', id, 'ledger'] as const,
+  patientDocuments: (id: string) => ['patient', id, 'documents'] as const,
+  visitNotes: (id: string) => ['visit', id, 'notes'] as const,
   patientSearch: (input: object) => ['patients', 'search', input] as const,
   todayVisits: ['visits', 'today'] as const,
+  todayVisitsFor: (branchId: string | null) => ['visits', 'today', branchId] as const,
   defaultFee: ['clinic', 'fee'] as const,
   therapists: ['clinic', 'therapists'] as const,
   trustedDevices: ['auth', 'devices'] as const,
@@ -24,6 +27,8 @@ export function invalidatePatientData(queryClient: QueryClient, patientId: strin
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.patient(patientId) }),
     queryClient.invalidateQueries({ queryKey: ['patients'] }),
+    // Session counts and plan progress on the Treatment tab change with every visit and reversal.
+    queryClient.invalidateQueries({ queryKey: ['episode'] }),
     queryClient.invalidateQueries({ queryKey: queryKeys.todayVisits }),
   ])
 }

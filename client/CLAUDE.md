@@ -40,6 +40,7 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
   branch scope; reused by `MarkAttendanceDialog`). Pure form rules in `clinicalForm.ts`. Each save is a new version; the
   server answers the unchanged version when nothing changed, so compare version numbers to tell the user. Opening an
   episode or a history is audited, so those queries use `staleTime` and never refetch on focus.
+- `src/features/visits/` and `src/features/billing/` (VIS-001 to VIS-003, BILL-001 to BILL-008): `TodayVisits` (home), `MarkAttendanceDialog` (the "earlier day" date and reason appear only with `visit.backdate`), `VisitsTab`, `SessionNoteDialog`, bulk attendance for the owner (`BulkDaysDialog`: many days for one patient, from the Visits tab; `BulkPatientsDialog`: many patients for one day, from the home page; `DayPicker`, `useBulkMarking`, `lib/calendar.ts`; both need `visit.bulk`, and `visit.backdate` for earlier days); `RecordPaymentDialog`, `PaymentsTab` (ledger, receipts, invoices), `RefundDialog`, `InvoiceDialog`, `ReverseDialog` (one dialog for visits and ledger entries), `MethodPicker`, `DefaultFeeCard` (in Clinic settings). Receipts and invoices open as PDFs in a new tab (`api.documents.pdfUrl`); printing is the PDF viewer's. Every money write uses `useIdempotencyKey` and `invalidatePatientData`. The ledger and note queries are audited on the server, so they use `staleTime` and skip refetch on focus.
 - `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
 - `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
 - `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.
@@ -53,7 +54,7 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 - **Online only.** Disable saving with `useOnlineStatus` and show `t.offline.blocked`. Never imply a save worked when it did not.
 - **Idempotency.** Attendance and payments send an `Idempotency-Key`; keep the same key after a `NETWORK` error, regenerate it
   after any other error (see `MarkAttendanceDialog`).
-- **No delete actions** for clinical or financial data. Corrections are reversals (not built yet).
+- **No delete actions** for clinical or financial data. Corrections are reversals (`ReverseDialog`); a reversed visit or entry stays listed and marked.
 - Dates and "today" use India time (`lib/date.ts`). Financial year is April to March.
 - Match the receptionist's pace: big tap targets (`h-10`), minimal typing, dialogs reset on every open.
 - Reference design: grey frame, left sidebar, white content panel, blue primary, breadcrumb page header, underlined tabs,
@@ -76,5 +77,4 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 
 ## Not built yet
 
-Session notes, reversals and refunds, PDF receipts and invoices, owner dashboard,
-default fee setting, owner view of a staff member's trusted devices, reports, import/export, audit log viewer. Build on the `dev` branch via a feature branch.
+Owner dashboard, owner view of a staff member's trusted devices, reports, import/export, audit log viewer, back-dated payments (the server accepts an owner-only `date`; the dialog has no field for it yet). Build on the `dev` branch via a feature branch.

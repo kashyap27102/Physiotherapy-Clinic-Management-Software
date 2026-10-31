@@ -15,15 +15,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { MethodPicker } from './MethodPicker'
 import { useIdempotencyKey } from '@/hooks/useIdempotencyKey'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { formatINR, fromPaise, toPaise } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
-import { cn } from '@/lib/utils'
 import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
-
-const METHODS: PaymentMethod[] = ['cash', 'upi', 'card', 'bank_transfer']
 
 interface Props {
   patientId: string
@@ -133,25 +131,7 @@ function PaymentForm({ patientId, onClose }: { patientId: string; onClose: () =>
         </div>
       </Field>
 
-      <fieldset className="space-y-1.5">
-        <legend className="text-sm font-medium">{t.payment.method}</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {METHODS.map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={method === m}
-              onClick={() => setMethod(m)}
-              className={cn(
-                'h-10 rounded-lg border text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                method === m ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-muted',
-              )}
-            >
-              {t.payment.methods[m]}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <MethodPicker value={method} onChange={setMethod} legend={t.payment.method} />
 
       <Field
         id="pay-ref"

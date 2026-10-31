@@ -12,6 +12,8 @@ export const PERMISSION_KEYS = [
   'clinical.edit',
   'episode.manage',
   'visit.mark',
+  'visit.backdate',
+  'visit.bulk',
   'fee.override',
   'ledger.view',
   'payment.record',
@@ -317,23 +319,21 @@ export interface VisitRecord {
   id: string
   episodeId: string
   visitedAt: string
+  branchId: string
+  /** Visits at any branch are tagged with where they happened (PAT-005). */
   branchName: string
   therapistName: string | null
   fee: Money
   feeOverrideReason: string | null
   reversed: boolean
+  hasNote: boolean
 }
 
-export interface TodayVisit {
-  id: string
+export interface TodayVisit extends VisitRecord {
   patientId: string
   patientName: string
   patientPhone: string
-  visitedAt: string
-  branchName: string
-  therapistName: string | null
-  fee: Money
-  reversed: boolean
+  /** Null when the viewer cannot see balances. */
   balance: Balance | null
 }
 
@@ -350,6 +350,8 @@ export interface LedgerRecord {
   visitId: string | null
   reversesEntryId: string | null
   reversedByEntryId: string | null
+  /** The numbered receipt (or reversal receipt) this entry produced. */
+  documentId: string | null
   documentNumber: string | null
 }
 
@@ -364,14 +366,52 @@ export interface MarkAttendanceInput {
   feeOverride?: { amount: Money; reason: string }
   /** Set after the user confirms a second visit on the same day. */
   confirmSecondVisitToday?: boolean
+  /** Owners work across branches; staff always mark at their own. */
+  branchId?: string
+  /** YYYY-MM-DD of an earlier day, for attendance that was forgotten. Needs the visit.backdate permission. */
+  visitDate?: string
+  /** Required with an earlier visitDate. */
+  backdateReason?: string
 }
 
 export interface MarkAttendanceResult {
   visit: VisitRecord
   sessionNumber: number
   planProgress: { planned: number | null; planExceeded: boolean }
-  balanceAfter: Balance
+  /** Null when the viewer cannot see balances. */
+  balanceAfter: Balance | null
   duesWarning: { amount: Money } | null
+}
+
+/** One visit to add in bulk: a patient and the day (YYYY-MM-DD, India time) they attended. */
+export interface BulkVisitEntry {
+  patientId: string
+  date: string
+}
+
+export interface BulkVisitsInput {
+  entries: BulkVisitEntry[]
+  therapistId?: string
+  branchId?: string
+  /** Required when any day is not today. */
+  reason?: string
+  /** Set after the user confirms visits on days that already have one. */
+  confirmDuplicates?: boolean
+}
+
+/** One entry the server refused. Nothing is saved while any entry has a problem. */
+export interface BulkProblem {
+  patientId: string
+  patientName: string | null
+  date: string
+  code: string
+  message: string
+}
+
+export interface BulkVisitsResult {
+  created: number
+  totalFee: Money
+  visits: { visitId: string; patientId: string; patientName: string | null; date: string }[]
 }
 
 export interface RecordPaymentInput {
@@ -379,12 +419,85 @@ export interface RecordPaymentInput {
   amount: Money
   method: PaymentMethod
   reference?: string
+  /** YYYY-MM-DD; back-dating is for the owner only. */
+  date?: string
+  branchId?: string
 }
 
 export interface RecordPaymentResult {
   entry: LedgerRecord
   receipt: { id: string; number: string }
-  balanceAfter: Balance
+  balanceAfter: Balance | null
+}
+
+export interface RefundInput {
+  patientId: string
+  amount: Money
+  method: PaymentMethod
+  reason: string
+}
+
+export interface RefundResult {
+  entry: LedgerRecord
+  balanceAfter: Balance | null
+}
+
+export interface ReverseResult {
+  entry: LedgerRecord
+  reversedEntryId: string
+  /** Reversing a payment issues a receipt of its own. */
+  reversalReceipt: { id: string; number: string } | null
+  balanceAfter: Balance | null
+}
+
+/** All of a patient's money entries, newest first, with the balance they add up to. */
+export interface PatientLedger {
+  items: LedgerRecord[]
+  balance: Balance
+}
+
+export interface SessionNote {
+  id: string
+  visitId: string
+  version: number
+  noteText: string
+  author: string
+  createdAt: string
+}
+
+export type DocumentType = 'RECEIPT' | 'REVERSAL_RECEIPT' | 'INVOICE'
+
+export interface BillingDocument {
+  id: string
+  type: DocumentType
+  number: string
+  issuedAt: string
+  branchName: string
+  /** Null for period invoices. */
+  amount: Money | null
+}
+
+export interface InvoiceInput {
+  patientId: string
+  /** Either an episode, or both dates (YYYY-MM-DD, India time). */
+  episodeId?: string
+  from?: string
+  to?: string
+}
+
+export interface InvoiceResult {
+  id: string
+  number: string
+  total: Money
+  sessions: number
+  /** True when an invoice with exactly these sessions already existed, so no new number was used. */
+  reused: boolean
+}
+
+export interface DefaultFee {
+  defaultFee: Money
+  /** False until the owner has chosen a fee. */
+  isSet: boolean
 }
 
 /** What the UI needs from a backend. Implemented by the mock and by the real HTTP client. */
@@ -455,11 +568,35 @@ export interface Api {
     discharge(episodeId: string, note?: string): Promise<DischargeResult>
   }
   visits: {
-    today(): Promise<TodayVisit[]>
+    /** Today's visits (India time): the caller's branch, or for an owner the chosen branch (all when omitted). */
+    today(branchId?: string): Promise<TodayVisit[]>
     create(input: MarkAttendanceInput, idempotencyKey: string): Promise<MarkAttendanceResult>
+    /** Many visits in one all-or-nothing save (owner). Throws ApiError with details.problems when any entry is refused. */
+    bulk(input: BulkVisitsInput, idempotencyKey: string): Promise<BulkVisitsResult>
+    /** Every visit across episodes and branches, newest first (VIS-003). */
+    forPatient(patientId: string): Promise<VisitRecord[]>
+    /** Reverses the visit's charge; the visit stays listed as reversed (BILL-005). */
+    reverse(visitId: string, reason: string, idempotencyKey: string): Promise<ReverseResult>
+    /** Every version of the visit note, newest first. Opening it is audited. */
+    notes(visitId: string): Promise<SessionNote[]>
+    /** Saves the next version; returns the current one unchanged when nothing changed. */
+    saveNote(visitId: string, noteText: string): Promise<SessionNote>
   }
   payments: {
     create(input: RecordPaymentInput, idempotencyKey: string): Promise<RecordPaymentResult>
+    /** Only advance credit can be refunded (BILL-004). */
+    refund(input: RefundInput, idempotencyKey: string): Promise<RefundResult>
+  }
+  ledger: {
+    /** Opening it is audited. */
+    forPatient(patientId: string): Promise<PatientLedger>
+    reverse(entryId: string, reason: string, idempotencyKey: string): Promise<ReverseResult>
+  }
+  documents: {
+    forPatient(patientId: string): Promise<BillingDocument[]>
+    /** Address of the PDF; open it in a new tab to view, save or print (BILL-006). */
+    pdfUrl(id: string): string
+    invoice(input: InvoiceInput, idempotencyKey: string): Promise<InvoiceResult>
   }
   clinic: {
     get(): Promise<Clinic>
@@ -468,7 +605,9 @@ export interface Api {
     ): Promise<Clinic>
     uploadLogo(file: File): Promise<Clinic>
     removeLogo(): Promise<Clinic>
-    defaultFee(): Promise<Money>
+    defaultFee(): Promise<DefaultFee>
+    /** Owner only. Applies to future visits; earlier visits keep the fee they were charged. */
+    setDefaultFee(amount: Money): Promise<DefaultFee>
     therapists(): Promise<Therapist[]>
   }
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Building2, FilterX, Loader2, Plus, Search, UserRoundPlus, UsersRound, X } from 'lucide-react'
+import { Building2, FilterX, ListChecks, Loader2, Plus, Search, UserRoundPlus, UsersRound, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '@/api'
@@ -23,6 +23,8 @@ import {
   type PatientFilters,
 } from '@/features/patients/patientFilters'
 import { PatientTable } from '@/features/patients/PatientTable'
+import { BulkPatientsDialog } from '@/features/visits/BulkPatientsDialog'
+import { TodayVisits } from '@/features/visits/TodayVisits'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { queryKeys } from '@/lib/queryKeys'
 import { t } from '@/strings/en'
@@ -42,6 +44,7 @@ export function HomePage() {
   const filters = readFilters(params)
   const { branchId, branch, setBranchId } = useBranchScope()
   const canSeeBalance = useCan('ledger.view')
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const [text, setText] = useState(() => params.get('q') ?? '')
   const typed = text.trim()
@@ -103,16 +106,24 @@ export function HomePage() {
       <PageHeader
         crumbs={[{ label: t.home.title }]}
         actions={
-          <Can permission="patient.register">
-            <Link
-              to="/patients/new"
-              state={{ prefill: typed }}
-              className={buttonVariants({ className: 'h-10 gap-2 px-4' })}
-            >
-              <Plus aria-hidden />
-              {t.home.registerNew}
-            </Link>
-          </Can>
+          <div className="flex flex-wrap gap-2">
+            <Can permission="visit.bulk">
+              <Button variant="outline" className="h-10 gap-2 px-4" onClick={() => setBulkOpen(true)}>
+                <ListChecks aria-hidden />
+                {t.bulk.button}
+              </Button>
+            </Can>
+            <Can permission="patient.register">
+              <Link
+                to="/patients/new"
+                state={{ prefill: typed }}
+                className={buttonVariants({ className: 'h-10 gap-2 px-4' })}
+              >
+                <Plus aria-hidden />
+                {t.home.registerNew}
+              </Link>
+            </Can>
+          </div>
         }
       />
       <p className="-mt-3 mb-5 text-sm text-muted-foreground">{t.home.subtitle}</p>
@@ -150,6 +161,9 @@ export function HomePage() {
       <p className="mb-6 px-1 text-xs text-muted-foreground" aria-live="polite">
         {tooShort ? t.home.searchHint : patients.data && searching ? t.home.resultCount(total) : ' '}
       </p>
+
+      <TodayVisits />
+      <BulkPatientsDialog open={bulkOpen} onOpenChange={setBulkOpen} />
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-xs">
         <header className="flex items-center justify-between gap-3 border-b px-4 py-3.5 sm:px-5">

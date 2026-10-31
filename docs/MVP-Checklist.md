@@ -41,7 +41,7 @@
 - [x] **TEN-001** Clinic self-registration with email code; clinic, 14-day trial, roles and owner created on verify — Must (replaces creation by super-admin, decided 2026-10-27)
 - [x] **TEN-001** First-sign-in setup: first branch required before using the app — Must
 - [x] **TEN-001** Owner edits clinic profile: name, address, phone, logo, receipt details — Must (logo stored in the database, up to 200 KB)
-- [ ] **TEN-002** Branch create, edit, deactivate; branch code locked after first receipt — Must (create, edit, deactivate and reactivate done; the code lock has a hook in `branches.service.ts` that goes live when receipts exist, BILL-006)
+- [x] **TEN-002** Branch create, edit, deactivate; branch code locked after first receipt — Must (the code lock counts billing documents in `branches.service.ts`)
 - [x] **USR-001** Staff create, edit, deactivate; one branch each — Must (invitation email, accept page, resend, last-owner guard)
 - [x] **USR-002** Owner edits permissions for Receptionist and Physiotherapist roles — Must
 - [x] Default permission templates created for every new tenant (BR-USR-7)
@@ -52,10 +52,10 @@
 - [x] **PAT-001** Register patient: name, phone, age, gender mandatory — Must (age or date of birth; owners pick the registering branch)
 - [x] Possible-duplicate check by phone and similar name — Must (warns, never blocks)
 - [x] **PAT-002** Search by name or phone, across all branches — Must (plus filters: branch, gender, status, whose phone, registered date; sort; paging)
-- [ ] **PAT-003** Patient profile with tabs: Overview, Treatment, Visits, Payments — Must (Overview and Treatment done; Visits and Payments wait for their sections)
-- [ ] Balance or advance credit shown prominently on the profile — Must (banner built; amount is zero until the ledger exists, BILL-002)
+- [x] **PAT-003** Patient profile with tabs: Overview, Treatment, Visits, Payments — Must
+- [x] Balance or advance credit shown prominently on the profile — Must
 - [x] **PAT-004** Edit patient details with before/after audit — Must
-- [ ] **PAT-005** Cross-branch access with branch tags on visits and payments — Must (access, branch selector and audited views done; branch tags on visits and payments wait for Visits and Billing)
+- [x] **PAT-005** Cross-branch access with branch tags on visits and payments — Must
 - [x] Global branch selector in the top bar; the patient list follows it
 
 ### Clinical
@@ -63,31 +63,31 @@
 - [x] **CLN-001** Start an episode; one active episode per patient — Must
 - [x] **CLN-002** Assessment form: history, pain, range of motion, diagnosis; versioned — Must
 - [x] **CLN-003** Treatment plan: diagnosis, goals, sessions and frequency, therapy types, estimated cost; versioned — Must
-- [ ] Plan progress shown ("session 6 of 10") and notice when exceeded — Must (display built; the count waits for Visits)
+- [x] Plan progress shown ("session 6 of 10") and notice when exceeded — Must
 - [x] **CLN-004** Discharge with optional note; dues prompt that does not block — Must (prompt shows the real amount once the ledger exists, BILL-002)
 - [x] Reactivate by starting a new episode, history preserved — Must
 
 ### Visits
 
-- [ ] **VIS-001** Receptionist home: search box, "Register new patient" button, today's visits list — Must
-- [ ] **VIS-001** Mark attendance; creates visit and charge; stores the fee at the time — Must
-- [ ] Same-day duplicate attendance confirmation — Must
-- [ ] **VIS-002** Optional session note, versioned — Must
-- [ ] **VIS-003** Patient visit history across episodes and branches — Must
+- [x] **VIS-001** Receptionist home: search box, "Register new patient" button, today's visits list — Must
+- [x] **VIS-001** Mark attendance; creates visit and charge; stores the fee at the time — Must
+- [x] Same-day duplicate attendance confirmation — Must
+- [x] **VIS-002** Optional session note, versioned — Must
+- [x] **VIS-003** Patient visit history across episodes and branches — Must
 
 ### Billing
 
-- [ ] **BILL-001** Default session fee (owner) and fee override with reason — Must
-- [ ] Fee change applies to future visits only — Must
-- [ ] **BILL-002** Append-only ledger: charge, payment, refund, reversal — Must
-- [ ] **BILL-003** Record payment: cash, UPI, card, bank transfer; advance allowed — Must
-- [ ] **BILL-004** Refund of advance credit with permission, method, and reason — Must
-- [ ] **BILL-005** Reverse an attendance or payment with reason; original stays visible — Must
-- [ ] **BILL-006** Receipt per payment as PDF and print — Must
-- [ ] Receipt numbers per branch per financial year; no duplicates, no gaps — Must
-- [ ] Reversal receipt with its own number — Must
-- [ ] **BILL-007** Invoice on request for an episode or period — Must
-- [ ] **BILL-008** Dues warning on attendance and on opening a patient (all branches count) — Must
+- [x] **BILL-001** Default session fee (owner) and fee override with reason — Must
+- [x] Fee change applies to future visits only — Must
+- [x] **BILL-002** Append-only ledger: charge, payment, refund, reversal — Must
+- [x] **BILL-003** Record payment: cash, UPI, card, bank transfer; advance allowed — Must
+- [x] **BILL-004** Refund of advance credit with permission, method, and reason — Must
+- [x] **BILL-005** Reverse an attendance or payment with reason; original stays visible — Must
+- [x] **BILL-006** Receipt per payment as PDF and print — Must (the PDF opens in a new tab and prints from the viewer; the format still needs the accountant review, REG-4)
+- [x] Receipt numbers per branch per financial year; no duplicates, no gaps — Must
+- [x] Reversal receipt with its own number — Must
+- [x] **BILL-007** Invoice on request for an episode or period — Must
+- [x] **BILL-008** Dues warning on attendance and on opening a patient (all branches count) — Must
 
 ### Audit
 

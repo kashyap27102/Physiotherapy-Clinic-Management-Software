@@ -1,5 +1,5 @@
 // Real backend client. Endpoint paths follow docs/API-Requirements.md.
-// Auth endpoints are live; patients, visits, payments and clinic answer 404 until their server modules are built.
+// Every endpoint here is served by the Express server in ../server.
 
 import axios, { isAxiosError, type Method } from 'axios'
 import { ApiError, errorDetails, type ApiErrorCode, type FieldError } from './errors'
@@ -8,8 +8,10 @@ import { PERMISSION_KEYS } from './types'
 import type {
   Api,
   Assessment,
+  BillingDocument,
   Branch,
   Clinic,
+  DefaultFee,
   DischargeResult,
   Episode,
   EpisodeDetail,
@@ -17,12 +19,16 @@ import type {
   LoginResult,
   Paged,
   PatientDetail,
+  PatientLedger,
   PatientListItem,
   RoleKey,
   RoleSummary,
+  SessionNote,
   SessionUser,
   StaffMember,
+  TodayVisit,
   TrustedDevice,
+  VisitRecord,
 } from './types'
 
 const BASE = '/api/v1'
@@ -272,12 +278,43 @@ export const httpApi: Api = {
   },
 
   visits: {
-    today: () => request('GET', '/visits/today'),
+    async today(branchId) {
+      const result = await request<{ items: TodayVisit[] }>('GET', '/visits/today', { query: { branchId } })
+      return result.items
+    },
     create: (input, idempotencyKey) => request('POST', '/visits', { body: input, idempotencyKey }),
+    bulk: (input, idempotencyKey) => request('POST', '/visits/bulk', { body: input, idempotencyKey }),
+    async forPatient(patientId) {
+      const result = await request<{ items: VisitRecord[] }>('GET', `/patients/${patientId}/visits`)
+      return result.items
+    },
+    reverse: (visitId, reason, idempotencyKey) =>
+      request('POST', `/visits/${visitId}/reverse`, { body: { reason }, idempotencyKey }),
+    async notes(visitId) {
+      const result = await request<{ items: SessionNote[] }>('GET', `/visits/${visitId}/notes`)
+      return result.items
+    },
+    saveNote: (visitId, noteText) => request('POST', `/visits/${visitId}/notes`, { body: { noteText } }),
   },
 
   payments: {
     create: (input, idempotencyKey) => request('POST', '/payments', { body: input, idempotencyKey }),
+    refund: (input, idempotencyKey) => request('POST', '/refunds', { body: input, idempotencyKey }),
+  },
+
+  ledger: {
+    forPatient: (patientId) => request<PatientLedger>('GET', `/patients/${patientId}/ledger`),
+    reverse: (entryId, reason, idempotencyKey) =>
+      request('POST', `/ledger-entries/${entryId}/reverse`, { body: { reason }, idempotencyKey }),
+  },
+
+  documents: {
+    async forPatient(patientId) {
+      const result = await request<{ items: BillingDocument[] }>('GET', `/patients/${patientId}/documents`)
+      return result.items
+    },
+    pdfUrl: (id) => `${BASE}/documents/${id}/pdf`,
+    invoice: (input, idempotencyKey) => request('POST', '/invoices', { body: input, idempotencyKey }),
   },
 
   clinic: {
@@ -287,11 +324,9 @@ export const httpApi: Api = {
     uploadLogo: (file) =>
       request<Clinic>('POST', '/clinic/logo', { body: file, contentType: file.type || 'image/png' }),
     removeLogo: () => request<Clinic>('DELETE', '/clinic/logo'),
-    async defaultFee() {
-      const result = await request<{ defaultFee: string }>('GET', '/clinic/fee')
-      return result.defaultFee
-    },
-    // Needs a backend endpoint open to anyone who can mark attendance (not in API doc v1.0 yet).
+    defaultFee: () => request<DefaultFee>('GET', '/clinic/fee'),
+    setDefaultFee: (amount) => request<DefaultFee>('PUT', '/clinic/fee', { body: { defaultFee: amount } }),
+    // Open to anyone who can mark attendance (not in API doc v1.0).
     therapists: () => request('GET', '/branches/current/therapists'),
   },
 }
