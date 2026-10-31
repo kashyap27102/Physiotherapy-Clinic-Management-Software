@@ -1,23 +1,34 @@
 // Real backend client. Endpoint paths follow docs/API-Requirements.md.
-// Auth endpoints are live; patients, visits, payments and clinic answer 404 until their server modules are built.
+// Every endpoint here is served by the Express server in ../server.
 
 import axios, { isAxiosError, type Method } from 'axios'
-import { ApiError, type ApiErrorCode, type FieldError } from './errors'
+import { ApiError, errorDetails, type ApiErrorCode, type FieldError } from './errors'
 import { notifySessionExpired } from './sessionEvents'
+import { PERMISSION_KEYS } from './types'
 import type {
   Api,
+  Assessment,
+  BillingDocument,
   Branch,
   Clinic,
+  DefaultFee,
+  DischargeResult,
+  Episode,
+  EpisodeDetail,
+  TreatmentPlan,
   LoginResult,
   Paged,
   PatientDetail,
+  PatientLedger,
   PatientListItem,
-  PermissionKey,
   RoleKey,
   RoleSummary,
+  SessionNote,
   SessionUser,
   StaffMember,
+  TodayVisit,
   TrustedDevice,
+  VisitRecord,
 } from './types'
 
 const BASE = '/api/v1'
@@ -45,7 +56,6 @@ interface ServerProfile {
 const ROLE_KEYS: readonly RoleKey[] = ['owner', 'receptionist', 'physiotherapist']
 
 function toSessionUser(profile: ServerProfile): SessionUser {
-  csrfToken = profile.csrfToken
   const roleKey = profile.role?.key
   return {
     id: profile.id,
@@ -54,9 +64,16 @@ function toSessionUser(profile: ServerProfile): SessionUser {
     role: profile.isSuperAdmin ? 'super_admin' : (ROLE_KEYS.find((key) => key === roleKey) ?? 'receptionist'),
     tenantName: profile.tenant?.name ?? '',
     branch: profile.branch ? { id: profile.branch.id, name: profile.branch.name } : null,
-    permissions: profile.permissions as PermissionKey[],
+    // A key this build does not know is dropped; permissions only hide or show UI, the server enforces them.
+    permissions: PERMISSION_KEYS.filter((key) => profile.permissions.includes(key)),
     needsSetup: profile.needsSetup,
   }
+}
+
+/** Maps the server's profile and remembers its CSRF token for the requests that follow. */
+function startSession(profile: ServerProfile): SessionUser {
+  csrfToken = profile.csrfToken
+  return toSessionUser(profile)
 }
 
 /** Auth calls answer 401 as part of their normal flow, so they never mean "your session just expired". */
@@ -65,6 +82,8 @@ const AUTH_FLOW = /^\/auth\/(login|otp\/|register|password\/(forgot|reset)|me$)/
 interface RequestOptions {
   body?: unknown
   query?: Record<string, string | number | boolean | undefined>
+  /** Lets a caller (React Query) cancel the request. */
+  signal?: AbortSignal
   idempotencyKey?: string
   /** For raw uploads such as the clinic logo; JSON otherwise. */
   contentType?: string
@@ -117,6 +136,7 @@ async function request<T>(method: Method, path: string, options: RequestOptions 
       url: path,
       params,
       data: options.body,
+      signal: options.signal,
       headers: {
         ...(options.idempotencyKey ? { 'Idempotency-Key': options.idempotencyKey } : {}),
         ...(options.contentType ? { 'Content-Type': options.contentType } : {}),
@@ -133,22 +153,21 @@ export const httpApi: Api = {
     async login(email, password): Promise<LoginResult> {
       try {
         const profile = await request<ServerProfile>('POST', '/auth/login', { body: { email, password } })
-        return { status: 'ok', user: toSessionUser(profile) }
+        return { status: 'ok', user: startSession(profile) }
       } catch (error) {
         if (error instanceof ApiError && error.code === 'OTP_REQUIRED') {
-          const details = (error.details ?? {}) as { challengeId?: string }
-          return { status: 'otp_required', challengeId: details.challengeId ?? '' }
+          return { status: 'otp_required', challengeId: errorDetails<{ challengeId: string }>(error).challengeId ?? '' }
         }
         throw error
       }
     },
     async verifyOtp(input) {
-      return toSessionUser(await request<ServerProfile>('POST', '/auth/otp/verify', { body: input }))
+      return startSession(await request<ServerProfile>('POST', '/auth/otp/verify', { body: input }))
     },
     resendOtp: (challengeId) => request<{ challengeId: string }>('POST', '/auth/otp/resend', { body: { challengeId } }),
     async me() {
       try {
-        return toSessionUser(await request<ServerProfile>('GET', '/auth/me'))
+        return startSession(await request<ServerProfile>('GET', '/auth/me'))
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) return null
         throw error
@@ -177,7 +196,7 @@ export const httpApi: Api = {
     revokeDevice: (id) => request<void>('DELETE', `/auth/devices/${id}`),
     register: (input) => request<{ registrationId: string }>('POST', '/auth/register', { body: input }),
     async verifyRegistration(input) {
-      return toSessionUser(await request<ServerProfile>('POST', '/auth/register/verify', { body: input }))
+      return startSession(await request<ServerProfile>('POST', '/auth/register/verify', { body: input }))
     },
     resendRegistration: (registrationId) =>
       request<{ registrationId: string }>('POST', '/auth/register/resend', { body: { registrationId } }),
@@ -221,7 +240,7 @@ export const httpApi: Api = {
   },
 
   patients: {
-    search: (input) => request<Paged<PatientListItem>>('GET', '/patients', { query: { ...input } }),
+    search: (input, signal) => request<Paged<PatientListItem>>('GET', '/patients', { query: { ...input }, signal }),
     create: (input, options) =>
       request<PatientDetail>('POST', '/patients', {
         body: input,
@@ -236,16 +255,66 @@ export const httpApi: Api = {
   },
 
   episodes: {
-    start: (patientId) => request('POST', `/patients/${patientId}/episodes`),
+    async list(patientId) {
+      const result = await request<{ items: Episode[] }>('GET', `/patients/${patientId}/episodes`)
+      return result.items
+    },
+    start: (patientId, input = {}) => request<Episode>('POST', `/patients/${patientId}/episodes`, { body: input }),
+    get: (id) => request<EpisodeDetail>('GET', `/episodes/${id}`),
+    async assessments(episodeId) {
+      const result = await request<{ items: Assessment[] }>('GET', `/episodes/${episodeId}/assessments`)
+      return result.items
+    },
+    saveAssessment: (episodeId, input) =>
+      request<Assessment>('POST', `/episodes/${episodeId}/assessments`, { body: input }),
+    async plans(episodeId) {
+      const result = await request<{ items: TreatmentPlan[] }>('GET', `/episodes/${episodeId}/treatment-plans`)
+      return result.items
+    },
+    savePlan: (episodeId, input) =>
+      request<TreatmentPlan>('POST', `/episodes/${episodeId}/treatment-plans`, { body: input }),
+    discharge: (episodeId, note) =>
+      request<DischargeResult>('POST', `/episodes/${episodeId}/discharge`, { body: note ? { note } : {} }),
   },
 
   visits: {
-    today: () => request('GET', '/visits/today'),
+    async today(branchId) {
+      const result = await request<{ items: TodayVisit[] }>('GET', '/visits/today', { query: { branchId } })
+      return result.items
+    },
     create: (input, idempotencyKey) => request('POST', '/visits', { body: input, idempotencyKey }),
+    bulk: (input, idempotencyKey) => request('POST', '/visits/bulk', { body: input, idempotencyKey }),
+    async forPatient(patientId) {
+      const result = await request<{ items: VisitRecord[] }>('GET', `/patients/${patientId}/visits`)
+      return result.items
+    },
+    reverse: (visitId, reason, idempotencyKey) =>
+      request('POST', `/visits/${visitId}/reverse`, { body: { reason }, idempotencyKey }),
+    async notes(visitId) {
+      const result = await request<{ items: SessionNote[] }>('GET', `/visits/${visitId}/notes`)
+      return result.items
+    },
+    saveNote: (visitId, noteText) => request('POST', `/visits/${visitId}/notes`, { body: { noteText } }),
   },
 
   payments: {
     create: (input, idempotencyKey) => request('POST', '/payments', { body: input, idempotencyKey }),
+    refund: (input, idempotencyKey) => request('POST', '/refunds', { body: input, idempotencyKey }),
+  },
+
+  ledger: {
+    forPatient: (patientId) => request<PatientLedger>('GET', `/patients/${patientId}/ledger`),
+    reverse: (entryId, reason, idempotencyKey) =>
+      request('POST', `/ledger-entries/${entryId}/reverse`, { body: { reason }, idempotencyKey }),
+  },
+
+  documents: {
+    async forPatient(patientId) {
+      const result = await request<{ items: BillingDocument[] }>('GET', `/patients/${patientId}/documents`)
+      return result.items
+    },
+    pdfUrl: (id) => `${BASE}/documents/${id}/pdf`,
+    invoice: (input, idempotencyKey) => request('POST', '/invoices', { body: input, idempotencyKey }),
   },
 
   clinic: {
@@ -255,11 +324,9 @@ export const httpApi: Api = {
     uploadLogo: (file) =>
       request<Clinic>('POST', '/clinic/logo', { body: file, contentType: file.type || 'image/png' }),
     removeLogo: () => request<Clinic>('DELETE', '/clinic/logo'),
-    async defaultFee() {
-      const result = await request<{ defaultFee: string }>('GET', '/clinic/fee')
-      return result.defaultFee
-    },
-    // Needs a backend endpoint open to anyone who can mark attendance (not in API doc v1.0 yet).
+    defaultFee: () => request<DefaultFee>('GET', '/clinic/fee'),
+    setDefaultFee: (amount) => request<DefaultFee>('PUT', '/clinic/fee', { body: { defaultFee: amount } }),
+    // Open to anyone who can mark attendance (not in API doc v1.0).
     therapists: () => request('GET', '/branches/current/therapists'),
   },
 }

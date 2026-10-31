@@ -16,8 +16,14 @@ export type ApiErrorCode =
   | 'DUPLICATE_PATIENT_WARNING'
   | 'NO_ACTIVE_EPISODE'
   | 'EPISODE_ALREADY_ACTIVE'
+  | 'VERSION_CONFLICT'
   | 'DUPLICATE_VISIT_TODAY'
   | 'FEE_REASON_REQUIRED'
+  | 'REFUND_EXCEEDS_CREDIT'
+  | 'ALREADY_REVERSED'
+  | 'CANNOT_REVERSE_REVERSAL'
+  | 'IDEMPOTENCY_IN_PROGRESS'
+  | 'IDEMPOTENCY_KEY_REUSED'
   | 'LAST_OWNER'
   | 'LAST_BRANCH'
   | 'BRANCH_HAS_STAFF'
@@ -52,4 +58,9 @@ export const isApiError = (error: unknown, code?: ApiErrorCode): error is ApiErr
 
 export function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiError ? error.message : fallback
+}
+
+/** The `details` object some error codes carry (duplicate candidates, permission warnings); empty when absent. */
+export function errorDetails<T extends object>(error: ApiError): Partial<T> {
+  return (error.details ?? {}) as Partial<T>
 }

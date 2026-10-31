@@ -43,13 +43,23 @@ model Tenant {
   status              String   @default("active")
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  subscriptions Subscription[]
-  logo          TenantLogo?
-  branches      Branch[]
-  patients      Patient[]
-  roles         Role[]
-  users         UserAccount[]
-  auditLogs     AuditLog[]
+  subscriptions   Subscription[]
+  logo            TenantLogo?
+  branches        Branch[]
+  patients        Patient[]
+  episodes        Episode[]
+  assessments     Assessment[]
+  treatmentPlans  TreatmentPlan[]
+  visits          Visit[]
+  sessionNotes    SessionNote[]
+  feeSettings     FeeSetting[]
+  ledgerEntries   LedgerEntry[]
+  billingDocs     BillingDocument[]
+  numberSeqs      NumberSequence[]
+  idempotencyKeys IdempotencyKey[]
+  roles           Role[]
+  users           UserAccount[]
+  auditLogs       AuditLog[]
 
   @@map("tenant")
 }
@@ -81,9 +91,14 @@ model Branch {
   phone    String?
   isActive Boolean @default(true) @map("is_active")
 
-  tenant   Tenant        @relation(fields: [tenantId], references: [id])
-  users    UserAccount[]
-  patients Patient[]
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  users           UserAccount[]
+  patients        Patient[]
+  episodesStarted Episode[]
+  visits          Visit[]
+  ledgerEntries   LedgerEntry[]
+  billingDocs     BillingDocument[]
+  numberSeqs      NumberSequence[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, code])
@@ -161,6 +176,15 @@ model UserAccount {
   sessions            UserSession[]
   auditLogs           AuditLog[]
   patientsCreated     Patient[]
+  episodesDischarged  Episode[]
+  assessmentsWritten  Assessment[]
+  plansWritten        TreatmentPlan[]
+  visitsTreated       Visit[]              @relation("VisitTherapist")
+  visitsMarked        Visit[]              @relation("VisitMarkedBy")
+  notesWritten        SessionNote[]
+  feesSet             FeeSetting[]
+  ledgerEntriesMade   LedgerEntry[]
+  documentsIssued     BillingDocument[]
 
   @@unique([tenantId, id])
   @@index([tenantId])
@@ -295,10 +319,17 @@ model Patient {
   status             String    @default("active")
   createdById        String    @map("created_by") @db.Uuid
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Bumped inside every money transaction for this patient, so two clerks cannot both pass the refund or reversal
+  /// check against the same balance (API-Requirements section 10).
+  ledgerRevision     Int       @default(0) @map("ledger_revision")
 
-  tenant           Tenant      @relation(fields: [tenantId], references: [id])
-  registeredBranch Branch      @relation(fields: [tenantId, registeredBranchId], references: [tenantId, id])
-  createdBy        UserAccount @relation(fields: [tenantId, createdById], references: [tenantId, id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  registeredBranch Branch            @relation(fields: [tenantId, registeredBranchId], references: [tenantId, id])
+  createdBy        UserAccount       @relation(fields: [tenantId, createdById], references: [tenantId, id])
+  episodes         Episode[]
+  visits           Visit[]
+  ledgerEntries    LedgerEntry[]
+  billingDocs      BillingDocument[]
 
   @@unique([tenantId, id])
   @@index([tenantId, phone])
@@ -306,6 +337,270 @@ model Patient {
   // Partial phone search (US-09.1). The name trigram index is an expression index in the migration SQL.
   @@index([phone(ops: raw("gin_trgm_ops"))], type: Gin, map: "patient_phone_trgm_idx")
   @@map("patient")
+}
+
+// ---------------------------------------------------------------- clinical (ER 3.3, CLN-001 to CLN-004)
+
+/// One course of treatment (BR-CLN-1). At most one active episode per patient: a partial unique index in the
+/// migration SQL (CON-11). Discharged episodes stay for good; a returning patient gets a new episode (BR-CLN-8).
+model Episode {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  patientId       String    @map("patient_id") @db.Uuid
+  startedBranchId String    @map("started_branch_id") @db.Uuid
+  /// active or discharged
+  status          String    @default("active")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  dischargedAt    DateTime? @map("discharged_at") @db.Timestamptz(6)
+  dischargeNote   String?   @map("discharge_note")
+  dischargedById  String?   @map("discharged_by") @db.Uuid
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  patient        Patient         @relation(fields: [tenantId, patientId], references: [tenantId, id])
+  startedBranch  Branch          @relation(fields: [tenantId, startedBranchId], references: [tenantId, id])
+  dischargedBy   UserAccount?    @relation(fields: [tenantId, dischargedById], references: [tenantId, id])
+  assessments    Assessment[]
+  treatmentPlans TreatmentPlan[]
+  visits         Visit[]
+  ledgerEntries  LedgerEntry[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, patientId, startedAt(sort: Desc)])
+  @@map("episode")
+}
+
+/// Append-only and versioned (BR-CLN-4): an edit inserts the next version. Insert and select only (SEC-008).
+model Assessment {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  episodeId     String   @map("episode_id") @db.Uuid
+  version       Int
+  history       String?
+  pain          String?
+  rangeOfMotion String?  @map("range_of_motion")
+  diagnosis     String?
+  /// chief complaint, pain score and others
+  extraFields   Json     @default("{}") @map("extra_fields")
+  authorId      String   @map("author_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant      @relation(fields: [tenantId], references: [id])
+  episode Episode     @relation(fields: [tenantId, episodeId], references: [tenantId, id])
+  author  UserAccount @relation(fields: [tenantId, authorId], references: [tenantId, id])
+
+  @@unique([episodeId, version])
+  @@index([tenantId, episodeId])
+  @@map("assessment")
+}
+
+/// Append-only and versioned (BR-CLN-4). The estimated cost is informational only and creates no charge (BR-CLN-5).
+model TreatmentPlan {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  episodeId       String   @map("episode_id") @db.Uuid
+  version         Int
+  diagnosis       String?
+  goals           String?
+  plannedSessions Int?     @map("planned_sessions")
+  /// for example 3 times a week
+  frequency       String?
+  therapyTypes    String?  @map("therapy_types")
+  estimatedCost   Decimal? @map("estimated_cost") @db.Decimal(12, 2)
+  notes           String?
+  authorId        String   @map("author_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant  Tenant      @relation(fields: [tenantId], references: [id])
+  episode Episode     @relation(fields: [tenantId, episodeId], references: [tenantId, id])
+  author  UserAccount @relation(fields: [tenantId, authorId], references: [tenantId, id])
+
+  @@unique([episodeId, version])
+  @@index([tenantId, episodeId])
+  @@map("treatment_plan")
+}
+
+// ---------------------------------------------------------------- visits (ER 3.3, VIS-001 to VIS-003)
+
+/// One attended session (VIS-001). Append-only: there is no status column, "reversed" is derived from the charge having a
+/// reversal (DD-3). The fee is stored at the time of the visit (BR-BILL-1), so a later fee change never alters it.
+model Visit {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  branchId          String   @map("branch_id") @db.Uuid
+  patientId         String   @map("patient_id") @db.Uuid
+  episodeId         String   @map("episode_id") @db.Uuid
+  therapistId       String?  @map("therapist_id") @db.Uuid
+  visitedAt         DateTime @default(now()) @map("visited_at") @db.Timestamptz(6)
+  feeAmount         Decimal  @map("fee_amount") @db.Decimal(12, 2)
+  feeOverrideReason String?  @map("fee_override_reason")
+  markedById        String   @map("marked_by") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  branch        Branch        @relation(fields: [tenantId, branchId], references: [tenantId, id])
+  patient       Patient       @relation(fields: [tenantId, patientId], references: [tenantId, id])
+  episode       Episode       @relation(fields: [tenantId, episodeId], references: [tenantId, id])
+  therapist     UserAccount?  @relation("VisitTherapist", fields: [tenantId, therapistId], references: [tenantId, id])
+  markedBy      UserAccount   @relation("VisitMarkedBy", fields: [tenantId, markedById], references: [tenantId, id])
+  notes         SessionNote[]
+  ledgerEntries LedgerEntry[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, branchId, visitedAt(sort: Desc)])
+  @@index([patientId, visitedAt(sort: Desc)])
+  @@index([episodeId, visitedAt(sort: Desc)])
+  @@map("visit")
+}
+
+/// Optional note on a visit (VIS-002). Versioned and append-only like assessments (BR-CLN-4).
+model SessionNote {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  visitId   String   @map("visit_id") @db.Uuid
+  version   Int
+  noteText  String   @map("note_text")
+  authorId  String   @map("author_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
+  visit  Visit       @relation(fields: [tenantId, visitId], references: [tenantId, id])
+  author UserAccount @relation(fields: [tenantId, authorId], references: [tenantId, id])
+
+  @@unique([visitId, version])
+  @@index([tenantId, visitId])
+  @@map("session_note")
+}
+
+// ---------------------------------------------------------------- billing (ER 3.4, BILL-001 to BILL-008)
+
+/// The clinic's default session fee (BILL-001). Each change inserts a row and the newest is current. Existing visits keep
+/// the fee they were charged, so a change applies to future visits only.
+model FeeSetting {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  defaultFee    Decimal  @map("default_fee") @db.Decimal(12, 2)
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  setById       String   @map("set_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
+  setBy  UserAccount @relation(fields: [tenantId, setById], references: [tenantId, id])
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("fee_setting")
+}
+
+/// The append-only ledger (BILL-002, BR-BILL-4). Amounts are never negative; the entry type decides the direction
+/// (ER section 4). A trigger refuses UPDATE and DELETE for every database role.
+model LedgerEntry {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  branchId        String   @map("branch_id") @db.Uuid
+  patientId       String   @map("patient_id") @db.Uuid
+  episodeId       String?  @map("episode_id") @db.Uuid
+  /// Required for CHARGE.
+  visitId         String?  @map("visit_id") @db.Uuid
+  /// Required for REVERSAL. Unique, so an entry is reversed only once (CON-03).
+  reversesEntryId String?  @map("reverses_entry_id") @db.Uuid
+  /// CHARGE, PAYMENT, REFUND, REVERSAL
+  entryType       String   @map("entry_type")
+  amount          Decimal  @db.Decimal(12, 2)
+  /// cash, upi, card, bank_transfer
+  paymentMethod   String?  @map("payment_method")
+  reference       String?
+  reason          String?
+  entryDate       DateTime @map("entry_date") @db.Date
+  createdById     String   @map("created_by") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  branch     Branch            @relation(fields: [tenantId, branchId], references: [tenantId, id])
+  patient    Patient           @relation(fields: [tenantId, patientId], references: [tenantId, id])
+  episode    Episode?          @relation(fields: [tenantId, episodeId], references: [tenantId, id])
+  visit      Visit?            @relation(fields: [tenantId, visitId], references: [tenantId, id])
+  createdBy  UserAccount       @relation(fields: [tenantId, createdById], references: [tenantId, id])
+  reverses   LedgerEntry?      @relation("Reversal", fields: [tenantId, reversesEntryId], references: [tenantId, id])
+  reversedBy LedgerEntry?      @relation("Reversal")
+  documents  BillingDocument[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, reversesEntryId])
+  @@index([patientId, createdAt])
+  @@index([tenantId, branchId, entryDate, entryType])
+  @@map("ledger_entry")
+}
+
+/// A numbered receipt, reversal receipt or invoice (DD-4). Append-only. Numbers have no gaps and no duplicates (CON-08):
+/// the counter is locked in the same transaction as the ledger insert.
+model BillingDocument {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  branchId      String    @map("branch_id") @db.Uuid
+  patientId     String    @map("patient_id") @db.Uuid
+  /// Null only for period invoices (DD-10).
+  ledgerEntryId String?   @map("ledger_entry_id") @db.Uuid
+  /// RECEIPT, REVERSAL_RECEIPT, INVOICE
+  docType       String    @map("doc_type")
+  /// For example 2026-27 (April to March, India time).
+  financialYear String    @map("financial_year")
+  seqNo         Int       @map("seq_no")
+  /// For example MUM/2026-27/0001
+  docNumber     String    @map("doc_number")
+  /// Invoice lines as issued (DD-5).
+  linesSnapshot Json?     @map("lines_snapshot")
+  periodFrom    DateTime? @map("period_from") @db.Date
+  periodTo      DateTime? @map("period_to") @db.Date
+  issuedById    String    @map("issued_by") @db.Uuid
+  issuedAt      DateTime  @default(now()) @map("issued_at") @db.Timestamptz(6)
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  branch      Branch       @relation(fields: [tenantId, branchId], references: [tenantId, id])
+  patient     Patient      @relation(fields: [tenantId, patientId], references: [tenantId, id])
+  ledgerEntry LedgerEntry? @relation(fields: [tenantId, ledgerEntryId], references: [tenantId, id])
+  issuedBy    UserAccount  @relation(fields: [tenantId, issuedById], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@unique([branchId, docType, financialYear, seqNo])
+  @@unique([tenantId, docNumber])
+  @@index([patientId, issuedAt(sort: Desc)])
+  @@map("billing_document")
+}
+
+/// One counter per branch, document type and financial year (CON-09), locked while a number is taken.
+model NumberSequence {
+  id            String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String @map("tenant_id") @db.Uuid
+  branchId      String @map("branch_id") @db.Uuid
+  docType       String @map("doc_type")
+  financialYear String @map("financial_year")
+  lastNumber    Int    @default(0) @map("last_number")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  branch Branch @relation(fields: [tenantId, branchId], references: [tenantId, id])
+
+  @@unique([branchId, docType, financialYear])
+  @@map("number_sequence")
+}
+
+/// Remembers the first answer to a money-moving POST, so a repeat with the same Idempotency-Key returns it instead of
+/// creating a second entry (API-Requirements section 10). Rows older than 24 hours are ignored. Not in the ER document.
+model IdempotencyKey {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  key            String
+  /// Hash of method, path and body: the same key with different content is refused.
+  requestHash    String   @map("request_hash")
+  /// Null while the first request is still running.
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, userId, key])
+  @@index([createdAt])
+  @@map("idempotency_key")
 }
 
 // ---------------------------------------------------------------- audit (ER 3.5)

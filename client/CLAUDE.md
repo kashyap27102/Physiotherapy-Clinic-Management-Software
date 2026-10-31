@@ -34,6 +34,13 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
   maps server 422 field errors onto react-hook-form.
 - `src/branchScope/` the top-bar branch choice (`useBranchScope`: `branchId` or null for all branches, remembered per user in localStorage). Lists pass `branchId` to the API; `components/layout/BranchSelect.tsx` is the dropdown. Visits, payments and the dashboard should follow it too.
 - `src/features/patients/` patient list (`PatientTable`, `PatientFilterBar`, `patientFilters.ts` keeps search, filters and page in the address bar), register/edit forms, profile tabs. `components/common/Pagination.tsx` is reusable.
+- `src/features/clinical/` the profile's Treatment tab (CLN-001 to CLN-004): `TreatmentTab` (episode picker, summary with
+  `ProgressMeter`, assessment and plan cards), `AssessmentDialog` (with the 0–10 `PainScale`), `PlanDialog` (frequency and
+  therapy chips), `VersionHistoryDialog`, `DischargeDialog`, `StartEpisodeButton` (owners pick a branch, pre-set from the
+  branch scope; reused by `MarkAttendanceDialog`). Pure form rules in `clinicalForm.ts`. Each save is a new version; the
+  server answers the unchanged version when nothing changed, so compare version numbers to tell the user. Opening an
+  episode or a history is audited, so those queries use `staleTime` and never refetch on focus.
+- `src/features/visits/` and `src/features/billing/` (VIS-001 to VIS-003, BILL-001 to BILL-008): `TodayVisits` (home), `MarkAttendanceDialog` (the "earlier day" date and reason appear only with `visit.backdate`), `VisitsTab`, `SessionNoteDialog`, bulk attendance for the owner (`BulkDaysDialog`: many days for one patient, from the Visits tab; `BulkPatientsDialog`: many patients for one day, from the home page; `DayPicker`, `useBulkMarking`, `lib/calendar.ts`; both need `visit.bulk`, and `visit.backdate` for earlier days); `RecordPaymentDialog`, `PaymentsTab` (ledger, receipts, invoices), `RefundDialog`, `InvoiceDialog`, `ReverseDialog` (one dialog for visits and ledger entries), `MethodPicker`, `DefaultFeeCard` (in Clinic settings). Receipts and invoices open as PDFs in a new tab (`api.documents.pdfUrl`); printing is the PDF viewer's. Every money write uses `useIdempotencyKey` and `invalidatePatientData`. The ledger and note queries are audited on the server, so they use `staleTime` and skip refetch on focus.
 - `src/auth/` session context, hooks (`useUser`, `useCan`), route guards (`RequireAuth`, `RequirePermission`, `Can`).
 - `src/features/<area>/` dialogs and tabs for one area. `src/pages/` one file per route. `src/components/{ui,layout,common}/`.
 - `src/lib/` money, date (India time), query keys. `src/strings/en.ts` all UI text.
@@ -47,7 +54,7 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 - **Online only.** Disable saving with `useOnlineStatus` and show `t.offline.blocked`. Never imply a save worked when it did not.
 - **Idempotency.** Attendance and payments send an `Idempotency-Key`; keep the same key after a `NETWORK` error, regenerate it
   after any other error (see `MarkAttendanceDialog`).
-- **No delete actions** for clinical or financial data. Corrections are reversals (not built yet).
+- **No delete actions** for clinical or financial data. Corrections are reversals (`ReverseDialog`); a reversed visit or entry stays listed and marked.
 - Dates and "today" use India time (`lib/date.ts`). Financial year is April to March.
 - Match the receptionist's pace: big tap targets (`h-10`), minimal typing, dialogs reset on every open.
 - Reference design: grey frame, left sidebar, white content panel, blue primary, breadcrumb page header, underlined tabs,
@@ -70,5 +77,4 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
 
 ## Not built yet
 
-Assessment and treatment-plan forms, discharge, reversals and refunds, PDF receipts and invoices, owner dashboard,
-default fee setting, owner view of a staff member's trusted devices, reports, import/export, audit log viewer. Build on the `dev` branch via a feature branch.
+Owner dashboard, owner view of a staff member's trusted devices, reports, import/export, audit log viewer, back-dated payments (the server accepts an owner-only `date`; the dialog has no field for it yet). Build on the `dev` branch via a feature branch.

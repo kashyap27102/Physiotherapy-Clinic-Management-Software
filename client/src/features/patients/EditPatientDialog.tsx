@@ -1,18 +1,19 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type PatientDetail, type PatientListItem } from '@/api'
+import { api, errorDetails, isApiError, type PatientDetail, type PatientListItem } from '@/api'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DuplicateNotice } from '@/features/patients/DuplicateNotice'
 import { CoreFields, OptionalFields, type PatientFormValues } from '@/features/patients/PatientFormFields'
 import { PATIENT_FORM_FIELDS, toUpdateInput, valuesFromPatient } from '@/features/patients/patientForm'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
-import { applyFieldErrors } from '@/lib/forms'
 import { queryKeys } from '@/lib/queryKeys'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 interface Props {
@@ -36,14 +37,15 @@ function EditForm({ patient, onClose }: { patient: PatientDetail; onClose: () =>
   const queryClient = useQueryClient()
   const online = useOnlineStatus()
   const [duplicates, setDuplicates] = useState<PatientListItem[] | null>(null)
-  const [formError, setFormError] = useState<string | null>(null)
 
   const form = useForm<PatientFormValues>({ defaultValues: valuesFromPatient(patient) })
   const { register, handleSubmit, setError, control, formState } = form
   const { errors, isDirty } = formState
   const values = useWatch({ control })
 
-  const save = useMutation({
+  const save = useFormMutation({
+    fields: PATIENT_FORM_FIELDS,
+    setError,
     mutationFn: ({ input, confirmDuplicate }: { input: PatientFormValues; confirmDuplicate: boolean }) =>
       api.patients.update(patient.id, toUpdateInput(input), { confirmDuplicate }),
     onSuccess: async (updated) => {
@@ -55,19 +57,15 @@ function EditForm({ patient, onClose }: { patient: PatientDetail; onClose: () =>
     onError: (error) => {
       // US-11a.2: the new phone number belongs to someone else; show who, and let the user decide.
       if (isApiError(error, 'DUPLICATE_PATIENT_WARNING')) {
-        setDuplicates((error.details as { candidates?: PatientListItem[] } | undefined)?.candidates ?? [])
-        return
+        setDuplicates(errorDetails<{ candidates: PatientListItem[] }>(error).candidates ?? [])
+        return true
       }
-      if (isApiError(error, 'VALIDATION_FAILED') && applyFieldErrors(error.fields, PATIENT_FORM_FIELDS, setError))
-        return
-      setFormError(errorMessage(error, t.common.genericError))
     },
   })
 
   const submit = (confirmDuplicate: boolean) =>
     handleSubmit((input) => {
-      setFormError(null)
-      save.mutate({ input, confirmDuplicate })
+      save.submit({ input, confirmDuplicate })
     })
 
   return (
@@ -115,8 +113,8 @@ function EditForm({ patient, onClose }: { patient: PatientDetail; onClose: () =>
           <OptionalFields register={register} errors={errors} />
         </section>
 
-        {formError && <FormAlert>{formError}</FormAlert>}
-        {!online && <FormAlert tone="info">{t.offline.blocked}</FormAlert>}
+        {save.formError && <FormAlert>{save.formError}</FormAlert>}
+        <OfflineNotice />
       </div>
 
       <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">

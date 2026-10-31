@@ -4,11 +4,14 @@ import { createRateLimiter } from '../middleware/rateLimit.js'
 import { csrfProtection, sessionMiddleware } from '../middleware/session.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
 import { branchesRouter } from '../modules/branches/branches.routes.js'
+import { clinicalRouter } from '../modules/clinical/clinical.routes.js'
+import { billingRouter } from '../modules/billing/billing.routes.js'
 import { clinicRouter } from '../modules/clinic/clinic.routes.js'
 import { createRegistrationRouter } from '../modules/registration/registration.routes.js'
 import { patientsRouter } from '../modules/patients/patients.routes.js'
 import { rolesRouter } from '../modules/roles/roles.routes.js'
 import { usersRouter } from '../modules/users/users.routes.js'
+import { visitsRouter } from '../modules/visits/visits.routes.js'
 import { healthRouter } from '../modules/health/health.routes.js'
 
 export const v1Router = Router()
@@ -35,3 +38,6 @@ v1Router.use(branchesRouter)
 v1Router.use(usersRouter)
 v1Router.use(rolesRouter)
 v1Router.use(patientsRouter)
+v1Router.use(clinicalRouter)
+v1Router.use(visitsRouter)
+v1Router.use(billingRouter)

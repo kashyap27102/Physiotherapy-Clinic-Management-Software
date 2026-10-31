@@ -53,7 +53,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   ].filter((item) => item !== false)
 
   return (
-    <nav className="flex flex-col gap-1" aria-label="Main">
+    <nav className="flex flex-col gap-1" aria-label={t.nav.main}>
       <NavLink to="/" end className={navLinkClass} onClick={onNavigate}>
         <Users className="size-4" aria-hidden />
         {t.nav.patients}

@@ -3,7 +3,7 @@ import { Building2, Loader2, Lock, MapPin, Pencil, Phone, Plus, Power, Users } f
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError, type Branch } from '@/api'
+import { api, errorMessage, type Branch } from '@/api'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -14,10 +14,10 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useFormMutation } from '@/hooks/useFormMutation'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
-import { applyFieldErrors } from '@/lib/forms'
 import { t } from '@/strings/en'
 
 /** TEN-002: the owner's branches. Deactivated, never deleted (BR-TEN-3). */
@@ -206,7 +206,6 @@ interface BranchValues {
 const BRANCH_FIELDS = ['name', 'code', 'address', 'phone'] as const
 
 function BranchForm({ branch, onDone }: { branch: Branch | null; onDone: () => void }) {
-  const [error, setError] = useState<string | null>(null)
   const form = useForm<BranchValues>({
     defaultValues: {
       name: branch?.name ?? '',
@@ -217,7 +216,9 @@ function BranchForm({ branch, onDone }: { branch: Branch | null; onDone: () => v
   })
   const { errors } = form.formState
 
-  const save = useMutation({
+  const save = useFormMutation({
+    fields: BRANCH_FIELDS,
+    setError: form.setError,
     mutationFn: (values: BranchValues) => {
       const input = {
         name: values.name.trim(),
@@ -237,20 +238,10 @@ function BranchForm({ branch, onDone }: { branch: Branch | null; onDone: () => v
       toast.success(branch ? t.branchSettings.updated : t.branchSettings.created)
       onDone()
     },
-    onError: (e) => {
-      if (isApiError(e, 'VALIDATION_FAILED') && applyFieldErrors(e.fields, BRANCH_FIELDS, form.setError)) return
-      setError(errorMessage(e, t.common.genericError))
-    },
   })
 
   return (
-    <form
-      noValidate
-      onSubmit={form.handleSubmit((values) => {
-        setError(null)
-        save.mutate(values)
-      })}
-    >
+    <form noValidate onSubmit={form.handleSubmit((values) => save.submit(values))}>
       <DialogHeader>
         <DialogTitle>{branch ? t.branchSettings.editTitle : t.branchSettings.addTitle}</DialogTitle>
       </DialogHeader>
@@ -287,7 +278,7 @@ function BranchForm({ branch, onDone }: { branch: Branch | null; onDone: () => v
         <Field id="branch-phone" label={t.branchSettings.phone} optional error={errors.phone?.message}>
           <Input id="branch-phone" type="tel" className={inputClassName} {...form.register('phone')} />
         </Field>
-        {error && <FormAlert>{error}</FormAlert>}
+        {save.formError && <FormAlert>{save.formError}</FormAlert>}
       </div>
       <DialogFooter className="mt-6">
         <Button type="submit" className="h-10 px-4" disabled={save.isPending}>

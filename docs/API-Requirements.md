@@ -80,30 +80,32 @@ Every error returns the same shape:
 
 The Owner has all of them. Receptionist and Physiotherapist defaults are in PRD section 16. Every endpoint below names the key it needs.
 
-| Key                | Meaning                                         |
-| ------------------ | ----------------------------------------------- |
-| `clinic.manage`    | Clinic profile, default fee, settings, branches |
-| `staff.manage`     | Staff accounts                                  |
-| `role.manage`      | Edit role permissions                           |
-| `device.manage`    | Revoke other users' trusted devices             |
-| `patient.register` | Create patients                                 |
-| `patient.edit`     | Edit demographics                               |
-| `patient.view`     | Search and open patients                        |
-| `clinical.view`    | View assessments, plans, notes                  |
-| `clinical.edit`    | Edit assessments, plans, notes                  |
-| `episode.manage`   | Start episode, discharge                        |
-| `visit.mark`       | Mark attendance                                 |
-| `fee.override`     | Override the session fee                        |
-| `ledger.view`      | See balances and payment history                |
-| `payment.record`   | Record payments                                 |
-| `refund.process`   | Process refunds                                 |
-| `entry.reverse`    | Reverse entries                                 |
-| `document.issue`   | Print receipts, generate invoices               |
-| `report.view`      | Dashboard and reports                           |
-| `data.import`      | Import patients                                 |
-| `data.export`      | Export data and reports                         |
-| `audit.view`       | View audit log                                  |
-| `platform.admin`   | Super-admin only: tenants, plans                |
+| Key                | Meaning                                               |
+| ------------------ | ----------------------------------------------------- |
+| `clinic.manage`    | Clinic profile, default fee, settings, branches       |
+| `staff.manage`     | Staff accounts                                        |
+| `role.manage`      | Edit role permissions                                 |
+| `device.manage`    | Revoke other users' trusted devices                   |
+| `patient.register` | Create patients                                       |
+| `patient.edit`     | Edit demographics                                     |
+| `patient.view`     | Search and open patients                              |
+| `clinical.view`    | View assessments, plans, notes                        |
+| `clinical.edit`    | Edit assessments, plans, notes                        |
+| `episode.manage`   | Start episode, discharge                              |
+| `visit.mark`       | Mark attendance                                       |
+| `visit.backdate`   | Mark attendance for an earlier day (owner by default) |
+| `visit.bulk`       | Mark many visits in one go (owner by default)         |
+| `fee.override`     | Override the session fee                              |
+| `ledger.view`      | See balances and payment history                      |
+| `payment.record`   | Record payments                                       |
+| `refund.process`   | Process refunds                                       |
+| `entry.reverse`    | Reverse entries                                       |
+| `document.issue`   | Print receipts, generate invoices                     |
+| `report.view`      | Dashboard and reports                                 |
+| `data.import`      | Import patients                                       |
+| `data.export`      | Export data and reports                               |
+| `audit.view`       | View audit log                                        |
+| `platform.admin`   | Super-admin only: tenants, plans                      |
 
 ## 5. Endpoint catalogue
 
@@ -185,30 +187,31 @@ Notation: **Perm** = permission key required; "any" = any signed-in user. Paths 
 
 ### 5.5 Visits (VIS)
 
-| Method | Path                   | Perm            | Req      | Rel | Notes                                                                                                                                                    |
-| ------ | ---------------------- | --------------- | -------- | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/visits/today`        | `patient.view`  | VIS-001  | R1  | The caller's branch (owner: `?branchId`). Includes dues indicator and payment status                                                                     |
-| POST   | `/visits`              | `visit.mark`    | VIS-001  | R1  | Body: patient, optional therapist, optional fee override with reason. Creates visit and charge in one transaction. Idempotent. Returns dues warning data |
-| GET    | `/visits/{id}`         | `patient.view`  | VIS-003  | R1  |                                                                                                                                                          |
-| POST   | `/visits/{id}/notes`   | `clinical.edit` | VIS-002  | R1  | Creates the next note version                                                                                                                            |
-| GET    | `/visits/{id}/notes`   | `clinical.view` | VIS-002  | R1  | All versions                                                                                                                                             |
-| POST   | `/visits/{id}/reverse` | `entry.reverse` | BILL-005 | R1  | Reason required. Reverses the charge                                                                                                                     |
+| Method | Path                   | Perm                        | Req      | Rel | Notes                                                                                                                                                                                                                                                                                                                                                                          |
+| ------ | ---------------------- | --------------------------- | -------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/visits/today`        | `patient.view`              | VIS-001  | R1  | The caller's branch (owner: `?branchId`). Includes dues indicator and payment status                                                                                                                                                                                                                                                                                           |
+| POST   | `/visits/bulk`         | `visit.mark` + `visit.bulk` | VIS-001  | R1  | Body: `entries` `[{ patientId, date }]` (up to 60), optional `therapistId`, `branchId`, `reason`, `confirmDuplicates`. One all-or-nothing save at the default fee. An earlier `date` also needs `visit.backdate` and a `reason`. Any refused entry answers 422 (or 409 `DUPLICATE_VISIT_TODAY` when only duplicates) with `details.problems`, and nothing is saved. Idempotent |
+| POST   | `/visits`              | `visit.mark`                | VIS-001  | R1  | Body: patient, optional therapist, optional fee override with reason. Creates visit and charge in one transaction. Idempotent. Returns dues warning data                                                                                                                                                                                                                       |
+| GET    | `/visits/{id}`         | `patient.view`              | VIS-003  | R1  |                                                                                                                                                                                                                                                                                                                                                                                |
+| POST   | `/visits/{id}/notes`   | `clinical.edit`             | VIS-002  | R1  | Creates the next note version                                                                                                                                                                                                                                                                                                                                                  |
+| GET    | `/visits/{id}/notes`   | `clinical.view`             | VIS-002  | R1  | All versions                                                                                                                                                                                                                                                                                                                                                                   |
+| POST   | `/visits/{id}/reverse` | `entry.reverse`             | BILL-005 | R1  | Reason required. Reverses the charge                                                                                                                                                                                                                                                                                                                                           |
 
 Rules enforced: `NO_ACTIVE_EPISODE`, `DUPLICATE_VISIT_TODAY` (needs `confirm=true`), `FEE_REASON_REQUIRED`. Branch always comes from the session for branch-assigned staff.
 
 ### 5.6 Billing (BILL)
 
-| Method | Path                           | Perm             | Req      | Rel | Notes                                                                                                                                                      |
-| ------ | ------------------------------ | ---------------- | -------- | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/payments`                    | `payment.record` | BILL-003 | R1  | Patient, amount, method, optional reference, date. Creates ledger entry and receipt in one transaction. Idempotent. Returns receipt number and new balance |
-| POST   | `/refunds`                     | `refund.process` | BILL-004 | R1  | Patient, amount, method, reason. `REFUND_EXCEEDS_CREDIT`. Idempotent                                                                                       |
-| POST   | `/ledger-entries/{id}/reverse` | `entry.reverse`  | BILL-005 | R1  | Reason required. `ALREADY_REVERSED`, `CANNOT_REVERSE_REVERSAL`. For a payment, issues a reversal receipt                                                   |
-| GET    | `/ledger-entries/{id}`         | `ledger.view`    | BILL-002 | R1  | Entry with its reversal link                                                                                                                               |
-| GET    | `/documents/{id}`              | `document.issue` | BILL-006 | R1  | Metadata                                                                                                                                                   |
-| GET    | `/documents/{id}/pdf`          | `document.issue` | BILL-006 | R1  | Receipt or invoice PDF; reprints marked "duplicate copy" (Rec)                                                                                             |
-| POST   | `/invoices`                    | `document.issue` | BILL-007 | R1  | Patient with episode or date range. Stores a lines snapshot and takes the next invoice number                                                              |
-| GET    | `/patients/{id}/documents`     | `document.issue` | BILL-006 | R1  |                                                                                                                                                            |
-| PUT    | `/patients/{id}/fee`           | `fee.override`   | BILL-001 | R1  | Optional patient-level fee (Rec)                                                                                                                           |
+| Method | Path                           | Perm             | Req      | Rel | Notes                                                                                                                                                                                                                                                                                                               |
+| ------ | ------------------------------ | ---------------- | -------- | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/payments`                    | `payment.record` | BILL-003 | R1  | Patient, amount, method, optional reference, date. Creates ledger entry and receipt in one transaction. Idempotent. Returns receipt number and new balance                                                                                                                                                          |
+| POST   | `/refunds`                     | `refund.process` | BILL-004 | R1  | Patient, amount, method, reason. `REFUND_EXCEEDS_CREDIT`. Idempotent                                                                                                                                                                                                                                                |
+| POST   | `/ledger-entries/{id}/reverse` | `entry.reverse`  | BILL-005 | R1  | Reason required. `ALREADY_REVERSED`, `CANNOT_REVERSE_REVERSAL`. For a payment, issues a reversal receipt                                                                                                                                                                                                            |
+| GET    | `/ledger-entries/{id}`         | `ledger.view`    | BILL-002 | R1  | Entry with its reversal link                                                                                                                                                                                                                                                                                        |
+| GET    | `/documents/{id}`              | `document.issue` | BILL-006 | R1  | Metadata                                                                                                                                                                                                                                                                                                            |
+| GET    | `/documents/{id}/pdf`          | `document.issue` | BILL-006 | R1  | Receipt or invoice PDF; reprints marked "duplicate copy" (Rec)                                                                                                                                                                                                                                                      |
+| POST   | `/invoices`                    | `document.issue` | BILL-007 | R1  | Patient with episode or date range. Stores a lines snapshot and takes the next invoice number. If the patient already has an invoice with exactly the same sessions and total, that invoice is returned (200, `reused: true`) and no number is used; added or reversed sessions make a new, corrected invoice (201) |
+| GET    | `/patients/{id}/documents`     | `document.issue` | BILL-006 | R1  |                                                                                                                                                                                                                                                                                                                     |
+| PUT    | `/patients/{id}/fee`           | `fee.override`   | BILL-001 | R1  | Optional patient-level fee (Rec)                                                                                                                                                                                                                                                                                    |
 
 ### 5.7 Dashboard, reports, export (REP, EXP)
 
@@ -277,7 +280,7 @@ Only the fields that matter for behaviour. Field names are indicative.
 
 ### 6.2 `POST /visits`
 
-- **Request:** `patientId`, optional `therapistId`, optional `feeOverride` `{ amount, reason }`, optional `confirmSecondVisitToday`.
+- **Request:** `patientId`, optional `therapistId`, optional `feeOverride` `{ amount, reason }`, optional `confirmSecondVisitToday`, optional `visitDate` (`YYYY-MM-DD`, an earlier India day) with `backdateReason`. An earlier `visitDate` needs `visit.backdate` (403 otherwise), a reason, and a day that is neither in the future nor before the episode started (422).
 - **Response 201:** `visit`, `charge` entry, `sessionNumber`, `planProgress` (for example 6 of 10, with `planExceeded`), `balanceAfter`, and `duesWarning` `{ amount }` when the patient owed money before this visit.
 
 ### 6.3 `POST /payments`

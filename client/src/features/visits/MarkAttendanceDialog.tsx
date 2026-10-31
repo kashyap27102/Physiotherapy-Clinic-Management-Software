@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import { api, errorMessage, isApiError } from '@/api'
+import { api, ApiError, errorMessage, isApiError } from '@/api'
 import { useCan, useUser } from '@/auth/hooks'
+import { FormAlert } from '@/components/auth/FormAlert'
 import { Field, inputClassName, selectClassName } from '@/components/common/Field'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -15,9 +16,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { StartEpisodeButton } from '@/features/clinical/StartEpisodeButton'
+import { useIdempotencyKey } from '@/hooks/useIdempotencyKey'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { dayKey } from '@/lib/date'
 import { formatINR, isValidAmount } from '@/lib/money'
 import { invalidatePatientData, queryKeys } from '@/lib/queryKeys'
+import { OfflineNotice } from '@/components/common/OfflineNotice'
 import { t } from '@/strings/en'
 
 interface Props {
@@ -43,6 +48,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const online = useOnlineStatus()
   const canOverrideFee = useCan('fee.override')
   const canStartEpisode = useCan('episode.manage')
+  const canBackdate = useCan('visit.backdate')
 
   const patientQuery = useQuery({ queryKey: queryKeys.patient(patientId), queryFn: () => api.patients.get(patientId) })
   const feeQuery = useQuery({ queryKey: queryKeys.defaultFee, queryFn: () => api.clinic.defaultFee() })
@@ -53,15 +59,14 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const [feeText, setFeeText] = useState('')
   const [reason, setReason] = useState('')
   const [confirmSecond, setConfirmSecond] = useState(false)
+  const [earlierDay, setEarlierDay] = useState(false)
+  const [visitDate, setVisitDate] = useState('')
+  const [backdateReason, setBackdateReason] = useState('')
+  const [backdateError, setBackdateError] = useState<string | null>(null)
+  const [dateServerError, setDateServerError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [reasonError, setReasonError] = useState<string | null>(null)
-  const idempotencyKey = useRef(crypto.randomUUID())
-
-  const startEpisode = useMutation({
-    mutationFn: () => api.episodes.start(patientId),
-    onSuccess: () => invalidatePatientData(queryClient, patientId),
-    onError: (error) => setFormError(errorMessage(error, t.common.genericError)),
-  })
+  const idempotencyKey = useIdempotencyKey()
 
   const attend = useMutation({
     mutationFn: () =>
@@ -71,8 +76,10 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
           therapistId: therapistId || undefined,
           feeOverride: overrideOn ? { amount: feeText.trim(), reason } : undefined,
           confirmSecondVisitToday: confirmSecond || undefined,
+          visitDate: earlierDay ? visitDate : undefined,
+          backdateReason: earlierDay ? backdateReason.trim() : undefined,
         },
-        idempotencyKey.current,
+        idempotencyKey.current(),
       ),
     onSuccess: async (result) => {
       toast.success(t.attendance.done(result.sessionNumber, result.planProgress.planned))
@@ -82,14 +89,20 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
     },
     onError: (error) => {
       // A network failure may or may not have saved: keep the key so a retry cannot double-charge.
-      if (!isApiError(error, 'NETWORK')) idempotencyKey.current = crypto.randomUUID()
+      idempotencyKey.afterError(error)
       if (isApiError(error, 'DUPLICATE_VISIT_TODAY')) {
         setConfirmSecond(true)
         return
       }
       if (isApiError(error, 'NO_ACTIVE_EPISODE')) void invalidatePatientData(queryClient, patientId)
       if (isApiError(error, 'FEE_REASON_REQUIRED')) setReasonError(t.attendance.reasonRequired)
-      setFormError(errorMessage(error, t.common.genericError))
+      // Show the server's own words next to the field it refused (for example "before this episode started").
+      const fieldMessage = (name: string) =>
+        error instanceof ApiError ? error.fields.find((f) => f.field === name)?.message : undefined
+      setDateServerError(fieldMessage('visitDate') ?? null)
+      setBackdateError(fieldMessage('backdateReason') ?? null)
+      const shown = error instanceof ApiError ? error.fields.map((f) => f.message).join(' ') : ''
+      setFormError(shown || errorMessage(error, t.common.genericError))
     },
   })
 
@@ -97,15 +110,16 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const hasEpisode = !!patient?.activeEpisodeId
   const feeValid = !overrideOn || isValidAmount(feeText)
   const reasonValid = !overrideOn || reason.trim().length > 0
-  const canSubmit = !!patient && hasEpisode && online && feeValid && reasonValid && !attend.isPending
+  const dateValid = !earlierDay || (visitDate !== '' && visitDate <= dayKey(new Date()))
+  const backdateValid = !earlierDay || backdateReason.trim().length > 0
+  const canSubmit =
+    !!patient && hasEpisode && online && feeValid && reasonValid && dateValid && backdateValid && !attend.isPending
 
   function submit() {
     setFormError(null)
     setReasonError(null)
-    if (overrideOn && !reasonValid) {
-      setReasonError(t.attendance.reasonRequired)
-      return
-    }
+    setBackdateError(null)
+    setDateServerError(null)
     attend.mutate()
   }
 
@@ -119,11 +133,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
       </DialogHeader>
 
       {patientQuery.isLoading && <p className="text-sm text-muted-foreground">{t.common.loading}</p>}
-      {patientQuery.isError && (
-        <Alert variant="destructive">
-          <AlertDescription>{t.patient.notFound}</AlertDescription>
-        </Alert>
-      )}
+      {patientQuery.isError && <FormAlert>{t.patient.notFound}</FormAlert>}
 
       {patient && patient.balance?.state === 'due' && (
         <Alert variant="destructive">
@@ -136,18 +146,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
         <Alert>
           <AlertTitle>{t.patient.noActiveEpisode}</AlertTitle>
           <AlertDescription>
-            {canStartEpisode ? (
-              <Button
-                size="lg"
-                className="mt-2"
-                disabled={startEpisode.isPending || !online}
-                onClick={() => startEpisode.mutate()}
-              >
-                {startEpisode.isPending ? t.episode.starting : t.episode.start}
-              </Button>
-            ) : (
-              t.episode.askTherapist
-            )}
+            {canStartEpisode ? <StartEpisodeButton patientId={patientId} className="mt-2" /> : t.episode.askTherapist}
           </AlertDescription>
         </Alert>
       )}
@@ -172,8 +171,14 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
 
           <div className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
             <span className="text-muted-foreground">{t.attendance.defaultFee}: </span>
-            <span className="font-medium">{feeQuery.data ? formatINR(feeQuery.data) : '…'}</span>
+            <span className="font-medium">{feeQuery.data ? formatINR(feeQuery.data.defaultFee) : '…'}</span>
           </div>
+
+          {feeQuery.data && !feeQuery.data.isSet && (
+            <Alert>
+              <AlertDescription>{t.attendance.feeNotSet}</AlertDescription>
+            </Alert>
+          )}
 
           {canOverrideFee && (
             <div className="space-y-3">
@@ -201,12 +206,69 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
                       onChange={(event) => setFeeText(event.target.value)}
                     />
                   </Field>
-                  <Field id="att-reason" label={t.attendance.overrideReason} error={reasonError ?? undefined}>
+                  <Field
+                    id="att-reason"
+                    label={t.attendance.overrideReason}
+                    error={reasonError ?? (feeText && !reasonValid ? t.attendance.reasonRequired : undefined)}
+                  >
                     <Input
                       id="att-reason"
                       className={inputClassName}
                       value={reason}
                       onChange={(event) => setReason(event.target.value)}
+                    />
+                  </Field>
+                </>
+              )}
+            </div>
+          )}
+
+          {canBackdate && (
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-4"
+                  checked={earlierDay}
+                  onChange={(event) => {
+                    setEarlierDay(event.target.checked)
+                    setConfirmSecond(false)
+                  }}
+                />
+                {t.attendance.earlierDay}
+              </label>
+              {earlierDay && (
+                <>
+                  <Field
+                    id="att-date"
+                    label={t.attendance.visitDate}
+                    error={dateServerError ?? (visitDate && !dateValid ? t.attendance.dateError : undefined)}
+                  >
+                    <Input
+                      id="att-date"
+                      type="date"
+                      className={inputClassName}
+                      max={dayKey(new Date())}
+                      value={visitDate}
+                      onChange={(event) => {
+                        setVisitDate(event.target.value)
+                        setDateServerError(null)
+                        setConfirmSecond(false)
+                      }}
+                    />
+                  </Field>
+                  <Field
+                    id="att-backdate-reason"
+                    label={t.attendance.backdateReason}
+                    error={backdateError ?? undefined}
+                  >
+                    <Input
+                      id="att-backdate-reason"
+                      className={inputClassName}
+                      maxLength={500}
+                      placeholder={t.attendance.backdateReasonPlaceholder}
+                      value={backdateReason}
+                      onChange={(event) => setBackdateReason(event.target.value)}
                     />
                   </Field>
                 </>
@@ -223,12 +285,8 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
         </div>
       )}
 
-      {formError && (
-        <Alert variant="destructive">
-          <AlertDescription>{formError}</AlertDescription>
-        </Alert>
-      )}
-      {!online && <p className="text-sm text-amber-700 dark:text-amber-400">{t.offline.blocked}</p>}
+      {formError && <FormAlert>{formError}</FormAlert>}
+      <OfflineNotice />
 
       <DialogFooter>
         <Button variant="outline" size="lg" onClick={onClose}>
