@@ -63,6 +63,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const [visitDate, setVisitDate] = useState('')
   const [backdateReason, setBackdateReason] = useState('')
   const [backdateError, setBackdateError] = useState<string | null>(null)
+  const [dateServerError, setDateServerError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [reasonError, setReasonError] = useState<string | null>(null)
   const idempotencyKey = useIdempotencyKey()
@@ -95,10 +96,13 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
       }
       if (isApiError(error, 'NO_ACTIVE_EPISODE')) void invalidatePatientData(queryClient, patientId)
       if (isApiError(error, 'FEE_REASON_REQUIRED')) setReasonError(t.attendance.reasonRequired)
-      if (error instanceof ApiError && error.fields.some((f) => f.field === 'backdateReason')) {
-        setBackdateError(t.attendance.backdateReasonRequired)
-      }
-      setFormError(errorMessage(error, t.common.genericError))
+      // Show the server's own words next to the field it refused (for example "before this episode started").
+      const fieldMessage = (name: string) =>
+        error instanceof ApiError ? error.fields.find((f) => f.field === name)?.message : undefined
+      setDateServerError(fieldMessage('visitDate') ?? null)
+      setBackdateError(fieldMessage('backdateReason') ?? null)
+      const shown = error instanceof ApiError ? error.fields.map((f) => f.message).join(' ') : ''
+      setFormError(shown || errorMessage(error, t.common.genericError))
     },
   })
 
@@ -115,6 +119,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
     setFormError(null)
     setReasonError(null)
     setBackdateError(null)
+    setDateServerError(null)
     attend.mutate()
   }
 
@@ -237,7 +242,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
                   <Field
                     id="att-date"
                     label={t.attendance.visitDate}
-                    error={visitDate && !dateValid ? t.attendance.dateError : undefined}
+                    error={dateServerError ?? (visitDate && !dateValid ? t.attendance.dateError : undefined)}
                   >
                     <Input
                       id="att-date"
@@ -247,6 +252,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
                       value={visitDate}
                       onChange={(event) => {
                         setVisitDate(event.target.value)
+                        setDateServerError(null)
                         setConfirmSecond(false)
                       }}
                     />

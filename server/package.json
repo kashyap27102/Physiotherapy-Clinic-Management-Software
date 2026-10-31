@@ -23,7 +23,8 @@
     "format": "prettier --write . --ignore-path ../.prettierignore",
     "format:check": "prettier --check . --ignore-path ../.prettierignore",
     "email:test": "tsx --env-file=.env scripts/send-test-email.ts",
-    "seed:patients": "tsx --env-file=.env scripts/seed-patients.ts"
+    "seed:patients": "tsx --env-file=.env scripts/seed-patients.ts",
+    "seed:forgotten-attendance": "tsx --env-file=.env scripts/seed-forgotten-attendance.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
