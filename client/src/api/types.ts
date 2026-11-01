@@ -500,6 +500,35 @@ export interface DefaultFee {
   isSet: boolean
 }
 
+/** One line of the audit log (AUD-001). Names are resolved by the server; null when that record no longer resolves. */
+export interface AuditEntry {
+  id: string
+  /** For example `payment.recorded`; see `t.audit.actions`. */
+  action: string
+  at: string
+  user: { id: string; fullName: string | null } | null
+  branch: { id: string; name: string | null } | null
+  patient: { id: string; fullName: string | null } | null
+  targetType: string | null
+  targetId: string | null
+  /** Before and after values, reasons, amounts; the shape depends on the action. */
+  details: unknown
+  ipAddress: string | null
+}
+
+export interface AuditLogInput {
+  userId?: string
+  patientId?: string
+  /** An exact action, or a group ending in a dot such as `patient.`. */
+  action?: string
+  branchId?: string
+  /** YYYY-MM-DD, India time, inclusive. */
+  from?: string
+  to?: string
+  page?: number
+  pageSize?: number
+}
+
 /** What the UI needs from a backend. Implemented by the mock and by the real HTTP client. */
 export interface Api {
   auth: {
@@ -597,6 +626,10 @@ export interface Api {
     /** Address of the PDF; open it in a new tab to view, save or print (BILL-006). */
     pdfUrl(id: string): string
     invoice(input: InvoiceInput, idempotencyKey: string): Promise<InvoiceResult>
+  }
+  audit: {
+    /** The clinic's audit log, newest first (needs audit.view). Reading it is not itself recorded. */
+    list(input: AuditLogInput, signal?: AbortSignal): Promise<Paged<AuditEntry>>
   }
   clinic: {
     get(): Promise<Clinic>

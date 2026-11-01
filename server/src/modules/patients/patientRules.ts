@@ -40,6 +40,13 @@ export function indiaToday(now: Date = new Date()): { year: number; month: numbe
   return { year: parts[0]!, month: parts[1]!, day: parts[2]! }
 }
 
+/** The moment an India-time calendar day ("YYYY-MM-DD") starts (India is UTC+5:30 all year). */
+const IST_OFFSET_MS = 330 * 60_000
+export function indiaDayStart(day: string, plusDays = 0): Date {
+  const [year, month, date] = day.split('-').map(Number) as [number, number, number]
+  return new Date(Date.UTC(year, month - 1, date + plusDays) - IST_OFFSET_MS)
+}
+
 /** A calendar date as a UTC midnight Date, which is how Prisma reads and writes `@db.Date` columns. */
 export const dateOnly = (year: number, month: number, day: number): Date => new Date(Date.UTC(year, month - 1, day))
 
