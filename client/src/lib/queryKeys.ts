@@ -13,6 +13,7 @@ export const queryKeys = {
   patientSearch: (input: object) => ['patients', 'search', input] as const,
   auditLog: (input: object) => ['audit', input] as const,
   dashboardToday: (branchId: string | null) => ['dashboard', 'today', branchId] as const,
+  financeToday: (branchId: string | null) => ['finance', 'today', branchId] as const,
   todayVisits: ['visits', 'today'] as const,
   todayVisitsFor: (branchId: string | null) => ['visits', 'today', branchId] as const,
   defaultFee: ['clinic', 'fee'] as const,
@@ -34,5 +35,6 @@ export function invalidatePatientData(queryClient: QueryClient, patientId: strin
     queryClient.invalidateQueries({ queryKey: queryKeys.todayVisits }),
     // Patients seen, collections and dues on the owner's dashboard move with every visit and payment.
     queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    queryClient.invalidateQueries({ queryKey: ['finance'] }),
   ])
 }

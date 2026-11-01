@@ -1,11 +1,12 @@
 import { Navigate } from 'react-router-dom'
-import { useCan } from '@/auth/hooks'
+import { useAnyCan } from '@/auth/hooks'
 
 /**
- * Where "/" leads after sign-in (US-01.1): the owner, or anyone who may see reports, lands on the dashboard; everyone
- * else, such as a receptionist or physiotherapist, lands on the patient list. Patients have their own address, `/patients`.
+ * Where "/" leads after sign-in (US-01.1): everyone who can see patients lands on the dashboard, which gives each role
+ * its own quick actions and today's visits (the KPI tiles need `report.view`, the money lives on `/finance`). Anyone else
+ * lands on the patient list. Patients have their own address, `/patients`.
  */
 export function LandingRedirect() {
-  const canSeeDashboard = useCan('report.view')
+  const canSeeDashboard = useAnyCan('patient.view', 'report.view')
   return <Navigate to={canSeeDashboard ? '/dashboard' : '/patients'} replace />
 }

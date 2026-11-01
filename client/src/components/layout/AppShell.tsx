@@ -5,6 +5,7 @@ import {
   Globe,
   KeyRound,
   LayoutDashboard,
+  Landmark,
   LogOut,
   Moon,
   ScrollText,
@@ -17,7 +18,7 @@ import {
 import { useState } from 'react'
 import { useTheme } from 'next-themes'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { useAuth, useCan, useUser } from '@/auth/hooks'
+import { useAnyCan, useAuth, useCan, useUser } from '@/auth/hooks'
 import { BranchScopeProvider } from '@/branchScope/BranchScopeProvider'
 import { BranchSelect } from '@/components/layout/BranchSelect'
 import { initials } from '@/lib/forms'
@@ -60,8 +61,9 @@ const sectionLabel = 'mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-mu
  * the rest shows, in bigger rows.
  */
 function SidebarNav({ onNavigate, sheet }: { onNavigate?: () => void; sheet?: boolean }) {
-  const canSeeReports = useCan('report.view')
+  const canSeeDashboard = useAnyCan('patient.view', 'report.view')
   const canSeePatients = useCan('patient.view')
+  const canSeeFinance = useCan('finance.view')
   const canManageClinic = useCan('clinic.manage')
   const canManageStaff = useCan('staff.manage')
   const canManageRoles = useCan('role.manage')
@@ -77,7 +79,7 @@ function SidebarNav({ onNavigate, sheet }: { onNavigate?: () => void; sheet?: bo
 
   return (
     <nav className="flex flex-col gap-1" aria-label={sheet ? t.nav.moreTitle : t.nav.main}>
-      {canSeeReports && !sheet && (
+      {canSeeDashboard && !sheet && (
         <NavLink to="/dashboard" className={linkClass} onClick={onNavigate}>
           <LayoutDashboard className={iconClass} aria-hidden />
           {t.nav.dashboard}
@@ -87,6 +89,12 @@ function SidebarNav({ onNavigate, sheet }: { onNavigate?: () => void; sheet?: bo
         <NavLink to="/patients" className={linkClass} onClick={onNavigate}>
           <Users className={iconClass} aria-hidden />
           {t.nav.patients}
+        </NavLink>
+      )}
+      {canSeeFinance && !sheet && (
+        <NavLink to="/finance" className={linkClass} onClick={onNavigate}>
+          <Landmark className={iconClass} aria-hidden />
+          {t.nav.finance}
         </NavLink>
       )}
       {canSeeAudit && (
@@ -121,14 +129,15 @@ const tabClass = ({ isActive }: { isActive: boolean }) =>
 
 /** Phones: the two places used all day sit in a labelled bar under the thumb; the rest is behind "More". */
 function BottomNav({ onMore }: { onMore: () => void }) {
-  const canSeeReports = useCan('report.view')
+  const canSeeDashboard = useAnyCan('patient.view', 'report.view')
   const canSeePatients = useCan('patient.view')
+  const canSeeFinance = useCan('finance.view')
   return (
     <nav
       aria-label={t.nav.main}
       className="fixed inset-x-0 bottom-0 z-30 flex h-[calc(4rem+env(safe-area-inset-bottom))] border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      {canSeeReports && (
+      {canSeeDashboard && (
         <NavLink to="/dashboard" className={tabClass}>
           <LayoutDashboard className="size-5" aria-hidden />
           {t.nav.dashboard}
@@ -138,6 +147,12 @@ function BottomNav({ onMore }: { onMore: () => void }) {
         <NavLink to="/patients" className={tabClass}>
           <Users className="size-5" aria-hidden />
           {t.nav.patients}
+        </NavLink>
+      )}
+      {canSeeFinance && (
+        <NavLink to="/finance" className={tabClass}>
+          <Landmark className="size-5" aria-hidden />
+          {t.nav.finance}
         </NavLink>
       )}
       <button type="button" onClick={onMore} className={tabClass({ isActive: false })}>

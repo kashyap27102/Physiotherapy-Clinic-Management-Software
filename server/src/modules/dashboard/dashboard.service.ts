@@ -39,29 +39,73 @@ async function patientNets(db: TenantDb, branchId: string | undefined): Promise<
   return [...nets].map(([patientId, netPaise]) => ({ patientId, netPaise }))
 }
 
+const isoDate = (today: { year: number; month: number; day: number }) =>
+  `${today.year}-${String(today.month).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`
+
 /**
- * GET /dashboard/today (REP-001, US-26): patients seen, collections and dues for today in India time. An owner sees
- * every branch together or one chosen branch; a branch-assigned user holding `report.view` always sees their own.
+ * GET /dashboard/today (REP-001, US-26): who came in and who registered today, in India time. No money: that is
+ * `/finance/today` and needs `finance.view`. An owner sees every branch together or one chosen branch; a
+ * branch-assigned user holding `report.view` always sees their own.
  *
  * - Patients seen: distinct patients with a visit today whose charge was not reversed.
- * - Collections: cash basis (BR-REP-1), payments dated today less reversals and refunds entered today.
- * - Dues: what patients owe in total. An account belongs to the patient (BILL-008), so a branch filter counts the
- *   patients registered at that branch.
  */
 export async function getTodaySummary(db: TenantDb, auth: AuthContext, requestedBranchId: string | undefined) {
   const today = indiaToday()
   const { start, end } = indiaDayRange(today.year, today.month, today.day)
   const branchId = auth.branchId ?? requestedBranchId
-  const byBranchFilter = branchId ? { branchId } : {}
 
-  const [visits, newPatients, entries, nets, branches] = await Promise.all([
+  const [visits, newPatients, branches] = await Promise.all([
     db.visit.findMany({
-      where: { visitedAt: { gte: start, lt: end }, ...byBranchFilter, ...notReversed },
+      where: { visitedAt: { gte: start, lt: end }, ...(branchId ? { branchId } : {}), ...notReversed },
       select: { patientId: true, branchId: true },
     }),
     db.patient.count({
       where: { createdAt: { gte: start, lt: end }, ...(branchId ? { registeredBranchId: branchId } : {}) },
     }),
+    db.branch.findMany({ select: { id: true, name: true, isActive: true }, orderBy: { name: 'asc' } }),
+  ])
+
+  // One row per branch, only when looking at every branch (US-26.3). Quiet inactive branches are left out.
+  const perBranch = branchId
+    ? null
+    : branches
+        .map((branch) => {
+          const here = visits.filter((visit) => visit.branchId === branch.id)
+          return {
+            branchId: branch.id,
+            name: branch.name,
+            isActive: branch.isActive,
+            patientsSeen: new Set(here.map((visit) => visit.patientId)).size,
+            sessions: here.length,
+          }
+        })
+        .filter((row) => row.isActive || row.sessions > 0)
+        .map(({ isActive: _isActive, ...row }) => row)
+
+  return {
+    date: isoDate(today),
+    branchId: branchId ?? null,
+    patientsSeen: new Set(visits.map((visit) => visit.patientId)).size,
+    sessions: visits.length,
+    newPatients,
+    byBranch: perBranch,
+  }
+}
+
+/**
+ * GET /finance/today (REP-001, US-26): collections and dues for today in India time. Same branch rules as the
+ * dashboard.
+ *
+ * - Collections: cash basis (BR-REP-1), payments dated today less reversals and refunds entered today.
+ * - Dues: what patients owe in total. An account belongs to the patient (BILL-008), so a branch filter counts the
+ *   patients registered at that branch.
+ */
+export async function getFinanceToday(db: TenantDb, auth: AuthContext, requestedBranchId: string | undefined) {
+  const today = indiaToday()
+  const branchId = auth.branchId ?? requestedBranchId
+  const byBranchFilter = branchId ? { branchId } : {}
+
+  const [entries, nets, branches] = await Promise.all([
     db.ledgerEntry.findMany({
       where: {
         entryDate: dateOnly(today.year, today.month, today.day),
@@ -102,32 +146,26 @@ export async function getTodaySummary(db: TenantDb, auth: AuthContext, requested
     : []
   const nameOf = new Map(names.map((patient) => [patient.id, patient.fullName]))
 
-  // One row per branch, only when looking at every branch (US-26.3). Quiet inactive branches are left out.
+  // One row per branch, only when looking at every branch. Quiet inactive branches are left out.
   const perBranch = branchId
     ? null
     : branches
         .map((branch) => {
-          const here = visits.filter((visit) => visit.branchId === branch.id)
           const collected = tallyCash(cash.filter((row) => row.branchId === branch.id).map((row) => row.entry)).net
           return {
             branchId: branch.id,
             name: branch.name,
             isActive: branch.isActive,
-            patientsSeen: new Set(here.map((visit) => visit.patientId)).size,
-            sessions: here.length,
             collected: formatMoney(collected),
             collectedPaise: collected,
           }
         })
-        .filter((row) => row.isActive || row.sessions > 0 || row.collectedPaise !== 0)
+        .filter((row) => row.isActive || row.collectedPaise !== 0)
         .map(({ isActive: _isActive, collectedPaise: _collectedPaise, ...row }) => row)
 
   return {
-    date: `${today.year}-${String(today.month).padStart(2, '0')}-${String(today.day).padStart(2, '0')}`,
+    date: isoDate(today),
     branchId: branchId ?? null,
-    patientsSeen: new Set(visits.map((visit) => visit.patientId)).size,
-    sessions: visits.length,
-    newPatients,
     collections: {
       net: formatMoney(tally.net),
       payments: formatMoney(tally.payments),

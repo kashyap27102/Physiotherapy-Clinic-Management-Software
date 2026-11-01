@@ -13,6 +13,7 @@ import type {
   Branch,
   Clinic,
   DashboardToday,
+  FinanceToday,
   DefaultFee,
   DischargeResult,
   Episode,
@@ -321,6 +322,10 @@ export const httpApi: Api = {
 
   dashboard: {
     today: (branchId, signal) => request<DashboardToday>('GET', '/dashboard/today', { query: { branchId }, signal }),
+  },
+
+  finance: {
+    today: (branchId, signal) => request<FinanceToday>('GET', '/finance/today', { query: { branchId }, signal }),
   },
 
   audit: {
