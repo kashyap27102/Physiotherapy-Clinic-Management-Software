@@ -157,3 +157,14 @@ describe('audit log call', () => {
     expect(seen.at(-1)!.params).toEqual({ patientId: 'p1', action: 'patient.', from: '2026-10-01', page: 2 })
   })
 })
+
+describe('dashboard call', () => {
+  it('asks for today, adding the branch only when one is chosen', async () => {
+    respond = () => ({ status: 200, data: { patientsSeen: 0 } })
+    await httpApi.dashboard.today()
+    expect(seen.at(-1)!.url).toBe('/dashboard/today')
+    expect(seen.at(-1)!.params).toEqual({})
+    await httpApi.dashboard.today('b1')
+    expect(seen.at(-1)!.params).toEqual({ branchId: 'b1' })
+  })
+})

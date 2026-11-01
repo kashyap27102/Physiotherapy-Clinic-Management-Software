@@ -12,6 +12,7 @@ import type {
   BillingDocument,
   Branch,
   Clinic,
+  DashboardToday,
   DefaultFee,
   DischargeResult,
   Episode,
@@ -316,6 +317,10 @@ export const httpApi: Api = {
     },
     pdfUrl: (id) => `${BASE}/documents/${id}/pdf`,
     invoice: (input, idempotencyKey) => request('POST', '/invoices', { body: input, idempotencyKey }),
+  },
+
+  dashboard: {
+    today: (branchId, signal) => request<DashboardToday>('GET', '/dashboard/today', { query: { branchId }, signal }),
   },
 
   audit: {
