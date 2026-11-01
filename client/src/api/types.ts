@@ -529,6 +529,33 @@ export interface AuditLogInput {
   pageSize?: number
 }
 
+/** Today's summary for the owner (REP-001). Money is a string with two decimals. */
+export interface DashboardToday {
+  /** The India day this covers, YYYY-MM-DD. */
+  date: string
+  branchId: string | null
+  /** Distinct patients with a visit today whose charge was not reversed. */
+  patientsSeen: number
+  sessions: number
+  newPatients: number
+  /** Cash basis: payments received less reversals and refunds, each also given separately. */
+  collections: {
+    net: Money
+    payments: Money
+    reversed: Money
+    refunded: Money
+    byMethod: { method: PaymentMethod; amount: Money }[]
+  }
+  dues: {
+    total: Money
+    /** Patients who owe something. */
+    patients: number
+    top: { patientId: string; fullName: string | null; amount: Money }[]
+  }
+  /** One row per branch; null when a single branch was asked for. */
+  byBranch: { branchId: string; name: string; patientsSeen: number; sessions: number; collected: Money }[] | null
+}
+
 /** What the UI needs from a backend. Implemented by the mock and by the real HTTP client. */
 export interface Api {
   auth: {
@@ -626,6 +653,10 @@ export interface Api {
     /** Address of the PDF; open it in a new tab to view, save or print (BILL-006). */
     pdfUrl(id: string): string
     invoice(input: InvoiceInput, idempotencyKey: string): Promise<InvoiceResult>
+  }
+  dashboard: {
+    /** Today in India time. A branch-assigned viewer always gets their own branch. Reading it is not audited. */
+    today(branchId?: string, signal?: AbortSignal): Promise<DashboardToday>
   }
   audit: {
     /** The clinic's audit log, newest first (needs audit.view). Reading it is not itself recorded. */

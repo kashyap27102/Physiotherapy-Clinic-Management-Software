@@ -96,7 +96,7 @@
 
 ### Dashboard
 
-- [ ] **REP-001** Basic owner dashboard: patients seen, collections, dues — Should (first to move to R2 if the pilot slips)
+- [x] **REP-001** Basic owner dashboard: patients seen, collections, dues — Should (first to move to R2 if the pilot slips)
 
 ### R1 exit gate
 
