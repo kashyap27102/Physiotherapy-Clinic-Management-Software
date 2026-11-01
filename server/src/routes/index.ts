@@ -3,6 +3,7 @@ import { env } from '../config/env.js'
 import { createRateLimiter } from '../middleware/rateLimit.js'
 import { csrfProtection, sessionMiddleware } from '../middleware/session.js'
 import { createAuthRouter } from '../modules/auth/auth.routes.js'
+import { auditRouter } from '../modules/audit/audit.routes.js'
 import { branchesRouter } from '../modules/branches/branches.routes.js'
 import { clinicalRouter } from '../modules/clinical/clinical.routes.js'
 import { billingRouter } from '../modules/billing/billing.routes.js'
@@ -41,3 +42,4 @@ v1Router.use(patientsRouter)
 v1Router.use(clinicalRouter)
 v1Router.use(visitsRouter)
 v1Router.use(billingRouter)
+v1Router.use(auditRouter)

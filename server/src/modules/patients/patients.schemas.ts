@@ -116,7 +116,7 @@ export const updateBody = z
 export const idParams = z.object({ id: uuid })
 
 /** A calendar date "YYYY-MM-DD" in a filter. */
-const filterDate = z
+export const filterDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a date like 2026-04-01.')
   .refine((value) => {
