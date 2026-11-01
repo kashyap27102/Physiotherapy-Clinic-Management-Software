@@ -64,6 +64,7 @@ describe.skipIf(!url)('owner dashboard', () => {
     return id
   }
   const today = (s: Session, query = '') => s.agent.get(`${API}/dashboard/today${query}`)
+  const finance = (s: Session, query = '') => s.agent.get(`${API}/finance/today${query}`)
 
   beforeAll(async () => {
     root = new PrismaClient({ adapter: new PrismaPg({ connectionString: url! }) })
@@ -176,14 +177,25 @@ describe.skipIf(!url)('owner dashboard', () => {
     expect((await today(ownerA)).status).toBe(200)
   })
 
+  it('keeps money behind finance.view, a separate permission from the dashboard', async () => {
+    expect((await finance(front1)).status).toBe(403)
+    expect((await finance(physio)).status).toBe(403)
+    expect((await request(app).get(`${API}/finance/today`)).status).toBe(401)
+    expect((await finance(ownerA)).status).toBe(200)
+    // The dashboard answer carries no money at all.
+    const res = (await today(ownerA)).body
+    expect(res).not.toHaveProperty('collections')
+    expect(res).not.toHaveProperty('dues')
+  })
+
   it('counts patients seen, leaving out a visit whose charge was reversed', async () => {
     const res = await today(ownerA)
     expect(res.body).toMatchObject({ branchId: null, patientsSeen: 2, sessions: 2, newPatients: 4 })
-    expect(res.body.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(res.body.date).toMatch(/^d{4}-d{2}-d{2}$/)
   })
 
   it('shows collections net of reversals and refunds, each shown separately (US-26.2)', async () => {
-    const { collections } = (await today(ownerA)).body
+    const { collections } = (await finance(ownerA)).body
     // Received 300 + 200 + 100 + 150, of which 100 was reversed and 50 refunded.
     expect(collections).toMatchObject({ net: '600.00', payments: '750.00', reversed: '100.00', refunded: '50.00' })
     const byMethod = Object.fromEntries(
@@ -193,7 +205,7 @@ describe.skipIf(!url)('owner dashboard', () => {
   })
 
   it('totals what patients owe, leaving out credit, and lists the largest first', async () => {
-    const { dues } = (await today(ownerA)).body
+    const { dues } = (await finance(ownerA)).body
     // p1 owes 500 - 300, p2 owes 500 - 200, p3 nets to nothing, p4 is 100 in credit.
     expect(dues).toMatchObject({ total: '500.00', patients: 2 })
     expect(dues.top).toEqual([
@@ -203,40 +215,51 @@ describe.skipIf(!url)('owner dashboard', () => {
   })
 
   it('splits by branch when looking at every branch, and the rows add up (US-26.3)', async () => {
-    const { byBranch, patientsSeen, collections } = (await today(ownerA)).body
-    const rows = byBranch as { branchId: string; patientsSeen: number; sessions: number; collected: string }[]
+    const { byBranch, patientsSeen } = (await today(ownerA)).body
+    const rows = byBranch as { branchId: string; patientsSeen: number; sessions: number }[]
     const one = rows.find((r) => r.branchId === branch1)!
     const two = rows.find((r) => r.branchId === branch2)!
-    expect(one).toMatchObject({ patientsSeen: 1, sessions: 1, collected: '600.00' })
-    expect(two).toMatchObject({ patientsSeen: 1, sessions: 1, collected: '0.00' })
+    expect(one).toMatchObject({ patientsSeen: 1, sessions: 1 })
+    expect(two).toMatchObject({ patientsSeen: 1, sessions: 1 })
     expect(rows.reduce((sum, r) => sum + r.patientsSeen, 0)).toBe(patientsSeen)
-    expect(rows.reduce((sum, r) => sum + Number(r.collected), 0)).toBe(Number(collections.net))
+
+    const money = (await finance(ownerA)).body
+    const paid = money.byBranch as { branchId: string; collected: string }[]
+    expect(paid.find((r) => r.branchId === branch1)!.collected).toBe('600.00')
+    expect(paid.find((r) => r.branchId === branch2)!.collected).toBe('0.00')
+    expect(paid.reduce((sum, r) => sum + Number(r.collected), 0)).toBe(Number(money.collections.net))
   })
 
   it('narrows to one branch and then has no split', async () => {
     const two = (await today(ownerA, `?branchId=${branch2}`)).body
     expect(two).toMatchObject({ branchId: branch2, patientsSeen: 1, sessions: 1, byBranch: null })
-    expect(two.collections.net).toBe('0.00')
     const one = (await today(ownerA, `?branchId=${branch1}`)).body
     expect(one).toMatchObject({ patientsSeen: 1, sessions: 1, newPatients: 4 })
-    expect(one.collections.net).toBe('600.00')
+
+    const moneyTwo = (await finance(ownerA, `?branchId=${branch2}`)).body
+    const moneyOne = (await finance(ownerA, `?branchId=${branch1}`)).body
+    expect(moneyTwo).toMatchObject({ branchId: branch2, byBranch: null })
+    expect(moneyTwo.collections.net).toBe('0.00')
+    expect(moneyOne.collections.net).toBe('600.00')
     // Dues follow the branch the patient was registered at (the account belongs to the patient, BILL-008).
-    expect(one.dues.total).toBe('500.00')
-    expect(two.dues).toMatchObject({ total: '0.00', patients: 0 })
+    expect(moneyOne.dues.total).toBe('500.00')
+    expect(moneyTwo.dues).toMatchObject({ total: '0.00', patients: 0 })
   })
 
   it('refuses a malformed branch id', async () => {
     expect((await today(ownerA, '?branchId=nope')).status).toBe(422)
+    expect((await finance(ownerA, '?branchId=nope')).status).toBe(422)
   })
 
   it('shows another clinic nothing of this one (SEC-001)', async () => {
     const own = (await today(ownerB)).body
     expect(own).toMatchObject({ patientsSeen: 0, sessions: 0, newPatients: 0 })
-    expect(own.collections.net).toBe('0.00')
-    expect(own.dues).toMatchObject({ total: '0.00', patients: 0, top: [] })
+    const ownMoney = (await finance(ownerB)).body
+    expect(ownMoney.collections.net).toBe('0.00')
+    expect(ownMoney.dues).toMatchObject({ total: '0.00', patients: 0, top: [] })
     // A branch of the first clinic matches nothing here.
     const foreign = (await today(ownerB, `?branchId=${branch1}`)).body
     expect(foreign).toMatchObject({ patientsSeen: 0, sessions: 0 })
-    expect(foreign.collections.net).toBe('0.00')
+    expect((await finance(ownerB, `?branchId=${branch1}`)).body.collections.net).toBe('0.00')
   })
 })

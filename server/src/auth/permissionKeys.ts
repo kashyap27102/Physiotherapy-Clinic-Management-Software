@@ -23,6 +23,7 @@ export const PERMISSION_KEYS = [
   'entry.reverse',
   'document.issue',
   'report.view',
+  'finance.view',
   'data.import',
   'data.export',
   'audit.view',

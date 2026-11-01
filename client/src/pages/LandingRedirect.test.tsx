@@ -59,7 +59,11 @@ describe('where "/" leads after sign-in (US-01.1)', () => {
     expect(await landOn(['patient.view', 'report.view'])).toBe('dashboard page')
   })
 
-  it('sends a receptionist or physiotherapist to the patient list', async () => {
-    expect(await landOn(['patient.view', 'visit.mark'])).toBe('patients page')
+  it('sends a receptionist or physiotherapist to the dashboard too, with their own quick actions', async () => {
+    expect(await landOn(['patient.view', 'visit.mark'])).toBe('dashboard page')
+  })
+
+  it('sends someone who cannot see patients to the patient list', async () => {
+    expect(await landOn(['visit.mark'])).toBe('patients page')
   })
 })

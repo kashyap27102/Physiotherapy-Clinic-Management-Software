@@ -1,33 +1,35 @@
 import { useQuery } from '@tanstack/react-query'
-import { Banknote, Building2, CircleAlert, RefreshCw, UsersRound } from 'lucide-react'
+import { Banknote, Building2, RefreshCw, UserRoundPlus, UsersRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api } from '@/api'
+import { useCan } from '@/auth/hooks'
 import { useBranchScope } from '@/branchScope/context'
 import { FormAlert } from '@/components/auth/FormAlert'
-import { Avatar } from '@/components/common/Avatar'
-import { EmptyState } from '@/components/common/EmptyState'
 import { SectionCard } from '@/components/common/SectionCard'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { collectionNotes, seenNotes } from '@/features/dashboard/dashboardText'
-import { TodayVisits } from '@/features/visits/TodayVisits'
+import { seenNotes } from '@/features/dashboard/dashboardText'
+import { QuickActions } from '@/features/dashboard/QuickActions'
 import { StatTile } from '@/features/dashboard/StatTile'
+import { TodayVisits } from '@/features/visits/TodayVisits'
 import { formatDate, formatTime } from '@/lib/date'
 import { formatINR } from '@/lib/money'
 import { queryKeys } from '@/lib/queryKeys'
 import { t } from '@/strings/en'
 
 /**
- * REP-001 and US-26: how the day is going. Patients seen, collections (net of reversals and refunds) and outstanding
- * dues for today in India time, for every branch together or the branch chosen in the top bar. It refreshes itself
- * once a minute; reading it is not recorded in the audit log.
+ * The home screen: quick actions, then how the day is going. Everyone who can see patients gets the quick actions and
+ * today's visits (VIS-001); the KPI tiles need `report.view`, and the money lives on the Finance page (`finance.view`).
+ * It follows the top-bar branch and refreshes itself once a minute; reading it is not recorded in the audit log.
  */
 export function DashboardPage() {
+  const canReport = useCan('report.view')
   const { branchId, branch, setBranchId } = useBranchScope()
   const query = useQuery({
     queryKey: queryKeys.dashboardToday(branchId),
     queryFn: ({ signal }) => api.dashboard.today(branchId ?? undefined, signal),
+    enabled: canReport,
     placeholderData: (previous) => previous,
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -39,8 +41,9 @@ export function DashboardPage() {
       <PageHeader
         crumbs={[{ label: t.dashboard.title }]}
         actions={
+          canReport &&
           summary && (
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground max-sm:justify-between">
               <span>{t.dashboard.updated(formatTime(new Date(query.dataUpdatedAt).toISOString()))}</span>
               <Button
                 variant="outline"
@@ -55,146 +58,115 @@ export function DashboardPage() {
           )
         }
       />
-      {summary && (
-        <p className="-mt-3 mb-5 text-sm text-muted-foreground">
+      {canReport && summary && (
+        <p className="-mt-2 mb-4 text-sm text-muted-foreground sm:-mt-3 sm:mb-5">
           {t.dashboard.today(formatDate(`${summary.date}T12:00:00+05:30`))}
           {branch && ` · ${branch.name}`}
         </p>
       )}
 
-      {query.isPending ? (
-        <DashboardSkeleton />
-      ) : query.isError || !summary ? (
-        <>
-          <FormAlert>{t.dashboard.loadError}</FormAlert>
-          <Button variant="outline" className="mt-3 h-10 px-4" onClick={() => void query.refetch()}>
-            {t.common.retry}
-          </Button>
-        </>
-      ) : (
-        <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatTile
-              hero
-              label={t.dashboard.collected}
-              icon={Banknote}
-              value={formatINR(summary.collections.net)}
-              notes={collectionNotes(summary.collections)}
-              className="lg:col-span-2"
-            />
-            <StatTile
-              label={t.dashboard.patientsSeen}
-              icon={UsersRound}
-              value={summary.patientsSeen}
-              notes={seenNotes(summary)}
-            />
-            <StatTile
-              label={t.dashboard.dues}
-              icon={CircleAlert}
-              tone={summary.dues.patients > 0 ? 'danger' : 'default'}
-              value={formatINR(summary.dues.total)}
-              notes={[t.dashboard.duesPatients(summary.dues.patients)]}
-            />
-          </div>
+      <QuickActions />
 
-          {/* VIS-001: who has been marked present today. */}
-          <TodayVisits />
-
-          <div className="grid items-start gap-5 lg:grid-cols-2">
-            <div className="space-y-5">
-              <SectionCard title={t.dashboard.byMethod} bodyClassName="p-0">
-                <ul className="divide-y">
-                  {summary.collections.byMethod.map((row) => (
-                    <li key={row.method} className="flex items-center justify-between px-5 py-3 text-sm">
-                      <span>{t.payment.methods[row.method]}</span>
-                      <span className="font-medium tabular-nums">{formatINR(row.amount)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </SectionCard>
-
-              {summary.byBranch && summary.byBranch.length > 1 && (
-                <SectionCard title={t.dashboard.byBranch} bodyClassName="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="border-b bg-muted/40 text-left text-xs tracking-wide text-muted-foreground uppercase">
-                        <tr>
-                          <th className="px-5 py-2.5 font-medium">{t.dashboard.branch}</th>
-                          <th className="px-3 py-2.5 text-right font-medium">{t.dashboard.patientsSeen}</th>
-                          <th className="px-5 py-2.5 text-right font-medium">{t.dashboard.collectedShort}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {summary.byBranch.map((row) => (
-                          <tr key={row.branchId}>
-                            <td className="px-5 py-3">
-                              <button
-                                type="button"
-                                onClick={() => setBranchId(row.branchId)}
-                                title={t.dashboard.showBranch(row.name)}
-                                className="flex items-center gap-2 rounded font-medium outline-none hover:text-primary focus-visible:underline"
-                              >
-                                <Building2 className="size-4 text-muted-foreground" aria-hidden />
-                                {row.name}
-                              </button>
-                            </td>
-                            <td className="px-3 py-3 text-right tabular-nums">{row.patientsSeen}</td>
-                            <td className="px-5 py-3 text-right font-medium tabular-nums">
-                              {formatINR(row.collected)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </SectionCard>
-              )}
+      <div className="space-y-5">
+        {canReport &&
+          (query.isPending ? (
+            <KpiSkeleton />
+          ) : query.isError || !summary ? (
+            <div>
+              <FormAlert>{t.dashboard.loadError}</FormAlert>
+              <Button variant="outline" className="mt-3 h-10 px-4" onClick={() => void query.refetch()}>
+                {t.common.retry}
+              </Button>
             </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatTile
+                hero
+                label={t.dashboard.patientsSeen}
+                icon={UsersRound}
+                value={summary.patientsSeen}
+                notes={seenNotes(summary)}
+                className="sm:col-span-2"
+              />
+              <StatTile
+                label={t.dashboard.newPatientsTile}
+                icon={UserRoundPlus}
+                value={summary.newPatients}
+                notes={[]}
+              />
+              <CollectedLink />
+            </div>
+          ))}
 
-            <SectionCard title={t.dashboard.topDues} bodyClassName="p-0">
-              {summary.dues.top.length === 0 ? (
-                <EmptyState icon={CircleAlert}>{t.dashboard.topDuesEmpty}</EmptyState>
-              ) : (
-                <ul className="divide-y">
-                  {summary.dues.top.map((row) => (
-                    <li key={row.patientId}>
-                      <Link
-                        to={`/patients/${row.patientId}`}
-                        className="flex items-center gap-3 px-5 py-3 text-sm outline-none hover:bg-muted/50 focus-visible:bg-muted/50"
-                      >
-                        <Avatar name={row.fullName ?? t.dashboard.unknownPatient} className="size-8 text-xs" />
-                        <span className="min-w-0 flex-1 truncate font-medium">
-                          {row.fullName ?? t.dashboard.unknownPatient}
-                        </span>
-                        <span className="font-medium text-destructive tabular-nums">{formatINR(row.amount)}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {branch && (
-                <p className="border-t px-5 py-3 text-xs text-muted-foreground">{t.dashboard.duesBranchNote}</p>
-              )}
-            </SectionCard>
-          </div>
-        </div>
-      )}
+        {/* VIS-001: who has been marked present today. */}
+        <TodayVisits />
+
+        {canReport && summary?.byBranch && summary.byBranch.length > 1 && (
+          <SectionCard title={t.dashboard.byBranch} bodyClassName="p-0">
+            <ul className="divide-y">
+              {summary.byBranch.map((row) => (
+                <li key={row.branchId} className="flex items-center justify-between gap-3 px-4 py-1 sm:px-5">
+                  <button
+                    type="button"
+                    onClick={() => setBranchId(row.branchId)}
+                    title={t.dashboard.showBranch(row.name)}
+                    className="flex min-h-11 min-w-0 items-center gap-2 rounded text-sm font-medium outline-none hover:text-primary focus-visible:underline"
+                  >
+                    <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="truncate">{row.name}</span>
+                  </button>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {t.dashboard.sessionsNote(row.patientsSeen)} · {t.dashboard.sessions(row.sessions)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </SectionCard>
+        )}
+      </div>
     </>
   )
 }
 
-function DashboardSkeleton() {
+/**
+ * "Collected today" as a link to the Finance page, for people who hold `finance.view`. It shares the Finance page's
+ * query, so opening the page right after shows the same figures at once.
+ */
+function CollectedLink() {
+  const canSeeFinance = useCan('finance.view')
+  const { branchId } = useBranchScope()
+  const finance = useQuery({
+    queryKey: queryKeys.financeToday(branchId),
+    queryFn: ({ signal }) => api.finance.today(branchId ?? undefined, signal),
+    enabled: canSeeFinance,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  })
+  if (!canSeeFinance) return null
+
   return (
-    <div className="space-y-5" aria-hidden>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Skeleton className="h-40 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-40 rounded-xl" />
-        <Skeleton className="h-40 rounded-xl" />
-      </div>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Skeleton className="h-56 rounded-xl" />
-        <Skeleton className="h-56 rounded-xl" />
-      </div>
+    <Link
+      to="/finance"
+      aria-label={`${t.dashboard.collectedLink}: ${t.dashboard.openFinance}`}
+      className="group rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <StatTile
+        label={t.dashboard.collectedLink}
+        icon={Banknote}
+        value={finance.data ? formatINR(finance.data.collections.net) : '–'}
+        notes={[t.dashboard.openFinance]}
+        className="h-full transition-colors group-hover:bg-muted/50"
+      />
+    </Link>
+  )
+}
+
+function KpiSkeleton() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-hidden>
+      <Skeleton className="h-40 rounded-xl sm:col-span-2" />
+      <Skeleton className="h-40 rounded-xl" />
+      <Skeleton className="h-40 rounded-xl" />
     </div>
   )
 }

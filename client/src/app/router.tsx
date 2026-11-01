@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
 import { AuditLogPage } from '@/pages/AuditLogPage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { FinancePage } from '@/pages/FinancePage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HomePage } from '@/pages/HomePage'
 import { LandingRedirect } from '@/pages/LandingRedirect'
@@ -68,8 +69,16 @@ export const router = createBrowserRouter([
               {
                 path: 'dashboard',
                 element: (
-                  <RequirePermission permission="report.view">
+                  <RequirePermission permission="patient.view">
                     <DashboardPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'finance',
+                element: (
+                  <RequirePermission permission="finance.view">
+                    <FinancePage />
                   </RequirePermission>
                 ),
               },
