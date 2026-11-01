@@ -47,6 +47,10 @@ export const t = {
     main: 'Main',
     menu: 'Open menu',
     closeMenu: 'Close menu',
+    more: 'More',
+    moreTitle: 'More',
+    account: 'Account',
+    appearance: 'Appearance',
     allBranches: 'All branches',
     branchSelect: 'Show data for branch',
     language: 'English',
@@ -446,6 +450,7 @@ export const t = {
       previous: 'Previous page',
       next: 'Next page',
       page: (n: number) => `Page ${n}`,
+      pageOf: (n: number, pages: number) => `Page ${n} of ${pages}`,
     },
   },
   patient: {

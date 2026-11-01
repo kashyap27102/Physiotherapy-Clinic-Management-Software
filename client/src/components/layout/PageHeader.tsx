@@ -19,8 +19,8 @@ export function PageHeader({ crumbs, badge, actions }: PageHeaderProps) {
   const current = crumbs[crumbs.length - 1]
   const parents = crumbs.slice(0, -1)
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-      <h1 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-2xl font-semibold tracking-tight">
+    <div className="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <h1 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xl font-semibold tracking-tight sm:text-2xl">
         {parents.map((crumb) => (
           <span key={crumb.label} className="flex items-center gap-2 text-muted-foreground">
             {crumb.to ? (
@@ -30,13 +30,18 @@ export function PageHeader({ crumbs, badge, actions }: PageHeaderProps) {
             ) : (
               crumb.label
             )}
-            <ChevronRight className="size-5" aria-hidden />
+            <ChevronRight className="size-4 sm:size-5" aria-hidden />
           </span>
         ))}
         <span className="truncate">{current?.label}</span>
         {badge}
       </h1>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {/* Phones: the actions share the full width, each a big labelled button. */}
+      {actions && (
+        <div className="flex w-full items-center gap-2 max-sm:*:h-11 max-sm:*:flex-1 sm:w-auto sm:flex-wrap">
+          {actions}
+        </div>
+      )}
     </div>
   )
 }
