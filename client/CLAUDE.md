@@ -33,6 +33,7 @@ shadcn/ui on **Base UI** (style `base-nova`) · React Router · TanStack Query �
   Shared pieces: `ConfirmDialog`, `EmptyState`, `Avatar`, `Switch` in `components/common`; `applyFieldErrors` in `lib/forms.ts`
   maps server 422 field errors onto react-hook-form.
 - `src/branchScope/` the top-bar branch choice (`useBranchScope`: `branchId` or null for all branches, remembered per user in localStorage). Lists pass `branchId` to the API; `components/layout/BranchSelect.tsx` is the dropdown. Visits, payments and the dashboard should follow it too.
+- **Routes:** `/` is only a redirect (`pages/LandingRedirect.tsx`): anyone with `report.view` (the owner) lands on `/dashboard`, everyone else on `/patients`. The patient list lives at `/patients` (`HomePage`), with `/patients/new` and `/patients/:id` under it; the sidebar lists Dashboard first, then Patients. Link to `/patients`, not `/`, when you mean the list.
 - `src/features/patients/` patient list (`PatientTable`, `PatientFilterBar`, `patientFilters.ts` keeps search, filters and page in the address bar), register/edit forms, profile tabs. `components/common/Pagination.tsx` is reusable.
 - `src/features/clinical/` the profile's Treatment tab (CLN-001 to CLN-004): `TreatmentTab` (episode picker, summary with
   `ProgressMeter`, assessment and plan cards), `AssessmentDialog` (with the 0–10 `PainScale`), `PlanDialog` (frequency and

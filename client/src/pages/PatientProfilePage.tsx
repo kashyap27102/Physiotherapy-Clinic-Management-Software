@@ -78,12 +78,12 @@ export function PatientProfilePage() {
     const notFound = isApiError(query.error, 'NOT_FOUND')
     return (
       <>
-        <PageHeader crumbs={[{ label: t.nav.patients, to: '/' }, { label: t.patient.notFound }]} />
+        <PageHeader crumbs={[{ label: t.nav.patients, to: '/patients' }, { label: t.patient.notFound }]} />
         <div className="max-w-xl rounded-xl border bg-card">
           <EmptyState
             icon={UserRound}
             action={
-              <Link to="/" className={buttonVariants({ variant: 'outline', className: 'h-10 px-4' })}>
+              <Link to="/patients" className={buttonVariants({ variant: 'outline', className: 'h-10 px-4' })}>
                 {t.register.back}
               </Link>
             }
@@ -97,7 +97,7 @@ export function PatientProfilePage() {
 
   return (
     <>
-      <PageHeader crumbs={[{ label: t.nav.patients, to: '/' }, { label: patient.fullName }]} />
+      <PageHeader crumbs={[{ label: t.nav.patients, to: '/patients' }, { label: patient.fullName }]} />
 
       <section className="mb-6 grid gap-5 rounded-xl border bg-card p-5 shadow-xs md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
         <div className="flex min-w-0 items-start gap-4">

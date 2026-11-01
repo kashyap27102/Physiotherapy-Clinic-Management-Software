@@ -6,6 +6,7 @@ import { AuditLogPage } from '@/pages/AuditLogPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HomePage } from '@/pages/HomePage'
+import { LandingRedirect } from '@/pages/LandingRedirect'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PatientProfilePage } from '@/pages/PatientProfilePage'
@@ -39,8 +40,9 @@ export const router = createBrowserRouter([
           {
             element: <AppShell />,
             children: [
+              { index: true, element: <LandingRedirect /> },
               {
-                index: true,
+                path: 'patients',
                 element: (
                   <RequirePermission permission="patient.view">
                     <HomePage />
