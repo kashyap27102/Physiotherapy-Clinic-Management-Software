@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { collectionNotes, seenNotes } from '@/features/dashboard/dashboardText'
+import { TodayVisits } from '@/features/visits/TodayVisits'
 import { StatTile } from '@/features/dashboard/StatTile'
 import { formatDate, formatTime } from '@/lib/date'
 import { formatINR } from '@/lib/money'
@@ -95,6 +96,9 @@ export function DashboardPage() {
               notes={[t.dashboard.duesPatients(summary.dues.patients)]}
             />
           </div>
+
+          {/* VIS-001: who has been marked present today. */}
+          <TodayVisits />
 
           <div className="grid items-start gap-5 lg:grid-cols-2">
             <div className="space-y-5">

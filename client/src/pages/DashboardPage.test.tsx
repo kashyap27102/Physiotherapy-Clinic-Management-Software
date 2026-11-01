@@ -8,7 +8,7 @@ import { DashboardPage } from './DashboardPage'
 
 vi.mock('@/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api')>()
-  return { ...actual, api: { dashboard: { today: vi.fn() } } }
+  return { ...actual, api: { dashboard: { today: vi.fn() }, visits: { today: vi.fn().mockResolvedValue([]) } } }
 })
 
 const reactGlobals = globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
