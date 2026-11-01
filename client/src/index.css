@@ -171,3 +171,21 @@
     @apply font-sans;
   }
 }
+
+/* Phones: 16px fields stop iOS from zooming the page on focus; taps respond at once. Unlayered so it beats utilities. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a,
+select,
+summary {
+  touch-action: manipulation;
+}

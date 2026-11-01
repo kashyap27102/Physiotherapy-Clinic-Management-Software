@@ -39,9 +39,9 @@ import { t } from '@/strings/en'
 
 // Underlined tab style from the reference design.
 const tabListClass =
-  'group-data-horizontal/tabs:h-11 mb-6 w-full justify-start gap-2 overflow-x-auto rounded-none border-b p-0'
+  'group-data-horizontal/tabs:h-12 mb-5 w-full justify-start gap-0 overflow-x-auto rounded-none border-b p-0 sm:mb-6 sm:gap-2 md:group-data-horizontal/tabs:h-11'
 const tabClass =
-  'h-full flex-none px-3 data-active:text-primary group-data-horizontal/tabs:after:-bottom-px group-data-[variant=line]/tabs-list:after:bg-primary'
+  'h-full min-w-0 flex-1 px-2 text-sm sm:flex-none sm:px-3 data-active:text-primary group-data-horizontal/tabs:after:-bottom-px group-data-[variant=line]/tabs-list:after:bg-primary'
 
 /** PAT-003: one page with the patient's details, balance and history. Every open is audited by the server. */
 export function PatientProfilePage() {
@@ -99,89 +99,93 @@ export function PatientProfilePage() {
     <>
       <PageHeader crumbs={[{ label: t.nav.patients, to: '/patients' }, { label: patient.fullName }]} />
 
-      <section className="mb-6 grid gap-5 rounded-xl border bg-card p-5 shadow-xs md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-        <div className="flex min-w-0 items-start gap-4">
-          <Avatar name={patient.fullName} className="size-16 text-xl" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="truncate text-xl font-semibold tracking-tight">{patient.fullName}</h2>
-              <SoftPill tone={patient.status === 'active' ? 'success' : 'muted'}>
-                {t.patient.status[patient.status]}
-              </SoftPill>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t.patient.ageYears(patient.age)} · {t.patient.gender[patient.gender]}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Phone className="size-3.5" aria-hidden />
-                {formatPhone(patient.phone)}
-                {patient.phoneContactType === 'guardian' && <span>({t.patient.guardianNumber.toLowerCase()})</span>}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Building2 className="size-3.5" aria-hidden />
-                {t.patient.registeredOn(patient.registeredBranch, formatDate(patient.createdAt))}
-              </span>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Can permission="visit.mark">
-                <Button className="h-10 gap-1.5 px-4" onClick={() => setMarking(true)}>
-                  <CalendarCheck aria-hidden />
-                  {t.visit.markAttendance}
-                </Button>
-              </Can>
-              <Can permission="payment.record">
-                <Button variant="outline" className="h-10 gap-1.5 px-4" onClick={() => setPaying(true)}>
-                  <Banknote aria-hidden />
-                  {t.visit.recordPayment}
-                </Button>
-              </Can>
-              <Can permission="patient.edit">
-                <Button variant="outline" className="h-10 gap-1.5 px-3" onClick={() => setEditing(true)}>
-                  <Pencil aria-hidden />
-                  {t.patient.edit}
-                </Button>
-              </Can>
-              <Can permission="audit.view">
-                <Link
-                  to={auditLinkForPatient(patient.id)}
-                  className={buttonVariants({ variant: 'outline', className: 'h-10 gap-1.5 px-3' })}
-                >
-                  <ScrollText aria-hidden />
-                  {t.audit.viewActivity}
-                </Link>
-              </Can>
+      <section className="mb-5 rounded-xl border bg-card p-4 shadow-xs sm:mb-6 sm:p-5">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <Avatar name={patient.fullName} className="size-12 text-lg sm:size-16 sm:text-xl" />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-xl font-semibold tracking-tight">{patient.fullName}</h2>
+                <SoftPill tone={patient.status === 'active' ? 'success' : 'muted'}>
+                  {t.patient.status[patient.status]}
+                </SoftPill>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t.patient.ageYears(patient.age)} · {t.patient.gender[patient.gender]}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <Phone className="size-3.5" aria-hidden />
+                  {formatPhone(patient.phone)}
+                  {patient.phoneContactType === 'guardian' && <span>({t.patient.guardianNumber.toLowerCase()})</span>}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Building2 className="size-3.5" aria-hidden />
+                  {t.patient.registeredOn(patient.registeredBranch, formatDate(patient.createdAt))}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* PAT-003 / BILL-008: the balance or advance credit is the first thing the front desk needs to see. */}
+          {patient.balance && (
+            <div className="md:w-64">
+              <BalanceBanner balance={patient.balance} />
+            </div>
+          )}
         </div>
 
-        {/* PAT-003 / BILL-008: the balance or advance credit is the first thing the front desk needs to see. */}
-        {patient.balance && (
-          <div className="md:w-64">
-            <BalanceBanner balance={patient.balance} />
-          </div>
-        )}
+        {/* Phones: two columns of big labelled buttons; wider screens: one wrapping row. */}
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <Can permission="visit.mark">
+            <Button className="h-11 gap-1.5 px-4 sm:h-10" onClick={() => setMarking(true)}>
+              <CalendarCheck aria-hidden />
+              {t.visit.markAttendance}
+            </Button>
+          </Can>
+          <Can permission="payment.record">
+            <Button variant="outline" className="h-11 gap-1.5 px-4 sm:h-10" onClick={() => setPaying(true)}>
+              <Banknote aria-hidden />
+              {t.visit.recordPayment}
+            </Button>
+          </Can>
+          <Can permission="patient.edit">
+            <Button variant="outline" className="h-11 gap-1.5 px-3 sm:h-10" onClick={() => setEditing(true)}>
+              <Pencil aria-hidden />
+              {t.patient.edit}
+            </Button>
+          </Can>
+          <Can permission="audit.view">
+            <Link
+              to={auditLinkForPatient(patient.id)}
+              className={buttonVariants({ variant: 'outline', className: 'h-11 gap-1.5 px-3 sm:h-10' })}
+            >
+              <ScrollText aria-hidden />
+              {t.audit.viewActivity}
+            </Link>
+          </Can>
+        </div>
       </section>
 
       <Tabs defaultValue="overview">
         <TabsList variant="line" className={tabListClass}>
           <TabsTrigger value="overview" className={tabClass}>
-            <UserRound aria-hidden />
+            <UserRound className="max-sm:hidden" aria-hidden />
             {t.patient.tabs.overview}
           </TabsTrigger>
           {canSeeClinical && (
             <TabsTrigger value="treatment" className={tabClass}>
-              <Target aria-hidden />
+              <Target className="max-sm:hidden" aria-hidden />
               {t.patient.tabs.treatment}
             </TabsTrigger>
           )}
           <TabsTrigger value="visits" className={tabClass}>
-            <ClipboardList aria-hidden />
+            <ClipboardList className="max-sm:hidden" aria-hidden />
             {t.patient.tabs.visits}
           </TabsTrigger>
           {canSeeLedger && (
             <TabsTrigger value="payments" className={tabClass}>
-              <CreditCard aria-hidden />
+              <CreditCard className="max-sm:hidden" aria-hidden />
               {t.patient.tabs.payments}
             </TabsTrigger>
           )}

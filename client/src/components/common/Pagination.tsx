@@ -13,7 +13,7 @@ interface PaginationProps {
 }
 
 const pageButton =
-  'flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40'
+  'flex h-11 min-w-11 items-center sm:h-9 sm:min-w-9 justify-center rounded-lg px-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-40'
 
 /** "1–25 of 132", rows per page, and previous / numbered / next page buttons. */
 export function Pagination({
@@ -38,7 +38,7 @@ export function Pagination({
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
             aria-label={t.home.pagination.perPage}
-            className="h-8 cursor-pointer rounded-md border border-input bg-transparent px-1.5 text-sm text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            className="h-10 cursor-pointer rounded-md sm:h-8 border border-input bg-transparent px-1.5 text-sm text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
             {pageSizes.map((size) => (
               <option key={size} value={size}>
@@ -49,7 +49,10 @@ export function Pagination({
         </label>
       </div>
 
-      <nav aria-label={t.home.pagination.label} className="flex items-center gap-1">
+      <nav
+        aria-label={t.home.pagination.label}
+        className="flex w-full items-center justify-between gap-1 sm:w-auto sm:justify-start"
+      >
         <button
           type="button"
           className={cn(pageButton, 'hover:bg-muted')}
@@ -59,16 +62,23 @@ export function Pagination({
         >
           <ChevronLeft className="size-4" aria-hidden />
         </button>
+        <span className="text-sm font-medium sm:hidden" aria-hidden>
+          {t.home.pagination.pageOf(page, pages)}
+        </span>
         {pageWindow(page, pages).map((n, i) =>
           n === null ? (
-            <span key={`gap-${i}`} className="px-1 text-sm text-muted-foreground" aria-hidden>
+            <span key={`gap-${i}`} className="px-1 text-sm max-sm:hidden text-muted-foreground" aria-hidden>
               …
             </span>
           ) : (
             <button
               key={n}
               type="button"
-              className={cn(pageButton, n === page ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted')}
+              className={cn(
+                pageButton,
+                'max-sm:hidden',
+                n === page ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted',
+              )}
               aria-label={t.home.pagination.page(n)}
               aria-current={n === page ? 'page' : undefined}
               onClick={() => onPageChange(n)}

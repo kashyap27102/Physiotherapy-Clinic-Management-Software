@@ -11,10 +11,10 @@ const SORTS: PatientSort[] = ['newest', 'oldest', 'name', 'name_desc']
 const PRESETS: RegisteredPreset[] = ['today', 'week', 'month', 'thisMonth', 'custom']
 
 const chipSelect =
-  'h-9 cursor-pointer appearance-none rounded-lg border border-input bg-card pr-3 pl-3 text-sm outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30'
+  'h-11 cursor-pointer appearance-none md:h-9 rounded-lg border border-input bg-card pr-3 pl-3 text-sm outline-none transition-colors hover:bg-muted/60 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30'
 const chipActive = 'border-primary/50 bg-primary/5 font-medium text-primary dark:bg-primary/10'
 const dateInput =
-  'h-9 rounded-lg border border-input bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:[color-scheme:dark]'
+  'h-11 min-w-0 flex-1 rounded-lg border border-input bg-card px-2.5 md:h-9 md:flex-none text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30 dark:[color-scheme:dark]'
 
 interface PatientFilterBarProps {
   filters: PatientFilters
@@ -25,7 +25,7 @@ interface PatientFilterBarProps {
 
 function Chip({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="flex">
+    <label className="flex max-md:w-[calc(50%-0.25rem)] max-md:*:w-full">
       <span className="sr-only">{label}</span>
       {children}
     </label>
@@ -55,7 +55,7 @@ export function PatientFilterBar({ filters, onChange, onClear }: PatientFilterBa
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           className={cn(
-            'flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+            'flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
             count > 0 && chipActive,
           )}
         >
@@ -71,7 +71,7 @@ export function PatientFilterBar({ filters, onChange, onClear }: PatientFilterBa
           <button
             type="button"
             onClick={onClear}
-            className="h-9 px-2 text-sm text-muted-foreground hover:text-foreground"
+            className="h-11 px-2 text-sm text-muted-foreground hover:text-foreground"
           >
             {t.home.filters.clear}
           </button>
@@ -138,7 +138,7 @@ export function PatientFilterBar({ filters, onChange, onClear }: PatientFilterBa
         </Chip>
 
         {preset === 'custom' && (
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center gap-2 md:w-auto">
             <input
               type="date"
               aria-label={t.home.filters.from}
@@ -171,7 +171,7 @@ export function PatientFilterBar({ filters, onChange, onClear }: PatientFilterBa
           </button>
         )}
 
-        <label className="relative flex items-center md:ml-auto">
+        <label className="relative flex items-center max-md:w-[calc(50%-0.25rem)] max-md:*:last:w-full md:ml-auto">
           <span className="sr-only">{t.home.filters.sort}</span>
           <ArrowDownUp className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" aria-hidden />
           <select
