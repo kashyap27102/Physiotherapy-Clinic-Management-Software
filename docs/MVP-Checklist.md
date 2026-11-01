@@ -91,8 +91,8 @@
 
 ### Audit
 
-- [ ] **AUD-001** Immutable audit log: views, edits, money events, permission changes, logins — Must
-- [ ] Owner audit log viewer with filters — Must
+- [x] **AUD-001** Immutable audit log: views, edits, money events, permission changes, logins — Must
+- [x] Owner audit log viewer with filters — Must
 
 ### Dashboard
 

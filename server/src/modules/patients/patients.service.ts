@@ -9,6 +9,7 @@ import {
   classifyQuery,
   currentAge,
   dateOnly,
+  indiaDayStart,
   indiaToday,
   nameSimilarity,
   normaliseName,
@@ -163,13 +164,6 @@ export interface SearchInput {
   sort: 'newest' | 'oldest' | 'name' | 'name_desc'
   page: number
   pageSize: number
-}
-
-/** The moment an India-time calendar day starts (India is UTC+5:30 all year). */
-const IST_OFFSET_MS = 330 * 60_000
-function indiaDayStart(day: string, plusDays = 0): Date {
-  const [year, month, date] = day.split('-').map(Number) as [number, number, number]
-  return new Date(Date.UTC(year, month - 1, date + plusDays) - IST_OFFSET_MS)
 }
 
 const ORDER: Record<SearchInput['sort'], Prisma.PatientOrderByWithRelationInput[]> = {
