@@ -8,6 +8,7 @@ import { branchesRouter } from '../modules/branches/branches.routes.js'
 import { clinicalRouter } from '../modules/clinical/clinical.routes.js'
 import { billingRouter } from '../modules/billing/billing.routes.js'
 import { clinicRouter } from '../modules/clinic/clinic.routes.js'
+import { dashboardRouter } from '../modules/dashboard/dashboard.routes.js'
 import { createRegistrationRouter } from '../modules/registration/registration.routes.js'
 import { patientsRouter } from '../modules/patients/patients.routes.js'
 import { rolesRouter } from '../modules/roles/roles.routes.js'
@@ -43,3 +44,4 @@ v1Router.use(clinicalRouter)
 v1Router.use(visitsRouter)
 v1Router.use(billingRouter)
 v1Router.use(auditRouter)
+v1Router.use(dashboardRouter)
