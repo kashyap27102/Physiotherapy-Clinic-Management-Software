@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  ScrollText,
   ShieldCheck,
   Store,
   Users,
@@ -45,6 +46,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const canManageClinic = useCan('clinic.manage')
   const canManageStaff = useCan('staff.manage')
   const canManageRoles = useCan('role.manage')
+  const canSeeAudit = useCan('audit.view')
   const settings = [
     canManageClinic && { to: '/settings/clinic', icon: Store, label: t.settings.clinic },
     canManageClinic && { to: '/settings/branches', icon: Building2, label: t.settings.branches },
@@ -63,6 +65,17 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <LayoutDashboard className="size-4" aria-hidden />
           {t.nav.dashboard}
         </NavLink>
+      )}
+      {canSeeAudit && (
+        <>
+          <div className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            {t.nav.auditSection}
+          </div>
+          <NavLink to="/audit-log" className={navLinkClass} onClick={onNavigate}>
+            <ScrollText className="size-4" aria-hidden />
+            {t.nav.auditLog}
+          </NavLink>
+        </>
       )}
       {settings.length > 0 && (
         <>

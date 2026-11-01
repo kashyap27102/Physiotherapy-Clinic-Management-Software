@@ -6,6 +6,7 @@ import {
   CreditCard,
   Pencil,
   Phone,
+  ScrollText,
   Building2,
   Target,
   UserRound,
@@ -23,6 +24,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { auditLinkForPatient } from '@/features/audit/auditFilters'
 import { EditPatientDialog } from '@/features/patients/EditPatientDialog'
 import { TreatmentTab } from '@/features/clinical/TreatmentTab'
 import { PaymentsTab } from '@/features/billing/PaymentsTab'
@@ -139,6 +141,15 @@ export function PatientProfilePage() {
                   <Pencil aria-hidden />
                   {t.patient.edit}
                 </Button>
+              </Can>
+              <Can permission="audit.view">
+                <Link
+                  to={auditLinkForPatient(patient.id)}
+                  className={buttonVariants({ variant: 'outline', className: 'h-10 gap-1.5 px-3' })}
+                >
+                  <ScrollText aria-hidden />
+                  {t.audit.viewActivity}
+                </Link>
               </Can>
             </div>
           </div>

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, MoreHorizontal, Pencil, Power, Send, UserPlus, UsersRound } from 'lucide-react'
+import { Building2, MoreHorizontal, Pencil, Power, ScrollText, Send, UserPlus, UsersRound } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { api, errorMessage, type StaffMember } from '@/api'
-import { useUser } from '@/auth/hooks'
+import { useCan, useUser } from '@/auth/hooks'
 import { FormAlert } from '@/components/auth/FormAlert'
 import { Avatar } from '@/components/common/Avatar'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { auditLinkForUser } from '@/features/audit/auditFilters'
 import { formatDateTime } from '@/lib/date'
 import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
@@ -37,6 +39,8 @@ interface Filter {
 /** USR-001: the owner invites, edits and deactivates staff; one branch each (BR-USR-1). */
 export function StaffPage() {
   const me = useUser()
+  const canSeeAudit = useCan('audit.view')
+  const navigate = useNavigate()
   const online = useOnlineStatus()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>({ role: '', branchId: '', status: 'active' })
@@ -218,6 +222,12 @@ export function StaffPage() {
                           <Pencil className="size-4" aria-hidden />
                           {t.settings.edit}
                         </DropdownMenuItem>
+                        {canSeeAudit && (
+                          <DropdownMenuItem onClick={() => void navigate(auditLinkForUser(person.id))}>
+                            <ScrollText className="size-4" aria-hidden />
+                            {t.audit.viewActivity}
+                          </DropdownMenuItem>
+                        )}
                         {person.invited && person.isActive && (
                           <DropdownMenuItem onClick={() => resend.mutate(person.id)}>
                             <Send className="size-4" aria-hidden />

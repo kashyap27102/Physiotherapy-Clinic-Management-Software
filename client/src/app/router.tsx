@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { RequireAuth, RequirePermission, RequireSetupComplete } from '@/auth/guards'
 import { AppShell } from '@/components/layout/AppShell'
 import { AcceptInvitationPage } from '@/pages/AcceptInvitationPage'
+import { AuditLogPage } from '@/pages/AuditLogPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage'
 import { HomePage } from '@/pages/HomePage'
@@ -67,6 +68,14 @@ export const router = createBrowserRouter([
                 element: (
                   <RequirePermission permission="report.view">
                     <DashboardPage />
+                  </RequirePermission>
+                ),
+              },
+              {
+                path: 'audit-log',
+                element: (
+                  <RequirePermission permission="audit.view">
+                    <AuditLogPage />
                   </RequirePermission>
                 ),
               },
