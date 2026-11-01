@@ -83,7 +83,7 @@ export function RegisterPatientPage() {
 
   return (
     <>
-      <PageHeader crumbs={[{ label: t.nav.patients, to: '/' }, { label: t.register.title }]} />
+      <PageHeader crumbs={[{ label: t.nav.patients, to: '/patients' }, { label: t.register.title }]} />
 
       <form onSubmit={submit(false)} noValidate className="max-w-3xl space-y-6">
         <SectionCard title={t.register.patientSection}>
@@ -144,7 +144,7 @@ export function RegisterPatientPage() {
         <OfflineNotice />
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Link to="/" className={buttonVariants({ variant: 'outline', className: 'h-11 px-5' })}>
+          <Link to="/patients" className={buttonVariants({ variant: 'outline', className: 'h-11 px-5' })}>
             {t.common.cancel}
           </Link>
           <Button type="submit" className="h-11 gap-2 px-6" disabled={create.isPending || !online}>
