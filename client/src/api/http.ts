@@ -8,6 +8,7 @@ import { PERMISSION_KEYS } from './types'
 import type {
   Api,
   Assessment,
+  AuditEntry,
   BillingDocument,
   Branch,
   Clinic,
@@ -315,6 +316,10 @@ export const httpApi: Api = {
     },
     pdfUrl: (id) => `${BASE}/documents/${id}/pdf`,
     invoice: (input, idempotencyKey) => request('POST', '/invoices', { body: input, idempotencyKey }),
+  },
+
+  audit: {
+    list: (input, signal) => request<Paged<AuditEntry>>('GET', '/audit-log', { query: { ...input }, signal }),
   },
 
   clinic: {

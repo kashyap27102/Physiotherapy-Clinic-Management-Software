@@ -148,3 +148,12 @@ describe('visits and billing calls', () => {
     expect(httpApi.documents.pdfUrl('d1')).toBe('/api/v1/documents/d1/pdf')
   })
 })
+
+describe('audit log call', () => {
+  it('sends only the filters that are set', async () => {
+    respond = () => ({ status: 200, data: { items: [], page: 1, pageSize: 50, total: 0 } })
+    await httpApi.audit.list({ patientId: 'p1', action: 'patient.', from: '2026-10-01', userId: undefined, page: 2 })
+    expect(seen.at(-1)!.url).toBe('/audit-log')
+    expect(seen.at(-1)!.params).toEqual({ patientId: 'p1', action: 'patient.', from: '2026-10-01', page: 2 })
+  })
+})

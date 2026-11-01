@@ -11,6 +11,7 @@ export const queryKeys = {
   patientDocuments: (id: string) => ['patient', id, 'documents'] as const,
   visitNotes: (id: string) => ['visit', id, 'notes'] as const,
   patientSearch: (input: object) => ['patients', 'search', input] as const,
+  auditLog: (input: object) => ['audit', input] as const,
   todayVisits: ['visits', 'today'] as const,
   todayVisitsFor: (branchId: string | null) => ['visits', 'today', branchId] as const,
   defaultFee: ['clinic', 'fee'] as const,
