@@ -43,6 +43,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const canSeeReports = useCan('report.view')
+  const canSeePatients = useCan('patient.view')
   const canManageClinic = useCan('clinic.manage')
   const canManageStaff = useCan('staff.manage')
   const canManageRoles = useCan('role.manage')
@@ -56,14 +57,16 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex flex-col gap-1" aria-label={t.nav.main}>
-      <NavLink to="/" end className={navLinkClass} onClick={onNavigate}>
-        <Users className="size-4" aria-hidden />
-        {t.nav.patients}
-      </NavLink>
       {canSeeReports && (
         <NavLink to="/dashboard" className={navLinkClass} onClick={onNavigate}>
           <LayoutDashboard className="size-4" aria-hidden />
           {t.nav.dashboard}
+        </NavLink>
+      )}
+      {canSeePatients && (
+        <NavLink to="/patients" className={navLinkClass} onClick={onNavigate}>
+          <Users className="size-4" aria-hidden />
+          {t.nav.patients}
         </NavLink>
       )}
       {canSeeAudit && (
