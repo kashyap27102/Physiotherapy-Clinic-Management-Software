@@ -157,6 +157,7 @@ export interface Paged<T> {
 export interface PatientListItem {
   id: string
   fullName: string
+  patientCode: string | null
   phone: string
   age: number
   gender: Gender
@@ -189,6 +190,8 @@ export interface PatientSearchInput {
 
 export interface CreatePatientInput {
   fullName: string
+  /** The doctor's own patient ID (optional, unique in the clinic). Empty clears it on edit. */
+  patientCode?: string
   /** As typed; the server normalises it (+91, spaces and a leading 0 are fine). */
   phone: string
   /** Age in years, or a date of birth (YYYY-MM-DD) from which the age is derived. One of the two is required. */
@@ -214,6 +217,7 @@ export type UpdatePatientInput = Partial<
 export interface PatientDetail {
   id: string
   fullName: string
+  patientCode: string | null
   phone: string
   phoneContactType: 'self' | 'guardian'
   /** YYYY-MM-DD when known; the age is then derived from it. */
@@ -334,6 +338,7 @@ export interface TodayVisit extends VisitRecord {
   patientId: string
   patientName: string
   patientPhone: string
+  patientCode: string | null
   /** Null when the viewer cannot see balances. */
   balance: Balance | null
 }

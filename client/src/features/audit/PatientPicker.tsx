@@ -75,7 +75,10 @@ export function PatientPicker({ onPick, className }: PatientPickerProps) {
                     className="flex w-full flex-col px-3 py-2 text-left text-sm outline-none hover:bg-muted focus-visible:bg-muted"
                   >
                     <span className="truncate font-medium">{patient.fullName}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{formatPhone(patient.phone)}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {patient.patientCode && `${patient.patientCode} · `}
+                      {formatPhone(patient.phone)}
+                    </span>
                   </button>
                 </li>
               ))}

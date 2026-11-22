@@ -32,6 +32,7 @@ const patient: PatientDetail = {
   emergencyContact: null,
   occupation: null,
   referringDoctor: null,
+  patientCode: null,
   email: null,
   notes: null,
   status: 'active',

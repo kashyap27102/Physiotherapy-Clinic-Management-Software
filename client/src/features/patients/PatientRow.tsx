@@ -31,6 +31,7 @@ export function PatientRow({ patient, className, onOpen }: PatientRowProps) {
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium group-hover:text-primary">{patient.fullName}</div>
         <div className="truncate text-sm text-muted-foreground">
+          {patient.patientCode && `${patient.patientCode} · `}
           {t.patient.ageYears(patient.age)} · {t.patient.gender[patient.gender]} · {formatPhone(patient.phone)}
         </div>
         <div className="truncate text-xs text-muted-foreground/80">

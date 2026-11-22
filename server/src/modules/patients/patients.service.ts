@@ -29,6 +29,8 @@ export interface Balance {
 export interface PatientListItem {
   id: string
   fullName: string
+  /** The doctor's own patient ID, when one was given. */
+  patientCode: string | null
   phone: string
   age: number
   gender: Gender
@@ -45,6 +47,7 @@ export interface PatientListItem {
 export interface PatientDetail {
   id: string
   fullName: string
+  patientCode: string | null
   phone: string
   phoneContactType: 'self' | 'guardian'
   /** "YYYY-MM-DD" when known. */
@@ -67,6 +70,7 @@ export interface PatientDetail {
 const select = {
   id: true,
   fullName: true,
+  patientCode: true,
   phone: true,
   phoneContactType: true,
   dateOfBirth: true,
@@ -109,6 +113,7 @@ type Extras = ReturnType<Awaited<ReturnType<typeof listExtras>>>
 const toListItem = (row: Row, extras: Extras): PatientListItem => ({
   id: row.id,
   fullName: row.fullName,
+  patientCode: row.patientCode,
   phone: row.phone,
   age: currentAge(row),
   gender: row.gender as Gender,
@@ -132,6 +137,7 @@ async function activeEpisodeIdFor(db: TenantDb, patientId: string): Promise<stri
 const toDetail = (row: Row, balance: Balance | null, activeEpisodeId: string | null): PatientDetail => ({
   id: row.id,
   fullName: row.fullName,
+  patientCode: row.patientCode,
   phone: row.phone,
   phoneContactType: row.phoneContactType as 'self' | 'guardian',
   dateOfBirth: row.dateOfBirth ? isoDate(row.dateOfBirth) : null,
@@ -196,9 +202,12 @@ export async function searchPatients(db: TenantDb, auth: AuthContext, input: Sea
       ...(input.registeredTo && { lt: indiaDayStart(input.registeredTo, 1) }),
     }
   }
-  if (query.kind === 'phone') where.phone = { contains: query.digits }
+  // The doctor's own patient ID is searched as well as the phone number or name.
+  const byCode = { patientCode: { contains: (input.q ?? '').trim(), mode: 'insensitive' as const } }
+  if (query.kind === 'phone') where.OR = [{ phone: { contains: query.digits } }, byCode]
   if (query.kind === 'name') {
-    where.AND = query.text.split(' ').map((word) => ({ fullName: { contains: word, mode: 'insensitive' as const } }))
+    const words = query.text.split(' ').map((word) => ({ fullName: { contains: word, mode: 'insensitive' as const } }))
+    where.OR = [{ AND: words }, byCode]
   }
 
   const [rows, total] = await Promise.all([
@@ -281,10 +290,20 @@ const duplicateWarning = (candidates: PatientListItem[]) =>
     details: { candidates },
   })
 
+/** The patient ID is unique within the clinic; another patient already using it answers 422 on that field. */
+async function assertCodeFree(db: TenantDb, code: string, excludeId?: string) {
+  const taken = await db.patient.findFirst({
+    where: { patientCode: code, ...(excludeId ? { id: { not: excludeId } } : {}) },
+    select: { id: true },
+  })
+  if (taken) throw validationError([{ field: 'patientCode', message: 'Another patient already has this patient ID.' }])
+}
+
 /* ---------------------------------------------------------------- create */
 
 export interface CreateInput {
   fullName: string
+  patientCode?: string | undefined
   phone: string
   phoneContactType: 'self' | 'guardian'
   age?: number | undefined
@@ -328,12 +347,15 @@ export async function createPatient(
     if (candidates.length > 0) throw duplicateWarning(candidates)
   }
 
+  if (input.patientCode) await assertCodeFree(db, input.patientCode)
+
   const today = todayDate()
   const row = await db.patient.create({
     data: {
       registeredBranchId: branch.id,
       createdById: auth.userId,
       fullName: input.fullName,
+      patientCode: input.patientCode ?? null,
       phone: input.phone,
       phoneContactType: input.phoneContactType,
       dateOfBirth: input.dateOfBirth ?? null,
@@ -399,6 +421,7 @@ export async function viewPatient(
 
 export interface UpdateInput {
   fullName?: string
+  patientCode?: string | null
   phone?: string
   phoneContactType?: 'self' | 'guardian'
   age?: number
@@ -416,6 +439,7 @@ export interface UpdateInput {
 function snapshot(row: Row): Record<string, string | number | null> {
   return {
     fullName: row.fullName,
+    patientCode: row.patientCode,
     phone: row.phone,
     phoneContactType: row.phoneContactType,
     dateOfBirth: row.dateOfBirth ? isoDate(row.dateOfBirth) : null,
@@ -444,6 +468,7 @@ export async function updatePatient(
   ip: string | undefined,
 ): Promise<PatientDetail> {
   const before = await findPatient(db, id)
+  if (input.patientCode && input.patientCode !== before.patientCode) await assertCodeFree(db, input.patientCode, id)
 
   if (input.phone !== undefined && input.phone !== before.phone && !options.confirmDuplicate) {
     const candidates = await findPossibleDuplicates(db, auth, {

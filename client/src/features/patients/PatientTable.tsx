@@ -69,6 +69,9 @@ export function PatientTable({ patients, showBranch, showBalance, stale }: Patie
                         {patient.fullName}
                       </Link>
                       {patient.status === 'inactive' && <SoftPill tone="muted">{t.home.table.inactive}</SoftPill>}
+                      {patient.patientCode && (
+                        <span className="text-xs text-muted-foreground tabular-nums">{patient.patientCode}</span>
+                      )}
                     </div>
                   </div>
                 </td>

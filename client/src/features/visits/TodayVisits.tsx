@@ -67,6 +67,7 @@ export function TodayVisits() {
                     {visit.patientName}
                   </div>
                   <div className="truncate text-sm text-muted-foreground">
+                    {visit.patientCode && `${visit.patientCode} · `}
                     {formatTime(visit.visitedAt)}
                     {!branch && ` · ${visit.branchName}`}
                     {visit.therapistName && ` · ${t.visit.therapist(visit.therapistName)}`}
