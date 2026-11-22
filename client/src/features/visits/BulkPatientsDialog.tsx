@@ -79,13 +79,7 @@ function PatientsForm({ onClose }: { onClose: () => void }) {
   const needReason = date !== today
   const count = chosen.size
   const feePaise = toPaise(feeQuery.data?.defaultFee ?? '') ?? 0
-  const canSubmit =
-    online &&
-    date !== '' &&
-    date <= today &&
-    count > 0 &&
-    (!needReason || reason.trim() !== '') &&
-    !bulk.mutation.isPending
+  const canSubmit = online && date !== '' && date <= today && count > 0 && !bulk.mutation.isPending
 
   const change = (next: Map<string, Chosen>) => {
     setChosen(new Map([...next].slice(0, BULK_LIMIT)))
@@ -121,7 +115,7 @@ function PatientsForm({ onClose }: { onClose: () => void }) {
   const input = () => ({
     entries: [...chosen.keys()].map((patientId) => ({ patientId, date })),
     ...(therapistId ? { therapistId } : {}),
-    ...(needReason ? { reason: reason.trim() } : {}),
+    ...(needReason && reason.trim() ? { reason: reason.trim() } : {}),
   })
 
   return (
