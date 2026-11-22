@@ -191,7 +191,7 @@ describe.skipIf(!url)('owner dashboard', () => {
   it('counts patients seen, leaving out a visit whose charge was reversed', async () => {
     const res = await today(ownerA)
     expect(res.body).toMatchObject({ branchId: null, patientsSeen: 2, sessions: 2, newPatients: 4 })
-    expect(res.body.date).toMatch(/^d{4}-d{2}-d{2}$/)
+    expect(res.body.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
   it('shows collections net of reversals and refunds, each shown separately (US-26.2)', async () => {
