@@ -21,6 +21,7 @@ export function OverviewTab({ patient }: { patient: PatientDetail }) {
       <SectionCard title={t.patient.personalSection}>
         <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2">
           <Detail label={t.register.fullName}>{patient.fullName}</Detail>
+          <Detail label={t.patient.patientCode}>{patient.patientCode}</Detail>
           <Detail label={t.register.gender}>{t.patient.gender[patient.gender]}</Detail>
           <Detail label={t.register.age}>{t.patient.ageYears(patient.age)}</Detail>
           <Detail label={t.patient.dateOfBirth}>{patient.dateOfBirth ? formatDate(patient.dateOfBirth) : null}</Detail>

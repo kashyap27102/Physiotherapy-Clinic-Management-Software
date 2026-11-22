@@ -16,7 +16,7 @@ describe('applyFieldErrors', () => {
     )
     expect(setError).toHaveBeenCalledTimes(1)
     expect(setError).toHaveBeenCalledWith('name', { message: 'Too short' })
-    expect(result).toEqual({ matched: 1, unmatched: 1 })
+    expect(result).toEqual({ matched: 1, unmatched: 1, unmatchedMessages: ['Required'] })
   })
 
   it('maps the server field path onto the form field name', () => {
@@ -28,6 +28,6 @@ describe('applyFieldErrors', () => {
       (f) => f.split('.').pop() ?? f,
     )
     expect(setError).toHaveBeenCalledWith('phone', { message: 'Bad' })
-    expect(result).toEqual({ matched: 1, unmatched: 0 })
+    expect(result).toEqual({ matched: 1, unmatched: 0, unmatchedMessages: [] })
   })
 })

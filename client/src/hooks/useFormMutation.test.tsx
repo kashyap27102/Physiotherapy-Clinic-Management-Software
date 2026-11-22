@@ -61,7 +61,8 @@ describe('useFormMutation', () => {
       ]),
     )
     expect(setError).toHaveBeenCalledTimes(1)
-    expect(formError()).toBe('Invalid')
+    // Only the message that has no field; the other one is already shown on its field.
+    expect(formError()).toBe('Nope')
   })
 
   it('shows the server message for other API errors and a generic one otherwise', async () => {

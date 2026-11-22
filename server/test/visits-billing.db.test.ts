@@ -368,11 +368,8 @@ describe.skipIf(!url)('visits and billing', () => {
       expect(res.body.sessionNumber).toBe(1)
     })
 
-    it('needs a reason, and refuses a future day or a day before the episode', async () => {
+    it('refuses a future day or a day before the episode', async () => {
       const { patientId } = await patientStartedEarlier()
-      const noReason = await attend(ownerA, patientId, { visitDate: ago(1), backdateReason: '  ' })
-      expect(noReason.status).toBe(422)
-      expect(noReason.body.error.fields[0].field).toBe('backdateReason')
       const future = await attend(ownerA, patientId, { visitDate: indiaDay(2), backdateReason: 'x' })
       expect(future.status).toBe(422)
       expect(future.body.error.fields[0].field).toBe('visitDate')
@@ -525,11 +522,8 @@ describe.skipIf(!url)('visits and billing', () => {
       expect(await root.ledgerEntry.count({ where: { patientId: good.patientId } })).toBe(0)
     })
 
-    it('needs a reason for earlier days, refuses future days, and refuses the same entry twice or too many', async () => {
+    it('refuses future days, and refuses the same entry twice or too many', async () => {
       const { patientId } = await startedEarlier()
-      const noReason = await bulk(ownerA, { entries: [{ patientId, date: ago(1) }], reason: ' ' })
-      expect(noReason.status).toBe(422)
-      expect(problemsOf(noReason)).toHaveLength(1)
       const future = await bulk(ownerA, { entries: [{ patientId, date: indiaDay(2) }], reason: 'x' })
       expect(future.status).toBe(422)
       const twice = await bulk(ownerA, {

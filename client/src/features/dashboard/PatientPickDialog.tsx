@@ -101,6 +101,7 @@ function PickBody({ title, onPick }: Pick<PatientPickDialogProps, 'title' | 'onP
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">{patient.fullName}</span>
                     <span className="block text-sm text-muted-foreground tabular-nums">
+                      {patient.patientCode && `${patient.patientCode} · `}
                       {formatPhone(patient.phone)}
                     </span>
                   </span>

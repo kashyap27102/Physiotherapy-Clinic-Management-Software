@@ -13,6 +13,7 @@ import { t } from '@/strings/en'
 /** The values the register and edit forms share (everything is text until it is sent). */
 export interface PatientFormValues {
   fullName: string
+  patientCode: string
   phone: string
   phoneContactType: 'self' | 'guardian'
   ageMode: 'age' | 'dob'
@@ -100,6 +101,24 @@ export function CoreFields({
             aria-invalid={Boolean(errors.fullName) || undefined}
             className={inputClassName}
             {...register('fullName', { validate: (v) => v.trim().length >= 2 || t.register.errors.fullName })}
+          />
+        </Field>
+      </div>
+
+      <div className="sm:col-span-2">
+        <Field
+          id="patientCode"
+          label={t.patient.patientCode}
+          optional
+          hint={t.patient.patientCodeHint}
+          error={errors.patientCode?.message}
+        >
+          <Input
+            id="patientCode"
+            autoComplete="off"
+            maxLength={40}
+            className={inputClassName}
+            {...register('patientCode')}
           />
         </Field>
       </div>

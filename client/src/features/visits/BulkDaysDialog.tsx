@@ -80,8 +80,7 @@ function DaysForm({ patientId, onClose }: { patientId: string; onClose: () => vo
   const needReason = days.some((day) => day !== today)
   const feePaise = toPaise(feeQuery.data?.defaultFee ?? '') ?? 0
   const ready = !!patient && !!episode && !patientQuery.isError
-  const canSubmit =
-    ready && online && days.length > 0 && (!needReason || reason.trim() !== '') && !bulk.mutation.isPending
+  const canSubmit = ready && online && days.length > 0 && !bulk.mutation.isPending
 
   const change = (next: Iterable<string>) => {
     setSelected(new Set([...next].slice(0, BULK_LIMIT)))
@@ -103,7 +102,7 @@ function DaysForm({ patientId, onClose }: { patientId: string; onClose: () => vo
   const input = () => ({
     entries: days.map((date) => ({ patientId, date })),
     ...(therapistId ? { therapistId } : {}),
-    ...(needReason ? { reason: reason.trim() } : {}),
+    ...(needReason && reason.trim() ? { reason: reason.trim() } : {}),
   })
 
   return (
@@ -203,7 +202,7 @@ function DaysForm({ patientId, onClose }: { patientId: string; onClose: () => vo
           </Field>
 
           {needReason && (
-            <Field id="bulk-reason" label={t.bulk.reason}>
+            <Field id="bulk-reason" label={t.bulk.reason} optional>
               <Input
                 id="bulk-reason"
                 className={inputClassName}
