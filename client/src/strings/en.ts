@@ -54,7 +54,6 @@ export const t = {
     appearance: 'Appearance',
     allBranches: 'All branches',
     branchSelect: 'Show data for branch',
-    language: 'English',
   },
   theme: {
     switchToLight: 'Switch to light theme',

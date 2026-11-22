@@ -2,7 +2,6 @@ import {
   Building2,
   ChevronDown,
   Ellipsis,
-  Globe,
   KeyRound,
   LayoutDashboard,
   Landmark,
@@ -239,12 +238,8 @@ export function AppShell() {
               <LogoMark className="shrink-0 lg:hidden" />
               <BranchSelect className="min-w-0 flex-1 sm:w-52 sm:flex-none" />
 
-              {/* The account menu, theme and language are in the "More" sheet on phones. */}
+              {/* The account menu and theme are in the "More" sheet on phones. */}
               <div className="ml-auto hidden items-center gap-1 sm:gap-2 lg:flex">
-                <span className="hidden items-center gap-1.5 px-2 text-sm text-muted-foreground lg:flex">
-                  <Globe className="size-4" aria-hidden />
-                  {t.nav.language}
-                </span>
                 <ThemeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex h-10 items-center gap-2 rounded-lg pl-1 pr-2 text-sm outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50">
