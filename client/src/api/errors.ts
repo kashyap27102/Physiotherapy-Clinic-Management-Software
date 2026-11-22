@@ -56,8 +56,13 @@ export class ApiError extends Error {
 export const isApiError = (error: unknown, code?: ApiErrorCode): error is ApiError =>
   error instanceof ApiError && (code === undefined || error.code === code)
 
+/** The message to show for a failure. For a validation failure that is the server's own per-field messages. */
 export function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof ApiError ? error.message : fallback
+  if (!(error instanceof ApiError)) return fallback
+  if (error.code === 'VALIDATION_FAILED' && error.fields.length > 0) {
+    return [...new Set(error.fields.map((field) => field.message))].join(' ')
+  }
+  return error.message
 }
 
 /** The `details` object some error codes carry (duplicate candidates, permission warnings); empty when absent. */
