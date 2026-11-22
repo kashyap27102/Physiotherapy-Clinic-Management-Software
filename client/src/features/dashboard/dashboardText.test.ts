@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { DashboardToday } from '@/api'
+import type { FinanceToday } from '@/api'
 import { collectionNotes, seenNotes } from './dashboardText'
 
-const collections = (over: Partial<DashboardToday['collections']> = {}): DashboardToday['collections'] => ({
+const collections = (over: Partial<FinanceToday['collections']> = {}): FinanceToday['collections'] => ({
   net: '0.00',
   payments: '0.00',
   reversed: '0.00',

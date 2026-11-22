@@ -21,6 +21,7 @@ export const PERMISSION_KEYS = [
   'entry.reverse',
   'document.issue',
   'report.view',
+  'finance.view',
   'data.import',
   'data.export',
   'audit.view',
@@ -529,7 +530,7 @@ export interface AuditLogInput {
   pageSize?: number
 }
 
-/** Today's summary for the owner (REP-001). Money is a string with two decimals. */
+/** Today's visits and new patients for the dashboard (REP-001). No money: that is `FinanceToday`. */
 export interface DashboardToday {
   /** The India day this covers, YYYY-MM-DD. */
   date: string
@@ -538,6 +539,14 @@ export interface DashboardToday {
   patientsSeen: number
   sessions: number
   newPatients: number
+  /** One row per branch; null when a single branch was asked for. */
+  byBranch: { branchId: string; name: string; patientsSeen: number; sessions: number }[] | null
+}
+
+/** Today's money (needs finance.view). Money is a string with two decimals. */
+export interface FinanceToday {
+  date: string
+  branchId: string | null
   /** Cash basis: payments received less reversals and refunds, each also given separately. */
   collections: {
     net: Money
@@ -553,7 +562,7 @@ export interface DashboardToday {
     top: { patientId: string; fullName: string | null; amount: Money }[]
   }
   /** One row per branch; null when a single branch was asked for. */
-  byBranch: { branchId: string; name: string; patientsSeen: number; sessions: number; collected: Money }[] | null
+  byBranch: { branchId: string; name: string; collected: Money }[] | null
 }
 
 /** What the UI needs from a backend. Implemented by the mock and by the real HTTP client. */
@@ -657,6 +666,10 @@ export interface Api {
   dashboard: {
     /** Today in India time. A branch-assigned viewer always gets their own branch. Reading it is not audited. */
     today(branchId?: string, signal?: AbortSignal): Promise<DashboardToday>
+  }
+  finance: {
+    /** Today's collections and dues in India time (needs finance.view). Reading it is not audited. */
+    today(branchId?: string, signal?: AbortSignal): Promise<FinanceToday>
   }
   audit: {
     /** The clinic's audit log, newest first (needs audit.view). Reading it is not itself recorded. */

@@ -20,3 +20,9 @@ export function useCan(permission: PermissionKey): boolean {
   const { state } = useAuth()
   return state.status === 'authenticated' && state.user.permissions.includes(permission)
 }
+
+/** True when the user holds at least one of the permissions. A single hook call, so it is safe in any component. */
+export function useAnyCan(...permissions: PermissionKey[]): boolean {
+  const { state } = useAuth()
+  return state.status === 'authenticated' && permissions.some((key) => state.user.permissions.includes(key))
+}

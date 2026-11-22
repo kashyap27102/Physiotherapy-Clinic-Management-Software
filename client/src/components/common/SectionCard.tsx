@@ -14,14 +14,14 @@ interface SectionCardProps {
 export function SectionCard({ title, action, badge, className, bodyClassName, children }: SectionCardProps) {
   return (
     <section className={cn('rounded-xl border bg-card text-card-foreground shadow-xs', className)}>
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-3.5">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3.5 sm:px-5">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-semibold">{title}</h2>
           {badge}
         </div>
         {action}
       </header>
-      <div className={cn('p-5', bodyClassName)}>{children}</div>
+      <div className={cn('p-4 sm:p-5', bodyClassName)}>{children}</div>
     </section>
   )
 }

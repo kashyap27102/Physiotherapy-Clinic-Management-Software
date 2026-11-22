@@ -101,7 +101,8 @@ The Owner has all of them. Receptionist and Physiotherapist defaults are in PRD 
 | `refund.process`   | Process refunds                                       |
 | `entry.reverse`    | Reverse entries                                       |
 | `document.issue`   | Print receipts, generate invoices                     |
-| `report.view`      | Dashboard and reports                                 |
+| `report.view`      | Dashboard (patients seen, new patients)               |
+| `finance.view`     | Finance page and money reports (collections, dues)    |
 | `data.import`      | Import patients                                       |
 | `data.export`      | Export data and reports                               |
 | `audit.view`       | View audit log                                        |
@@ -215,16 +216,17 @@ Rules enforced: `NO_ACTIVE_EPISODE`, `DUPLICATE_VISIT_TODAY` (needs `confirm=tru
 
 ### 5.7 Dashboard, reports, export (REP, EXP)
 
-| Method | Path                     | Perm          | Req     | Rel | Notes                                                                                          |
-| ------ | ------------------------ | ------------- | ------- | --- | ---------------------------------------------------------------------------------------------- |
-| GET    | `/dashboard/today`       | `report.view` | REP-001 | R1* | Patients seen, collections, dues. `?branchId` optional. *May move to R2                        |
-| GET    | `/reports/revenue`       | `report.view` | REP-002 | R2  | `from`, `to`, `groupBy=day                                                                     | week                                           | month`, `branchId`, `basis=collections | charges` |
-| GET    | `/reports/outstanding`   | `report.view` | REP-002 | R2  | Patients with dues, sorted by amount                                                           |
-| GET    | `/reports/by-branch`     | `report.view` | REP-002 | R2  | Visits and revenue per branch                                                                  |
-| GET    | `/reports/by-method`     | `report.view` | REP-002 | R2  | Cash, UPI, card, bank transfer                                                                 |
-| GET    | `/reports/{name}/export` | `data.export` | REP-003 | R2  | `format=xlsx                                                                                   | pdf`; same filters as the report; audit logged |
-| POST   | `/exports`               | `data.export` | EXP-001 | R2  | Request a clinic data export (patients, visits, payments). Large exports run in the background |
-| GET    | `/exports/{id}`          | `data.export` | EXP-001 | R2  | Status and download link                                                                       |
+| Method | Path                     | Perm           | Req     | Rel | Notes                                                                                                    |
+| ------ | ------------------------ | -------------- | ------- | --- | -------------------------------------------------------------------------------------------------------- |
+| GET    | `/dashboard/today`       | `report.view`  | REP-001 | R1* | Patients seen, sessions, new patients, per-branch split. No money. `?branchId` optional. *May move to R2 |
+| GET    | `/finance/today`         | `finance.view` | REP-001 | R1  | Collections (net, by method), dues and the largest dues, per-branch collections. `?branchId` optional    |
+| GET    | `/reports/revenue`       | `report.view`  | REP-002 | R2  | `from`, `to`, `groupBy=day                                                                               | week                                           | month`, `branchId`, `basis=collections | charges` |
+| GET    | `/reports/outstanding`   | `report.view`  | REP-002 | R2  | Patients with dues, sorted by amount                                                                     |
+| GET    | `/reports/by-branch`     | `report.view`  | REP-002 | R2  | Visits and revenue per branch                                                                            |
+| GET    | `/reports/by-method`     | `report.view`  | REP-002 | R2  | Cash, UPI, card, bank transfer                                                                           |
+| GET    | `/reports/{name}/export` | `data.export`  | REP-003 | R2  | `format=xlsx                                                                                             | pdf`; same filters as the report; audit logged |
+| POST   | `/exports`               | `data.export`  | EXP-001 | R2  | Request a clinic data export (patients, visits, payments). Large exports run in the background           |
+| GET    | `/exports/{id}`          | `data.export`  | EXP-001 | R2  | Status and download link                                                                                 |
 
 ### 5.8 Import (IMP)
 

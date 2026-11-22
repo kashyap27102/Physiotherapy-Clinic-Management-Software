@@ -24,10 +24,11 @@ import {
 } from '@/features/patients/patientFilters'
 import { PatientTable } from '@/features/patients/PatientTable'
 import { BulkPatientsDialog } from '@/features/visits/BulkPatientsDialog'
-import { TodayVisits } from '@/features/visits/TodayVisits'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { queryKeys } from '@/lib/queryKeys'
 import { t } from '@/strings/en'
+
+const canHover = typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 
 /** Digits and phone punctuation only: a phone fragment, which needs four digits before the server will search. */
 const isPhoneText = (text: string) => /^[\d\s+().-]+$/.test(text)
@@ -106,7 +107,7 @@ export function HomePage() {
       <PageHeader
         crumbs={[{ label: t.home.title }]}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <>
             <Can permission="visit.bulk">
               <Button variant="outline" className="h-10 gap-2 px-4" onClick={() => setBulkOpen(true)}>
                 <ListChecks aria-hidden />
@@ -123,10 +124,10 @@ export function HomePage() {
                 {t.home.registerNew}
               </Link>
             </Can>
-          </div>
+          </>
         }
       />
-      <p className="-mt-3 mb-5 text-sm text-muted-foreground">{t.home.subtitle}</p>
+      <p className="-mt-2 mb-4 sm:-mt-3 sm:mb-5 text-sm text-muted-foreground">{t.home.subtitle}</p>
 
       <div className="relative mb-2">
         <Search
@@ -135,7 +136,8 @@ export function HomePage() {
         />
         <input
           type="search"
-          autoFocus
+          // A phone would pop the keyboard over the list on every visit; a desk keeps the search ready to type.
+          autoFocus={canHover}
           autoComplete="off"
           aria-label={t.home.searchLabel}
           placeholder={t.home.searchPlaceholder}
@@ -162,7 +164,6 @@ export function HomePage() {
         {tooShort ? t.home.searchHint : patients.data && searching ? t.home.resultCount(total) : ' '}
       </p>
 
-      <TodayVisits />
       <BulkPatientsDialog open={bulkOpen} onOpenChange={setBulkOpen} />
 
       <section className="overflow-hidden rounded-xl border bg-card shadow-xs">

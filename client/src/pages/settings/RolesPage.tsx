@@ -41,7 +41,7 @@ const GROUPS: { key: keyof typeof t.permissionGroups; permissions: ClinicPermiss
     ],
   },
   { key: 'clinical', permissions: ['clinical.view', 'clinical.edit', 'episode.manage'] },
-  { key: 'data', permissions: ['report.view', 'data.export', 'data.import', 'audit.view'] },
+  { key: 'data', permissions: ['report.view', 'finance.view', 'data.export', 'data.import', 'audit.view'] },
   { key: 'clinic', permissions: ['clinic.manage', 'staff.manage', 'role.manage', 'device.manage'] },
 ]
 const ALL: ClinicPermission[] = GROUPS.flatMap((g) => g.permissions)

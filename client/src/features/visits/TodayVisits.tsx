@@ -28,7 +28,7 @@ export function TodayVisits() {
   const items = visits.data ?? []
 
   return (
-    <section className="mb-6 overflow-hidden rounded-xl border bg-card shadow-xs">
+    <section className="overflow-hidden rounded-xl border bg-card shadow-xs">
       <header className="flex items-center justify-between gap-3 border-b px-4 py-3.5 sm:px-5">
         <h2 className="flex min-w-0 items-center gap-2 text-base font-semibold">
           <CalendarCheck className="size-4 shrink-0 text-primary" aria-hidden />
