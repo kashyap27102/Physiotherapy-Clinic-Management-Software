@@ -41,8 +41,10 @@ export function useFormMutation<TData, TVars, TField extends string>({
       if (typeof handled === 'string') return setFormError(handled)
       if (handled) return
       if (isApiError(error, 'VALIDATION_FAILED') && error.fields.length > 0) {
-        const { unmatched } = applyFieldErrors(error.fields, fields, setError, toName)
+        const { unmatched, unmatchedMessages } = applyFieldErrors(error.fields, fields, setError, toName)
         if (unmatched === 0) return
+        // Only what is not already shown on a field, in the server's own words.
+        return setFormError([...new Set(unmatchedMessages)].join(' '))
       }
       setFormError(errorMessage(error, t.common.genericError))
     },
