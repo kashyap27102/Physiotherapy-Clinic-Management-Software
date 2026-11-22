@@ -6,6 +6,7 @@ export const GENDERS: Gender[] = ['female', 'male', 'other', 'undisclosed']
 /** Field names the server can send errors for; anything else is shown as a general message. */
 export const PATIENT_FORM_FIELDS = [
   'fullName',
+  'patientCode',
   'phone',
   'phoneContactType',
   'age',
@@ -26,6 +27,7 @@ export function blankValues(prefill = ''): PatientFormValues {
   const isPhone = /^[\d\s+().-]{3,}$/.test(text)
   return {
     fullName: text && !isPhone ? text : '',
+    patientCode: '',
     phone: text && isPhone ? text : '',
     phoneContactType: 'self',
     ageMode: 'age',
@@ -45,6 +47,7 @@ export function blankValues(prefill = ''): PatientFormValues {
 export function valuesFromPatient(patient: PatientDetail): PatientFormValues {
   return {
     fullName: patient.fullName,
+    patientCode: patient.patientCode ?? '',
     phone: patient.phone,
     phoneContactType: patient.phoneContactType,
     ageMode: patient.dateOfBirth ? 'dob' : 'age',
@@ -66,6 +69,7 @@ const orUndefined = (text: string) => text.trim() || undefined
 export function toCreateInput(values: PatientFormValues): CreatePatientInput {
   return {
     fullName: values.fullName.trim(),
+    ...(orUndefined(values.patientCode) ? { patientCode: values.patientCode.trim() } : {}),
     phone: values.phone.trim(),
     phoneContactType: values.phoneContactType,
     ...(values.ageMode === 'dob' ? { dateOfBirth: values.dateOfBirth } : { age: Number(values.age) }),
@@ -84,6 +88,7 @@ export function toCreateInput(values: PatientFormValues): CreatePatientInput {
 export function toUpdateInput(values: PatientFormValues): UpdatePatientInput {
   return {
     fullName: values.fullName.trim(),
+    patientCode: values.patientCode.trim(),
     phone: values.phone.trim(),
     phoneContactType: values.phoneContactType,
     ...(values.ageMode === 'dob' ? { dateOfBirth: values.dateOfBirth } : { age: Number(values.age) }),

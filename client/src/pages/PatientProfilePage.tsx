@@ -111,6 +111,7 @@ export function PatientProfilePage() {
                 </SoftPill>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
+                {patient.patientCode && `${t.patient.patientCode}: ${patient.patientCode} · `}
                 {t.patient.ageYears(patient.age)} · {t.patient.gender[patient.gender]}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">

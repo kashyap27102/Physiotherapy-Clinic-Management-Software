@@ -109,7 +109,7 @@ export async function listTodayVisits(db: TenantDb, auth: AuthContext, requested
     where: { visitedAt: { gte: start, lt: end }, ...(branchId ? { branchId } : {}) },
     orderBy: [{ visitedAt: 'desc' }, { id: 'desc' }],
     take: 300,
-    select: { ...visitSelect, patient: { select: { id: true, fullName: true, phone: true } } },
+    select: { ...visitSelect, patient: { select: { id: true, fullName: true, patientCode: true, phone: true } } },
   })
   const balances = auth.permissions.has('ledger.view')
     ? await balancesFor(db, [...new Set(rows.map((row) => row.patientId))])
@@ -120,6 +120,7 @@ export async function listTodayVisits(db: TenantDb, auth: AuthContext, requested
       patientId: row.patient.id,
       patientName: row.patient.fullName,
       patientPhone: row.patient.phone,
+      patientCode: row.patient.patientCode,
       balance: balances ? (balances.get(row.patientId) ?? null) : null,
     })),
   }

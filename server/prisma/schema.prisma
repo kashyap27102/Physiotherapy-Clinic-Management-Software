@@ -298,6 +298,8 @@ model Patient {
   tenantId           String    @map("tenant_id") @db.Uuid
   registeredBranchId String    @map("registered_branch_id") @db.Uuid
   fullName           String    @map("full_name")
+  /// Optional extra ID the doctor or clinic gives the patient (file or card number). Unique within the clinic.
+  patientCode        String?   @map("patient_code")
   /// Ten digits for Indian numbers, or "+" and digits for others.
   phone              String
   /// self or guardian (US-08.5)
@@ -332,6 +334,7 @@ model Patient {
   billingDocs      BillingDocument[]
 
   @@unique([tenantId, id])
+  @@unique([tenantId, patientCode])
   @@index([tenantId, phone])
   @@index([tenantId, createdAt(sort: Desc)])
   // Partial phone search (US-09.1). The name trigram index is an expression index in the migration SQL.

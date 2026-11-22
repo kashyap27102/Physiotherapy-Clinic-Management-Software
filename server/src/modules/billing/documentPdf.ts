@@ -16,7 +16,7 @@ export interface DocumentPdfData {
     logo: Buffer | null
   }
   branch: { name: string; address: string | null; phone: string | null }
-  patient: { name: string; phone: string }
+  patient: { name: string; phone: string; code?: string | null }
   /** Receipt and reversal receipt. */
   payment?: {
     amount: string
@@ -113,6 +113,7 @@ export function renderDocumentPdf(data: DocumentPdfData): Promise<Buffer> {
     row('Number', data.docNumber)
     row('Date', data.issuedOn)
     row('Patient', `${data.patient.name} (${data.patient.phone})`)
+    if (data.patient.code) row('Patient ID', data.patient.code)
 
     if (data.payment) {
       const p = data.payment

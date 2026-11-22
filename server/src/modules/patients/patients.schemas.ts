@@ -42,6 +42,13 @@ const age = z
   .min(0, 'Enter a valid age.')
   .max(120, 'Enter an age up to 120.')
 
+/** The doctor's own ID for the patient; letters, digits and . _ / - only. */
+const patientCode = z
+  .string()
+  .trim()
+  .max(40, 'Use at most 40 characters.')
+  .regex(/^[A-Za-z0-9._/-]*$/, 'Use letters, digits and . _ / - only.')
+
 const gender = z.enum(GENDERS, { error: 'Choose a gender.' })
 const contactType = z.enum(['self', 'guardian'], { error: 'Choose whose number this is.' })
 
@@ -73,6 +80,7 @@ const email = z
 export const createBody = z
   .object({
     fullName,
+    patientCode: patientCode.optional().transform((value) => value || undefined),
     phone,
     phoneContactType: contactType.default('self'),
     age: age.optional(),
@@ -99,6 +107,7 @@ export const createBody = z
 export const updateBody = z
   .object({
     fullName,
+    patientCode: patientCode.transform((value) => value || null).nullable(),
     phone,
     phoneContactType: contactType,
     age,

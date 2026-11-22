@@ -492,7 +492,7 @@ export async function documentPdf(db: TenantDb, auth: AuthContext, id: string, i
       issuedAt: true,
       linesSnapshot: true,
       branch: { select: { name: true, address: true, phone: true } },
-      patient: { select: { fullName: true, phone: true } },
+      patient: { select: { fullName: true, patientCode: true, phone: true } },
       ledgerEntry: {
         select: {
           amount: true,
@@ -520,7 +520,7 @@ export async function documentPdf(db: TenantDb, auth: AuthContext, id: string, i
     duplicate: printed > 0,
     clinic: { ...clinic, logo: logo ? Buffer.from(logo.data) : null },
     branch: doc.branch,
-    patient: { name: doc.patient.fullName, phone: doc.patient.phone },
+    patient: { name: doc.patient.fullName, phone: doc.patient.phone, code: doc.patient.patientCode },
   }
   if (doc.docType === 'INVOICE') {
     const snapshot = doc.linesSnapshot as unknown as InvoiceSnapshot
