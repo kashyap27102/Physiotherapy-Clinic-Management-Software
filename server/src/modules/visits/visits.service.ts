@@ -140,7 +140,7 @@ export const isoDay = (d: DayParts) => `${d.year}-${pad2(d.month)}-${pad2(d.day)
 
 /**
  * The India day a visit counts for: today, or an earlier day for a user holding `visit.backdate` (VIS-001, OQ-14).
- * An earlier day needs a reason, and cannot be in the future or before the episode began. Shared by single and bulk
+ * An earlier day may carry a reason (optional), and cannot be in the future or before the episode began. Shared by single and bulk
  * attendance so both follow the same rule.
  */
 export function resolveVisitDay(
@@ -160,8 +160,7 @@ export function resolveVisitDay(
   if (dayNumber(requested) < dayNumber(indiaToday(episodeStartedAt))) {
     throw validationError([{ field: 'visitDate', message: 'The visit date is before this episode started.' }])
   }
-  const why = reason?.trim() ?? ''
-  if (!why) throw validationError([{ field: 'backdateReason', message: 'Say why attendance is being added late.' }])
+  const why = reason?.trim() || null
   return { day: requested, backdated: true, reason: why }
 }
 
@@ -184,7 +183,7 @@ export interface CreateVisitInput {
  * with the fee stored as it was at that moment (BR-BILL-1). Needs an active episode. Dues only warn, never block
  * (BR-VIS-4). A second visit on the same day asks for confirmation. A fee other than the default needs `fee.override`
  * and a reason, which is audited. Attendance forgotten on an earlier day can be entered with `visitDate`, but only by a
- * user holding `visit.backdate`, with a reason; the date cannot be in the future or before the episode began.
+ * user holding `visit.backdate`, optionally with a reason; the date cannot be in the future or before the episode began.
  */
 export async function createVisit(db: TenantDb, auth: AuthContext, input: CreateVisitInput, ip: string | undefined) {
   const patient = await db.patient.findFirst({ where: { id: input.patientId }, select: { id: true } })

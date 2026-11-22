@@ -77,7 +77,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
           feeOverride: overrideOn ? { amount: feeText.trim(), reason } : undefined,
           confirmSecondVisitToday: confirmSecond || undefined,
           visitDate: earlierDay ? visitDate : undefined,
-          backdateReason: earlierDay ? backdateReason.trim() : undefined,
+          backdateReason: earlierDay ? backdateReason.trim() || undefined : undefined,
         },
         idempotencyKey.current(),
       ),
@@ -111,9 +111,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
   const feeValid = !overrideOn || isValidAmount(feeText)
   const reasonValid = !overrideOn || reason.trim().length > 0
   const dateValid = !earlierDay || (visitDate !== '' && visitDate <= dayKey(new Date()))
-  const backdateValid = !earlierDay || backdateReason.trim().length > 0
-  const canSubmit =
-    !!patient && hasEpisode && online && feeValid && reasonValid && dateValid && backdateValid && !attend.isPending
+  const canSubmit = !!patient && hasEpisode && online && feeValid && reasonValid && dateValid && !attend.isPending
 
   function submit() {
     setFormError(null)
@@ -260,6 +258,7 @@ function AttendanceForm({ patientId, onClose }: { patientId: string; onClose: ()
                   <Field
                     id="att-backdate-reason"
                     label={t.attendance.backdateReason}
+                    optional
                     error={backdateError ?? undefined}
                   >
                     <Input
