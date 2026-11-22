@@ -24,7 +24,7 @@ npm run build
 
 The client talks only to the real Express API (`server/`). Start it with `npm run dev` in `server` (port 4000); the Vite
 dev server proxies `/api` there, so the session cookies stay same-origin. Sign-in needs a user in the database and a
-working email setup (`RESEND_API_KEY`) for the code sent to new devices.
+working email setup (`BREVO_API_KEY` and `EMAIL_FROM`) for the code sent to new devices.
 
 Screens whose server endpoints are not built yet (patients, visits, payments) show an error until those modules land.
 

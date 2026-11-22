@@ -1,6 +1,6 @@
-// Manual check of the Resend setup: npm run email:test -- you@example.com
-// Sends one real email using RESEND_API_KEY and EMAIL_FROM from .env. Until a domain is verified in Resend,
-// the only recipient it accepts is the Resend account owner's own address.
+// Manual check of the email setup (Brevo or Resend): npm run email:test -- you@example.com
+// Sends one real email using BREVO_API_KEY (or RESEND_API_KEY) and EMAIL_FROM from .env. With Resend and no
+// verified domain, the only recipient it accepts is the account owner's own address.
 import { getEmailSender } from '../src/lib/email/index.js'
 import { otpEmail } from '../src/lib/email/templates.js'
 

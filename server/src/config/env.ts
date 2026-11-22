@@ -33,13 +33,16 @@ const schema = z.object({
     .default('false')
     .transform((value) => value === 'true'),
 
-  /** Resend API key. Without it the API still boots; sending email answers 503. Never log this value. */
+  /** Brevo API key (free plan, no domain needed). Preferred when both keys are set. Never log this value. */
+  BREVO_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+
+  /** Resend API key. Without an email key the API still boots; sending email answers 503. Never log this value. */
   RESEND_API_KEY: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
 
-  /** Sender shown on every email, for example "Clinic Software <no-reply@yourdomain.com>". Must be a Resend-verified sender. */
+  /** Sender shown on every email, for example "Clinic Software <no-reply@yourdomain.com>". Must be a sender verified with the provider (Brevo: a verified single sender address; Resend: a verified domain). */
   EMAIL_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
 
-  /** Development only: every outgoing email goes to this address instead (the sandbox sender only reaches the Resend account owner). Ignored in test and production. */
+  /** Development only: every outgoing email goes to this address instead (handy while the sender is a sandbox or a personal address). Ignored in test and production. */
   EMAIL_DEV_REDIRECT_TO: z.preprocess(emptyToUndefined, z.email().optional()),
 
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(300),

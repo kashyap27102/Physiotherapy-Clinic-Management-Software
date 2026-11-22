@@ -1,5 +1,6 @@
 import { env } from '../../config/env.js'
 import { unavailable } from '../errors.js'
+import { createBrevoSender } from './brevo.js'
 import { createResendSender } from './resend.js'
 import type { EmailSender } from './types.js'
 
@@ -29,12 +30,18 @@ let sender: EmailSender | undefined
 /** Lazy singleton, like the database client. Tests replace it with `setEmailSender`. */
 export function getEmailSender(): EmailSender {
   if (!sender) {
-    if (env.RESEND_API_KEY && env.EMAIL_FROM) {
-      const resend = createResendSender({ apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM })
+    // Brevo is preferred (no domain needed); Resend is used when only its key is set.
+    const provider =
+      env.EMAIL_FROM && env.BREVO_API_KEY
+        ? createBrevoSender({ apiKey: env.BREVO_API_KEY, from: env.EMAIL_FROM })
+        : env.EMAIL_FROM && env.RESEND_API_KEY
+          ? createResendSender({ apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM })
+          : undefined
+    if (provider) {
       sender =
         env.NODE_ENV === 'development' && env.EMAIL_DEV_REDIRECT_TO
-          ? redirectTo(env.EMAIL_DEV_REDIRECT_TO, resend)
-          : resend
+          ? redirectTo(env.EMAIL_DEV_REDIRECT_TO, provider)
+          : provider
     } else {
       sender = unconfigured
     }
