@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { parseIsoDate } from '../billing/billingRules.js'
 
 const uuid = z.uuid({ error: 'Invalid id.' })
 
@@ -16,6 +17,20 @@ export const idParams = z.object({ id: uuid })
 export const startEpisodeBody = z.object({
   /** Owners work across branches, so they say where the episode starts. */
   branchId: uuid.optional(),
+  /** An earlier India day the episode really began (YYYY-MM-DD), for one entered late. Needs `visit.backdate` (checked in the service). */
+  startedOn: z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+      if (value === undefined || value === '') return null
+      const parts = parseIsoDate(value)
+      if (!parts) {
+        ctx.addIssue({ code: 'custom', message: 'Enter the date as YYYY-MM-DD.' })
+        return z.NEVER
+      }
+      return parts
+    }),
+  backdateReason: z.string().trim().max(500, 'Use at most 500 characters.').default(''),
 })
 
 const extraFields = z

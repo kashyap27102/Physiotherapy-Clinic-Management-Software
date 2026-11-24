@@ -33,6 +33,7 @@ const DANGER = new Set([
   'user.deactivated',
   'visit.fee_overridden',
   'visit.backdated',
+  'episode.backdated',
   'visit.reversed',
   'ledger.reversed',
   'role.permissions_changed',
@@ -92,6 +93,13 @@ export function summarize(action: string, raw: unknown): string | null {
     }
     case 'visit.backdated': {
       const day = text(d['visitDate'])
+      parts.push(day ? s.forDate(formatDate(`${day}T12:00:00+05:30`)) : null)
+      const reason = text(d['reason'])
+      parts.push(reason ? s.reason(reason) : null)
+      break
+    }
+    case 'episode.backdated': {
+      const day = text(d['startedOn'])
       parts.push(day ? s.forDate(formatDate(`${day}T12:00:00+05:30`)) : null)
       const reason = text(d['reason'])
       parts.push(reason ? s.reason(reason) : null)
