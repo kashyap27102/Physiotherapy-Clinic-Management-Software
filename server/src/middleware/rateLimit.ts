@@ -16,6 +16,8 @@ export function createRateLimiter({ windowMs = 60_000, limit }: LimiterOptions) 
     limit,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
+    // CORS preflight calls are not real requests; never count or block them.
+    skip: (req) => req.method === 'OPTIONS',
     handler: (_req, _res, next) =>
       next(new AppError(429, 'RATE_LIMITED', 'Too many requests. Please try again shortly.')),
   })
