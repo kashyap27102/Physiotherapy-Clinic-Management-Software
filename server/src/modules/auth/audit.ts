@@ -32,6 +32,7 @@ export type AuthAuditAction =
   | 'patient.viewed'
   | 'patient.updated'
   | 'episode.started'
+  | 'episode.backdated'
   | 'episode.discharged'
   | 'episode.viewed'
   | 'assessment.created'

@@ -1,10 +1,11 @@
 import type { AuthContext } from '../../auth/context.js'
 import type { TenantDb } from '../../db/tenantScope.js'
 import { Prisma } from '../../generated/prisma/client.js'
-import { AppError, notFound, validationError } from '../../lib/errors.js'
+import { AppError, forbidden, notFound, validationError } from '../../lib/errors.js'
 import { recordAudit } from '../auth/audit.js'
+import { indiaToday } from '../patients/patientRules.js'
 import { balanceFor } from '../patients/patients.service.js'
-import { sessionCountForEpisode } from '../visits/visits.service.js'
+import { dayNumber, isoDay, middayOf, sessionCountForEpisode, type DayParts } from '../visits/visits.service.js'
 import {
   isEmptyAssessment,
   isEmptyPlan,
@@ -191,11 +192,30 @@ export async function startEpisode(
   db: TenantDb,
   auth: AuthContext,
   patientId: string,
-  input: { branchId?: string | undefined },
+  input: {
+    branchId?: string | undefined
+    startedOn?: DayParts | null | undefined
+    backdateReason?: string | undefined
+  },
   ip: string | undefined,
 ): Promise<EpisodeDto> {
   const patient = await db.patient.findFirst({ where: { id: patientId }, select: { id: true } })
   if (!patient) throw notFound('Patient not found.')
+
+  // An episode entered late can start on an earlier India day so earlier visits fit inside it.
+  let startedAt: Date | undefined
+  let backdatedTo: DayParts | null = null
+  const today = indiaToday()
+  if (input.startedOn && dayNumber(input.startedOn) !== dayNumber(today)) {
+    if (!auth.permissions.has('visit.backdate')) {
+      throw forbidden('Your role cannot start an episode on an earlier day.')
+    }
+    if (dayNumber(input.startedOn) > dayNumber(today)) {
+      throw validationError([{ field: 'startedOn', message: 'The start date cannot be in the future.' }])
+    }
+    startedAt = middayOf(input.startedOn)
+    backdatedTo = input.startedOn
+  }
 
   const branchId = auth.branchId ?? input.branchId
   if (!branchId) {
@@ -212,7 +232,11 @@ export async function startEpisode(
   try {
     row = await db.$transaction(async (tx) => {
       const created = await tx.episode.create({
-        data: { patientId, startedBranchId: branch.id } as Prisma.EpisodeUncheckedCreateInput,
+        data: {
+          patientId,
+          startedBranchId: branch.id,
+          ...(startedAt ? { startedAt } : {}),
+        } as Prisma.EpisodeUncheckedCreateInput,
         select: episodeSelect,
       })
       await tx.patient.update({ where: { id: patientId }, data: { status: 'active' } })
@@ -223,6 +247,13 @@ export async function startEpisode(
     throw error
   }
   await audit(auth, ip, 'episode.started', 'episode', row.id, { patientId, branchId: branch.id })
+  if (backdatedTo) {
+    await audit(auth, ip, 'episode.backdated', 'episode', row.id, {
+      patientId,
+      startedOn: isoDay(backdatedTo),
+      reason: input.backdateReason?.trim() || null,
+    })
+  }
   return toEpisode(row)
 }
 

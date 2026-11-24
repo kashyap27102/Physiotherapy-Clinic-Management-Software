@@ -625,7 +625,10 @@ export interface Api {
   episodes: {
     list(patientId: string): Promise<Episode[]>
     /** Owners work across branches and name one; staff always start at their own. */
-    start(patientId: string, input?: { branchId?: string }): Promise<Episode>
+    start(
+      patientId: string,
+      input?: { branchId?: string; startedOn?: string; backdateReason?: string },
+    ): Promise<Episode>
     /** Opening an episode is audited on the server. */
     get(id: string): Promise<EpisodeDetail>
     /** Every version, newest first. Audited. */
