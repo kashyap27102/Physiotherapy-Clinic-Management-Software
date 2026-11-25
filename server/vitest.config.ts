@@ -10,6 +10,9 @@ try {
 export default defineConfig({
   test: {
     environment: 'node',
+    // The database tests share one database and each disables and re-enables the append-only triggers during
+    // cleanup, so running files in parallel lets one file re-arm a trigger while another is still deleting.
+    fileParallelism: false,
     include: ['test/**/*.test.ts', 'src/**/*.test.ts'],
     // Tests never read a developer's shell configuration. The app itself never gets a database URL here;
     // only the tenant-isolation tests use TEST_DATABASE_URL and are skipped when it is not set.
